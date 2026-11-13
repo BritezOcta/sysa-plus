@@ -1,0 +1,12 @@
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-background);
+  color: var(--color-secondary);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
