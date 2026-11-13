@@ -1,7 +1,7 @@
+import LoginPage from './pages/LoginPage'
+
 function App() {
-  return (
-    <>hola mundo</>
-  )
+  return <LoginPage />
 }
 
 export default App
