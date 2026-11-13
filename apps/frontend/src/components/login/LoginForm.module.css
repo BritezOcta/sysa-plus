@@ -1,0 +1,81 @@
+.form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.header h1 {
+  color: var(--color-text);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.header p {
+  color: var(--color-text-muted);
+  font-size: 15px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #D5DCE3;
+  border-radius: var(--radius-md);
+  background-color: var(--color-input);
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(0 140 204 / 15%);
+}
+
+.field input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.submitButton {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+  background-color: #0075AD;
+}
+
+.logo {
+  width: 48px;
+  height: auto;
+  display: block;
+  margin-bottom: 4px;
+}

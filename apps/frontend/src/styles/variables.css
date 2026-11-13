@@ -1,16 +1,27 @@
 :root {
-  --color-primary: #820413;
-  --color-secondary: #3C3C3C;
-  --color-background: #F5F5F5;
-  --color-surface: #FFFFFF;
+  /* Colores institucionales */
+  --color-primary: #008CCC;
+  --color-secondary: #000000;
 
+  /* Superficies */
+  --color-background: #EEF1F4;
+  --color-surface: #F8FAFC;
+  --color-input: #E9EDF1;
+
+  /* Texto */
+  --color-text: #20252B;
+  --color-text-muted: #68727D;
+
+  /* Tipografía */
   --font-primary: "Roboto", sans-serif;
 
-
+  /* Espaciado */
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
+  --spacing-xl: 32px;
 
+  /* Bordes */
   --radius-sm: 6px;
   --radius-md: 10px;
 }
