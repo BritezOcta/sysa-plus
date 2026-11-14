@@ -1,22 +1,25 @@
-
-import styles from './LoginForm.module.css'
+import { useNavigate } from 'react-router'
 import utnLogo from '../../assets/images/utn-logotipo.svg'
-
-async function loginAction(_formData: FormData) {
-    // TODO: completar esto conectarlo con el back y auth xd
-}
+import { APP_ROUTES, AUTH_RULES, INSTITUTION_BRAND } from '../../constants'
+import styles from './LoginForm.module.css'
 
 function LoginForm() {
+  const navigate = useNavigate()
+
+  async function loginAction() {
+    navigate(APP_ROUTES.ACADEMIC_OFFER)
+  }
+
   return (
     <form className={styles.form} action={loginAction}>
       <img
         src={utnLogo}
-        alt="Logo de la Universidad Tecnológica Nacional"
+        alt={INSTITUTION_BRAND.LOGO_ALT}
         className={styles.logo}
       />
 
       <div className={styles.header}>
-        <h1>Bienvenido a SysA+</h1>
+        <h1>Bienvenido a {INSTITUTION_BRAND.SYSTEM_NAME}</h1>
         <p>Ingresá tus datos para continuar.</p>
       </div>
 
@@ -29,8 +32,8 @@ function LoginForm() {
           placeholder="Ingresá tu DNI"
           inputMode="numeric"
           autoComplete="username"
-          pattern="[0-9]{7,8}"
-          maxLength={8}
+          pattern={AUTH_RULES.DNI_PATTERN}
+          maxLength={AUTH_RULES.DNI_MAX_LENGTH}
           required
         />
       </div>
