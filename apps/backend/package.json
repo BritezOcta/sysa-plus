@@ -2,11 +2,15 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "db:pull": "prisma db pull",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate"
   },
   "keywords": [],
   "author": "",

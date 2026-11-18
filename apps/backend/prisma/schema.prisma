@@ -7,261 +7,296 @@ datasource db {
   provider = "sqlserver"
 }
 
-model ACADEMIC_PERIOD {
-  ACADEMIC_PERIOD_ID Int               @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement())
-  YEAR               Int               @db.SmallInt
-  SEMESTER           Int               @db.TinyInt
-  PERIOD_START_DATE  DateTime          @db.Date
-  PERIOD_END_DATE    DateTime          @db.Date
-  COURSE_OFFERING    COURSE_OFFERING[]
+model AcademicPeriod {
+  academicPeriodId Int              @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement()) @map("ACADEMIC_PERIOD_ID")
+  year             Int              @map("YEAR") @db.SmallInt
+  semester         Int              @map("SEMESTER") @db.TinyInt
+  periodStartDate  DateTime         @map("PERIOD_START_DATE") @db.Date
+  periodEndDate    DateTime         @map("PERIOD_END_DATE") @db.Date
+  courseOfferings  CourseOffering[]
 
-  @@unique([YEAR, SEMESTER], map: "UQ_ACADEMIC_PERIOD")
+  @@unique([year, semester], map: "UQ_ACADEMIC_PERIOD")
+  @@map("ACADEMIC_PERIOD")
 }
 
-model ADMINISTRATOR_PROFILE {
-  ADMIN_ID Int   @id(map: "PK_ADMINISTRATOR_PROFILE") @default(autoincrement())
-  USER_ID  Int   @unique(map: "UQ_ADMIN_USER")
-  USERS    USERS @relation(fields: [USER_ID], references: [USER_ID], onUpdate: NoAction, map: "FK_ADMIN_USERS")
+model AdministratorProfile {
+  adminId Int  @id(map: "PK_ADMINISTRATOR_PROFILE") @default(autoincrement()) @map("ADMIN_ID")
+  userId  Int  @unique(map: "UQ_ADMIN_USER") @map("USER_ID")
+  user    User @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_ADMIN_USERS")
+
+  @@map("ADMINISTRATOR_PROFILE")
 }
 
-model ASSESSMENT_GRADE {
-  ASSESSMENT_GRADE_ID  Int               @id(map: "PK_ASSESSMENT_GRADE") @default(autoincrement())
-  ASSESSMENT_ID        Int
-  COURSE_ENROLLMENT_ID Int
-  GRADE_SCORE          Decimal           @db.Decimal(5, 2)
-  ASSESSMENTS          ASSESSMENTS       @relation(fields: [ASSESSMENT_ID], references: [ASSESSMENT_ID], onUpdate: NoAction, map: "FK_AG_ASSESSMENT")
-  COURSE_ENROLLMENT    COURSE_ENROLLMENT @relation(fields: [COURSE_ENROLLMENT_ID], references: [COURSE_ENROLLMENT_ID], onUpdate: NoAction, map: "FK_AG_ENROLLMENT")
+model AssessmentGrade {
+  assessmentGradeId  Int              @id(map: "PK_ASSESSMENT_GRADE") @default(autoincrement()) @map("ASSESSMENT_GRADE_ID")
+  assessmentId       Int              @map("ASSESSMENT_ID")
+  courseEnrollmentId Int              @map("COURSE_ENROLLMENT_ID")
+  gradeScore         Decimal          @map("GRADE_SCORE") @db.Decimal(5, 2)
+  assessment         Assessment       @relation(fields: [assessmentId], references: [assessmentId], onUpdate: NoAction, map: "FK_AG_ASSESSMENT")
+  courseEnrollment   CourseEnrollment @relation(fields: [courseEnrollmentId], references: [courseEnrollmentId], onUpdate: NoAction, map: "FK_AG_ENROLLMENT")
 
-  @@unique([ASSESSMENT_ID, COURSE_ENROLLMENT_ID], map: "UQ_ASSESSMENT_GRADE")
-  @@index([COURSE_ENROLLMENT_ID], map: "IX_AG_ENROLLMENT")
+  @@unique([assessmentId, courseEnrollmentId], map: "UQ_ASSESSMENT_GRADE")
+  @@index([courseEnrollmentId], map: "IX_AG_ENROLLMENT")
+  @@map("ASSESSMENT_GRADE")
 }
 
-model ASSESSMENTS {
-  ASSESSMENT_ID      Int                @id(map: "PK_ASSESSMENTS") @default(autoincrement())
-  COURSE_OFFERING_ID Int
-  ASSESSMENT_DATE    DateTime?          @db.Date
-  MAX_SCORE          Decimal            @db.Decimal(5, 2)
-  ASSESSMENT_NAME    String             @db.NVarChar(150)
-  ASSESSMENT_TYPE    String             @db.NVarChar(50)
-  ASSESSMENT_GRADE   ASSESSMENT_GRADE[]
-  COURSE_OFFERING    COURSE_OFFERING    @relation(fields: [COURSE_OFFERING_ID], references: [COURSE_OFFERING_ID], onUpdate: NoAction, map: "FK_ASSESS_OFFERING")
+model Assessment {
+  assessmentId     Int               @id(map: "PK_ASSESSMENTS") @default(autoincrement()) @map("ASSESSMENT_ID")
+  courseOfferingId Int               @map("COURSE_OFFERING_ID")
+  assessmentDate   DateTime?         @map("ASSESSMENT_DATE") @db.Date
+  maxScore         Decimal           @map("MAX_SCORE") @db.Decimal(5, 2)
+  assessmentName   String            @map("ASSESSMENT_NAME") @db.NVarChar(150)
+  assessmentType   String            @map("ASSESSMENT_TYPE") @db.NVarChar(50)
+  assessmentGrades AssessmentGrade[]
+  courseOffering   CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_ASSESS_OFFERING")
 
-  @@index([COURSE_OFFERING_ID], map: "IX_ASSESS_OFFERING")
+  @@index([courseOfferingId], map: "IX_ASSESS_OFFERING")
+  @@map("ASSESSMENTS")
 }
 
-model ATTENDANCE {
-  ATTENDANCE_ID        Int               @id(map: "PK_ATTENDANCE") @default(autoincrement())
-  CLASS_SESSION_ID     Int
-  COURSE_ENROLLMENT_ID Int
-  ATTENDANCE_STATUS    String            @db.NVarChar(20)
-  COURSE_ENROLLMENT    COURSE_ENROLLMENT @relation(fields: [COURSE_ENROLLMENT_ID], references: [COURSE_ENROLLMENT_ID], onUpdate: NoAction, map: "FK_ATT_ENROLLMENT")
-  CLASS_SESSION        CLASS_SESSION     @relation(fields: [CLASS_SESSION_ID], references: [CLASS_SESSION_ID], onUpdate: NoAction, map: "FK_ATT_SESSION")
+model Attendance {
+  attendanceId       Int              @id(map: "PK_ATTENDANCE") @default(autoincrement()) @map("ATTENDANCE_ID")
+  classSessionId     Int              @map("CLASS_SESSION_ID")
+  courseEnrollmentId Int              @map("COURSE_ENROLLMENT_ID")
+  attendanceStatus   String           @map("ATTENDANCE_STATUS") @db.NVarChar(20)
+  courseEnrollment   CourseEnrollment @relation(fields: [courseEnrollmentId], references: [courseEnrollmentId], onUpdate: NoAction, map: "FK_ATT_ENROLLMENT")
+  classSession       ClassSession     @relation(fields: [classSessionId], references: [classSessionId], onUpdate: NoAction, map: "FK_ATT_SESSION")
 
-  @@unique([CLASS_SESSION_ID, COURSE_ENROLLMENT_ID], map: "UQ_ATTENDANCE")
+  @@unique([classSessionId, courseEnrollmentId], map: "UQ_ATTENDANCE")
+  @@map("ATTENDANCE")
 }
 
-model CAREERS {
-  CAREER_ID      Int              @id(map: "PK_CAREERS") @default(autoincrement())
-  CAREER_NAME    String           @db.NVarChar(150)
-  CAREER_CODE    String           @unique(map: "UQ_CAREERS_CODE") @db.NVarChar(20)
-  STUDENT_CAREER STUDENT_CAREER[]
-  STUDY_PLAN     STUDY_PLAN[]
+model Career {
+  careerId          Int             @id(map: "PK_CAREERS") @default(autoincrement()) @map("CAREER_ID")
+  careerName        String          @map("CAREER_NAME") @db.NVarChar(150)
+  careerCode        String          @unique(map: "UQ_CAREERS_CODE") @map("CAREER_CODE") @db.NVarChar(20)
+  durationYears     Int             @default(5, map: "DF_CAREERS_DURATION") @map("DURATION_YEARS") @db.TinyInt
+  careerDescription String?         @map("CAREER_DESCRIPTION") @db.NVarChar(500)
+  isActive          Boolean         @default(true, map: "DF_CAREERS_ACTIVE") @map("IS_ACTIVE")
+  updatedAt         DateTime        @default(dbgenerated("sysutcdatetime()"), map: "DF_CAREERS_UPDATED_AT") @updatedAt @map("UPDATED_AT")
+  studentCareers    StudentCareer[]
+  studyPlans        StudyPlan[]
+
+  @@map("CAREERS")
 }
 
-model CLASS_SESSION {
-  CLASS_SESSION_ID   Int             @id(map: "PK_CLASS_SESSION") @default(autoincrement())
-  COURSE_OFFERING_ID Int
-  SESSION_DATE       DateTime        @db.Date
-  SESSION_TOPIC      String?         @db.NVarChar(255)
-  ATTENDANCE         ATTENDANCE[]
-  COURSE_OFFERING    COURSE_OFFERING @relation(fields: [COURSE_OFFERING_ID], references: [COURSE_OFFERING_ID], onUpdate: NoAction, map: "FK_CS_OFFERING")
+model ClassSession {
+  classSessionId   Int            @id(map: "PK_CLASS_SESSION") @default(autoincrement()) @map("CLASS_SESSION_ID")
+  courseOfferingId Int            @map("COURSE_OFFERING_ID")
+  sessionDate      DateTime       @map("SESSION_DATE") @db.Date
+  sessionTopic     String?        @map("SESSION_TOPIC") @db.NVarChar(255)
+  attendances      Attendance[]
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CS_OFFERING")
 
-  @@index([COURSE_OFFERING_ID], map: "IX_CS_OFFERING")
+  @@index([courseOfferingId], map: "IX_CS_OFFERING")
+  @@map("CLASS_SESSION")
 }
 
-model COURSE_ENROLLMENT {
-  COURSE_ENROLLMENT_ID Int                @id(map: "PK_COURSE_ENROLLMENT") @default(autoincrement())
-  STUDENT_CAREER_ID    Int
-  COURSE_OFFERING_ID   Int
-  ENROLLMENT_DATE      DateTime           @default(dbgenerated("CONVERT([date],getdate())"), map: "DF_CE_DATE") @db.Date
-  ENROLLMENT_STATUS    String             @db.NVarChar(30)
-  ASSESSMENT_GRADE     ASSESSMENT_GRADE[]
-  ATTENDANCE           ATTENDANCE[]
-  COURSE_OFFERING      COURSE_OFFERING    @relation(fields: [COURSE_OFFERING_ID], references: [COURSE_OFFERING_ID], onUpdate: NoAction, map: "FK_CE_OFFERING")
-  STUDENT_CAREER       STUDENT_CAREER     @relation(fields: [STUDENT_CAREER_ID], references: [STUDENT_CAREER_ID], onUpdate: NoAction, map: "FK_CE_STUDENT_CAREER")
+model CourseEnrollment {
+  courseEnrollmentId Int               @id(map: "PK_COURSE_ENROLLMENT") @default(autoincrement()) @map("COURSE_ENROLLMENT_ID")
+  studentCareerId    Int               @map("STUDENT_CAREER_ID")
+  courseOfferingId   Int               @map("COURSE_OFFERING_ID")
+  enrollmentDate     DateTime          @default(dbgenerated("CONVERT([date],getdate())"), map: "DF_CE_DATE") @map("ENROLLMENT_DATE") @db.Date
+  enrollmentStatus   String            @map("ENROLLMENT_STATUS") @db.NVarChar(30)
+  assessmentGrades   AssessmentGrade[]
+  attendances        Attendance[]
+  courseOffering     CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CE_OFFERING")
+  studentCareer      StudentCareer     @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_CE_STUDENT_CAREER")
 
-  @@unique([STUDENT_CAREER_ID, COURSE_OFFERING_ID], map: "UQ_COURSE_ENROLLMENT")
-  @@index([COURSE_OFFERING_ID], map: "IX_CE_OFFERING")
+  @@unique([studentCareerId, courseOfferingId], map: "UQ_COURSE_ENROLLMENT")
+  @@index([courseOfferingId], map: "IX_CE_OFFERING")
+  @@map("COURSE_ENROLLMENT")
 }
 
-model COURSE_OFFERING {
-  COURSE_OFFERING_ID    Int                  @id(map: "PK_COURSE_OFFERING") @default(autoincrement())
-  STUDY_PLAN_SUBJECT_ID Int
-  ACADEMIC_PERIOD_ID    Int
-  COMMISSION            String               @db.NVarChar(20)
-  CAPACITY              Int
-  OFFERING_STATUS       String               @db.NVarChar(30)
-  ASSESSMENTS           ASSESSMENTS[]
-  CLASS_SESSION         CLASS_SESSION[]
-  COURSE_ENROLLMENT     COURSE_ENROLLMENT[]
-  ACADEMIC_PERIOD       ACADEMIC_PERIOD      @relation(fields: [ACADEMIC_PERIOD_ID], references: [ACADEMIC_PERIOD_ID], onUpdate: NoAction, map: "FK_CO_PERIOD")
-  STUDY_PLAN_SUBJECT    STUDY_PLAN_SUBJECT   @relation(fields: [STUDY_PLAN_SUBJECT_ID], references: [STUDY_PLAN_SUBJECT_ID], onUpdate: NoAction, map: "FK_CO_SPS")
-  TEACHER_ASSIGNMENT    TEACHER_ASSIGNMENT[]
+model CourseOffering {
+  courseOfferingId   Int                 @id(map: "PK_COURSE_OFFERING") @default(autoincrement()) @map("COURSE_OFFERING_ID")
+  studyPlanSubjectId Int                 @map("STUDY_PLAN_SUBJECT_ID")
+  academicPeriodId   Int                 @map("ACADEMIC_PERIOD_ID")
+  commission         String              @map("COMMISSION") @db.NVarChar(20)
+  capacity           Int                 @map("CAPACITY")
+  offeringStatus     String              @map("OFFERING_STATUS") @db.NVarChar(30)
+  assessments        Assessment[]
+  classSessions      ClassSession[]
+  courseEnrollments  CourseEnrollment[]
+  academicPeriod     AcademicPeriod      @relation(fields: [academicPeriodId], references: [academicPeriodId], onUpdate: NoAction, map: "FK_CO_PERIOD")
+  studyPlanSubject   StudyPlanSubject    @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CO_SPS")
+  teacherAssignments TeacherAssignment[]
 
-  @@unique([STUDY_PLAN_SUBJECT_ID, ACADEMIC_PERIOD_ID, COMMISSION], map: "UQ_COURSE_OFFERING")
-  @@index([ACADEMIC_PERIOD_ID], map: "IX_CO_PERIOD")
+  @@unique([studyPlanSubjectId, academicPeriodId, commission], map: "UQ_COURSE_OFFERING")
+  @@index([academicPeriodId], map: "IX_CO_PERIOD")
+  @@map("COURSE_OFFERING")
 }
 
-model EXAM_CALL {
-  EXAM_CALL_ID          Int                @id(map: "PK_EXAM_CALL") @default(autoincrement())
-  STUDY_PLAN_SUBJECT_ID Int
-  EXAM_SESSION_ID       Int
-  CALL_DATE             DateTime
-  CALL_STATUS           String             @db.NVarChar(30)
-  EXAM_SESSION          EXAM_SESSION       @relation(fields: [EXAM_SESSION_ID], references: [EXAM_SESSION_ID], onUpdate: NoAction, map: "FK_EC_SESSION")
-  STUDY_PLAN_SUBJECT    STUDY_PLAN_SUBJECT @relation(fields: [STUDY_PLAN_SUBJECT_ID], references: [STUDY_PLAN_SUBJECT_ID], onUpdate: NoAction, map: "FK_EC_SPS")
-  EXAM_ENROLLMENT       EXAM_ENROLLMENT[]
+model ExamCall {
+  examCallId         Int              @id(map: "PK_EXAM_CALL") @default(autoincrement()) @map("EXAM_CALL_ID")
+  studyPlanSubjectId Int              @map("STUDY_PLAN_SUBJECT_ID")
+  examSessionId      Int              @map("EXAM_SESSION_ID")
+  callDate           DateTime         @map("CALL_DATE")
+  callStatus         String           @map("CALL_STATUS") @db.NVarChar(30)
+  examSession        ExamSession      @relation(fields: [examSessionId], references: [examSessionId], onUpdate: NoAction, map: "FK_EC_SESSION")
+  studyPlanSubject   StudyPlanSubject @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_EC_SPS")
+  examEnrollments    ExamEnrollment[]
 
-  @@index([EXAM_SESSION_ID], map: "IX_EC_SESSION")
+  @@index([examSessionId], map: "IX_EC_SESSION")
+  @@map("EXAM_CALL")
 }
 
-model EXAM_ENROLLMENT {
-  EXAM_ENROLLMENT_ID    Int                @id(map: "PK_EXAM_ENROLLMENT") @default(autoincrement())
-  EXAM_CALL_ID          Int
-  STUDENT_CAREER_ID     Int
-  STUDENT_STUDY_PLAN_ID Int
-  EXAM_STATUS           String             @db.NVarChar(30)
-  EXAM_GRADE            Decimal?           @db.Decimal(4, 2)
-  EXAM_CALL             EXAM_CALL          @relation(fields: [EXAM_CALL_ID], references: [EXAM_CALL_ID], onUpdate: NoAction, map: "FK_EE_CALL")
-  STUDENT_CAREER        STUDENT_CAREER     @relation(fields: [STUDENT_CAREER_ID], references: [STUDENT_CAREER_ID], onUpdate: NoAction, map: "FK_EE_STUDENT_CAREER")
-  STUDENT_STUDY_PLAN    STUDENT_STUDY_PLAN @relation(fields: [STUDENT_STUDY_PLAN_ID], references: [STUDENT_STUDY_PLAN_ID], onUpdate: NoAction, map: "FK_EE_STUDENT_PLAN")
+model ExamEnrollment {
+  examEnrollmentId   Int              @id(map: "PK_EXAM_ENROLLMENT") @default(autoincrement()) @map("EXAM_ENROLLMENT_ID")
+  examCallId         Int              @map("EXAM_CALL_ID")
+  studentCareerId    Int              @map("STUDENT_CAREER_ID")
+  studentStudyPlanId Int              @map("STUDENT_STUDY_PLAN_ID")
+  examStatus         String           @map("EXAM_STATUS") @db.NVarChar(30)
+  examGrade          Decimal?         @map("EXAM_GRADE") @db.Decimal(4, 2)
+  examCall           ExamCall         @relation(fields: [examCallId], references: [examCallId], onUpdate: NoAction, map: "FK_EE_CALL")
+  studentCareer      StudentCareer    @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_EE_STUDENT_CAREER")
+  studentStudyPlan   StudentStudyPlan @relation(fields: [studentStudyPlanId], references: [studentStudyPlanId], onUpdate: NoAction, map: "FK_EE_STUDENT_PLAN")
 
-  @@unique([EXAM_CALL_ID, STUDENT_CAREER_ID], map: "UQ_EXAM_ENROLLMENT")
-  @@index([STUDENT_CAREER_ID], map: "IX_EE_STUDENT_CAREER")
+  @@unique([examCallId, studentCareerId], map: "UQ_EXAM_ENROLLMENT")
+  @@index([studentCareerId], map: "IX_EE_STUDENT_CAREER")
+  @@map("EXAM_ENROLLMENT")
 }
 
-model EXAM_SESSION {
-  EXAM_SESSION_ID    Int         @id(map: "PK_EXAM_SESSION") @default(autoincrement())
-  EXAM_NAME          String      @db.NVarChar(100)
-  EXAM_YEAR          Int         @db.SmallInt
-  SESSION_START_DATE DateTime    @db.Date
-  SESSION_END_DATE   DateTime    @db.Date
-  SESSION_STATUS     String      @db.NVarChar(30)
-  EXAM_CALL          EXAM_CALL[]
+model ExamSession {
+  examSessionId    Int        @id(map: "PK_EXAM_SESSION") @default(autoincrement()) @map("EXAM_SESSION_ID")
+  examName         String     @map("EXAM_NAME") @db.NVarChar(100)
+  examYear         Int        @map("EXAM_YEAR") @db.SmallInt
+  sessionStartDate DateTime   @map("SESSION_START_DATE") @db.Date
+  sessionEndDate   DateTime   @map("SESSION_END_DATE") @db.Date
+  sessionStatus    String     @map("SESSION_STATUS") @db.NVarChar(30)
+  examCalls        ExamCall[]
+
+  @@map("EXAM_SESSION")
 }
 
-model STUDENT_CAREER {
-  STUDENT_CAREER_ID  Int                  @id(map: "PK_STUDENT_CAREER") @default(autoincrement())
-  STUDENT_ID         Int
-  ADMISSION_YEAR     Int                  @db.SmallInt
-  CAREER_ID          Int
-  ACADEMIC_STATUS    String               @db.NVarChar(30)
-  COURSE_ENROLLMENT  COURSE_ENROLLMENT[]
-  EXAM_ENROLLMENT    EXAM_ENROLLMENT[]
-  CAREERS            CAREERS              @relation(fields: [CAREER_ID], references: [CAREER_ID], onUpdate: NoAction, map: "FK_SC_CAREER")
-  STUDENT_PROFILE    STUDENT_PROFILE      @relation(fields: [STUDENT_ID], references: [STUDENT_ID], onUpdate: NoAction, map: "FK_SC_STUDENT")
-  STUDENT_STUDY_PLAN STUDENT_STUDY_PLAN[]
+model StudentCareer {
+  studentCareerId   Int                @id(map: "PK_STUDENT_CAREER") @default(autoincrement()) @map("STUDENT_CAREER_ID")
+  studentId         Int                @map("STUDENT_ID")
+  admissionYear     Int                @map("ADMISSION_YEAR") @db.SmallInt
+  careerId          Int                @map("CAREER_ID")
+  academicStatus    String             @map("ACADEMIC_STATUS") @db.NVarChar(30)
+  courseEnrollments CourseEnrollment[]
+  examEnrollments   ExamEnrollment[]
+  career            Career             @relation(fields: [careerId], references: [careerId], onUpdate: NoAction, map: "FK_SC_CAREER")
+  studentProfile    StudentProfile     @relation(fields: [studentId], references: [studentId], onUpdate: NoAction, map: "FK_SC_STUDENT")
+  studentStudyPlans StudentStudyPlan[]
 
-  @@unique([STUDENT_ID, CAREER_ID], map: "UQ_STUDENT_CAREER")
-  @@index([CAREER_ID], map: "IX_SC_CAREER")
+  @@unique([studentId, careerId], map: "UQ_STUDENT_CAREER")
+  @@index([careerId], map: "IX_SC_CAREER")
+  @@map("STUDENT_CAREER")
 }
 
-model STUDENT_PROFILE {
-  STUDENT_ID     Int              @id(map: "PK_STUDENT_PROFILE") @default(autoincrement())
-  LEGAJO         String           @unique(map: "UQ_STUDENT_LEGAJO") @db.NVarChar(20)
-  USER_ID        Int              @unique(map: "UQ_STUDENT_USER")
-  STUDENT_CAREER STUDENT_CAREER[]
-  USERS          USERS            @relation(fields: [USER_ID], references: [USER_ID], onUpdate: NoAction, map: "FK_STUDENT_USERS")
+model StudentProfile {
+  studentId      Int             @id(map: "PK_STUDENT_PROFILE") @default(autoincrement()) @map("STUDENT_ID")
+  legajo         String          @unique(map: "UQ_STUDENT_LEGAJO") @map("LEGAJO") @db.NVarChar(20)
+  userId         Int             @unique(map: "UQ_STUDENT_USER") @map("USER_ID")
+  studentCareers StudentCareer[]
+  user           User            @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_STUDENT_USERS")
+
+  @@map("STUDENT_PROFILE")
 }
 
-model STUDENT_STUDY_PLAN {
-  STUDENT_STUDY_PLAN_ID Int               @id(map: "PK_STUDENT_STUDY_PLAN") @default(autoincrement())
-  STUDENT_CAREER_ID     Int
-  STUDY_PLAN_ID         Int
-  EXAM_ENROLLMENT       EXAM_ENROLLMENT[]
-  STUDENT_CAREER        STUDENT_CAREER    @relation(fields: [STUDENT_CAREER_ID], references: [STUDENT_CAREER_ID], onUpdate: NoAction, map: "FK_SSP_STUDENT_CAREER")
-  STUDY_PLAN            STUDY_PLAN        @relation(fields: [STUDY_PLAN_ID], references: [STUDY_PLAN_ID], onUpdate: NoAction, map: "FK_SSP_STUDY_PLAN")
+model StudentStudyPlan {
+  studentStudyPlanId Int              @id(map: "PK_STUDENT_STUDY_PLAN") @default(autoincrement()) @map("STUDENT_STUDY_PLAN_ID")
+  studentCareerId    Int              @map("STUDENT_CAREER_ID")
+  studyPlanId        Int              @map("STUDY_PLAN_ID")
+  examEnrollments    ExamEnrollment[]
+  studentCareer      StudentCareer    @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_SSP_STUDENT_CAREER")
+  studyPlan          StudyPlan        @relation(fields: [studyPlanId], references: [studyPlanId], onUpdate: NoAction, map: "FK_SSP_STUDY_PLAN")
 
-  @@unique([STUDENT_CAREER_ID, STUDY_PLAN_ID], map: "UQ_STUDENT_STUDY_PLAN")
+  @@unique([studentCareerId, studyPlanId], map: "UQ_STUDENT_STUDY_PLAN")
+  @@map("STUDENT_STUDY_PLAN")
 }
 
-model STUDY_PLAN {
-  STUDY_PLAN_ID      Int                  @id(map: "PK_STUDY_PLAN") @default(autoincrement())
-  CAREER_ID          Int
-  RESOLUTION         String               @db.NVarChar(100)
-  IS_ACTIVE          Boolean              @default(true, map: "DF_STUDY_PLAN_ACTIVE")
-  STUDENT_STUDY_PLAN STUDENT_STUDY_PLAN[]
-  CAREERS            CAREERS              @relation(fields: [CAREER_ID], references: [CAREER_ID], onUpdate: NoAction, map: "FK_STUDY_PLAN_CAREERS")
-  STUDY_PLAN_SUBJECT STUDY_PLAN_SUBJECT[]
+model StudyPlan {
+  studyPlanId       Int                @id(map: "PK_STUDY_PLAN") @default(autoincrement()) @map("STUDY_PLAN_ID")
+  careerId          Int                @map("CAREER_ID")
+  resolution        String             @map("RESOLUTION") @db.NVarChar(100)
+  isActive          Boolean            @default(true, map: "DF_STUDY_PLAN_ACTIVE") @map("IS_ACTIVE")
+  studentStudyPlans StudentStudyPlan[]
+  career            Career             @relation(fields: [careerId], references: [careerId], onUpdate: NoAction, map: "FK_STUDY_PLAN_CAREERS")
+  studyPlanSubjects StudyPlanSubject[]
 
-  @@index([CAREER_ID], map: "IX_STUDY_PLAN_CAREER")
+  @@index([careerId], map: "IX_STUDY_PLAN_CAREER")
+  @@map("STUDY_PLAN")
 }
 
-model STUDY_PLAN_SUBJECT {
-  STUDY_PLAN_SUBJECT_ID                                                               Int                     @id(map: "PK_STUDY_PLAN_SUBJECT") @default(autoincrement())
-  STUDY_PLAN_ID                                                                       Int
-  SUBJECT_ID                                                                          Int
-  SUBJECT_YEAR                                                                        Int                     @db.TinyInt
-  SEMESTER                                                                            Int?                    @db.TinyInt
-  WEEKLY_HOURS                                                                        Int?
-  TOTAL_HOURS                                                                         Int?
-  COURSE_OFFERING                                                                     COURSE_OFFERING[]
-  EXAM_CALL                                                                           EXAM_CALL[]
-  STUDY_PLAN                                                                          STUDY_PLAN              @relation(fields: [STUDY_PLAN_ID], references: [STUDY_PLAN_ID], onUpdate: NoAction, map: "FK_SPS_STUDY_PLAN")
-  SUBJECTS                                                                            SUBJECTS                @relation(fields: [SUBJECT_ID], references: [SUBJECT_ID], onUpdate: NoAction, map: "FK_SPS_SUBJECTS")
-  SUBJECT_CORRELATIVITY_SUBJECT_CORRELATIVITY_REQUIRED_SUBJECT_IDToSTUDY_PLAN_SUBJECT SUBJECT_CORRELATIVITY[] @relation("SUBJECT_CORRELATIVITY_REQUIRED_SUBJECT_IDToSTUDY_PLAN_SUBJECT")
-  SUBJECT_CORRELATIVITY_SUBJECT_CORRELATIVITY_TARGET_SUBJECT_IDToSTUDY_PLAN_SUBJECT   SUBJECT_CORRELATIVITY[] @relation("SUBJECT_CORRELATIVITY_TARGET_SUBJECT_IDToSTUDY_PLAN_SUBJECT")
+model StudyPlanSubject {
+  studyPlanSubjectId Int                    @id(map: "PK_STUDY_PLAN_SUBJECT") @default(autoincrement()) @map("STUDY_PLAN_SUBJECT_ID")
+  studyPlanId        Int                    @map("STUDY_PLAN_ID")
+  subjectId          Int                    @map("SUBJECT_ID")
+  subjectYear        Int?                   @map("SUBJECT_YEAR") @db.TinyInt
+  semester           Int?                   @map("SEMESTER") @db.TinyInt
+  weeklyHours        Int?                   @map("WEEKLY_HOURS")
+  totalHours         Int?                   @map("TOTAL_HOURS")
+  isActive           Boolean                @default(true, map: "DF_SPS_ACTIVE") @map("IS_ACTIVE")
+  courseOfferings    CourseOffering[]
+  examCalls          ExamCall[]
+  studyPlan          StudyPlan              @relation(fields: [studyPlanId], references: [studyPlanId], onUpdate: NoAction, map: "FK_SPS_STUDY_PLAN")
+  subject            Subject                @relation(fields: [subjectId], references: [subjectId], onUpdate: NoAction, map: "FK_SPS_SUBJECTS")
+  requiredBy         SubjectCorrelativity[] @relation("CorrelativityRequired")
+  requirements       SubjectCorrelativity[] @relation("CorrelativityTarget")
 
-  @@unique([STUDY_PLAN_ID, SUBJECT_ID], map: "UQ_STUDY_PLAN_SUBJECT")
-  @@index([SUBJECT_ID], map: "IX_SPS_SUBJECT")
+  @@unique([studyPlanId, subjectId], map: "UQ_STUDY_PLAN_SUBJECT")
+  @@index([subjectId], map: "IX_SPS_SUBJECT")
+  @@map("STUDY_PLAN_SUBJECT")
 }
 
-model SUBJECT_CORRELATIVITY {
-  CORRELATIVITY_ID                                                                 Int                @id(map: "PK_SUBJECT_CORRELATIVITY") @default(autoincrement())
-  TARGET_SUBJECT_ID                                                                Int
-  REQUIRED_SUBJECT_ID                                                              Int
-  STUDY_PLAN_SUBJECT_SUBJECT_CORRELATIVITY_REQUIRED_SUBJECT_IDToSTUDY_PLAN_SUBJECT STUDY_PLAN_SUBJECT @relation("SUBJECT_CORRELATIVITY_REQUIRED_SUBJECT_IDToSTUDY_PLAN_SUBJECT", fields: [REQUIRED_SUBJECT_ID], references: [STUDY_PLAN_SUBJECT_ID], onUpdate: NoAction, map: "FK_CORR_REQUIRED")
-  STUDY_PLAN_SUBJECT_SUBJECT_CORRELATIVITY_TARGET_SUBJECT_IDToSTUDY_PLAN_SUBJECT   STUDY_PLAN_SUBJECT @relation("SUBJECT_CORRELATIVITY_TARGET_SUBJECT_IDToSTUDY_PLAN_SUBJECT", fields: [TARGET_SUBJECT_ID], references: [STUDY_PLAN_SUBJECT_ID], onUpdate: NoAction, map: "FK_CORR_TARGET")
+model SubjectCorrelativity {
+  correlativityId   Int              @id(map: "PK_SUBJECT_CORRELATIVITY") @default(autoincrement()) @map("CORRELATIVITY_ID")
+  targetSubjectId   Int              @map("TARGET_SUBJECT_ID")
+  requiredSubjectId Int              @map("REQUIRED_SUBJECT_ID")
+  correlativityType String           @map("CORRELATIVITY_TYPE") @db.NVarChar(30)
+  createdAt         DateTime         @default(dbgenerated("sysutcdatetime()"), map: "DF_CORRELATIVITY_CREATED_AT") @map("CREATED_AT")
+  requiredSubject   StudyPlanSubject @relation("CorrelativityRequired", fields: [requiredSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CORR_REQUIRED")
+  targetSubject     StudyPlanSubject @relation("CorrelativityTarget", fields: [targetSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CORR_TARGET")
 
-  @@unique([TARGET_SUBJECT_ID, REQUIRED_SUBJECT_ID], map: "UQ_CORRELATIVITY")
+  @@unique([targetSubjectId, requiredSubjectId, correlativityType], map: "UQ_CORRELATIVITY")
+  @@map("SUBJECT_CORRELATIVITY")
 }
 
-model SUBJECTS {
-  SUBJECT_ID          Int                  @id(map: "PK_SUBJECTS") @default(autoincrement())
-  SUBJECT_CODE        String               @unique(map: "UQ_SUBJECTS_CODE") @db.NVarChar(20)
-  SUBJECT_NAME        String               @db.NVarChar(150)
-  SUBJECT_DESCRIPTION String?              @db.NVarChar(500)
-  STUDY_PLAN_SUBJECT  STUDY_PLAN_SUBJECT[]
+model Subject {
+  subjectId          Int                @id(map: "PK_SUBJECTS") @default(autoincrement()) @map("SUBJECT_ID")
+  subjectCode        String             @unique(map: "UQ_SUBJECTS_CODE") @map("SUBJECT_CODE") @db.NVarChar(20)
+  subjectName        String             @map("SUBJECT_NAME") @db.NVarChar(150)
+  subjectDescription String?            @map("SUBJECT_DESCRIPTION") @db.NVarChar(500)
+  studyPlanSubjects  StudyPlanSubject[]
+
+  @@map("SUBJECTS")
 }
 
-model TEACHER_ASSIGNMENT {
-  TEACHER_ASSIGNMENT_ID Int             @id(map: "PK_TEACHER_ASSIGNMENT") @default(autoincrement())
-  TEACHER_ID            Int
-  COURSE_OFFERING_ID    Int
-  COURSE_OFFERING       COURSE_OFFERING @relation(fields: [COURSE_OFFERING_ID], references: [COURSE_OFFERING_ID], onUpdate: NoAction, map: "FK_TA_OFFERING")
-  TEACHER_PROFILE       TEACHER_PROFILE @relation(fields: [TEACHER_ID], references: [TEACHER_ID], onUpdate: NoAction, map: "FK_TA_TEACHER")
+model TeacherAssignment {
+  teacherAssignmentId Int            @id(map: "PK_TEACHER_ASSIGNMENT") @default(autoincrement()) @map("TEACHER_ASSIGNMENT_ID")
+  teacherId           Int            @map("TEACHER_ID")
+  courseOfferingId    Int            @map("COURSE_OFFERING_ID")
+  courseOffering      CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_TA_OFFERING")
+  teacherProfile      TeacherProfile @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, map: "FK_TA_TEACHER")
 
-  @@unique([TEACHER_ID, COURSE_OFFERING_ID], map: "UQ_TEACHER_ASSIGNMENT")
+  @@unique([teacherId, courseOfferingId], map: "UQ_TEACHER_ASSIGNMENT")
+  @@map("TEACHER_ASSIGNMENT")
 }
 
-model TEACHER_PROFILE {
-  TEACHER_ID         Int                  @id(map: "PK_TEACHER_PROFILE") @default(autoincrement())
-  USER_ID            Int                  @unique(map: "UQ_TEACHER_USER")
-  TEACHER_ASSIGNMENT TEACHER_ASSIGNMENT[]
-  USERS              USERS                @relation(fields: [USER_ID], references: [USER_ID], onUpdate: NoAction, map: "FK_TEACHER_USERS")
+model TeacherProfile {
+  teacherId          Int                 @id(map: "PK_TEACHER_PROFILE") @default(autoincrement()) @map("TEACHER_ID")
+  userId             Int                 @unique(map: "UQ_TEACHER_USER") @map("USER_ID")
+  teacherAssignments TeacherAssignment[]
+  user               User                @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_TEACHER_USERS")
+
+  @@map("TEACHER_PROFILE")
 }
 
-model USERS {
-  USER_ID               Int                    @id(map: "PK_USERS") @default(autoincrement())
-  ROLE                  String                 @db.NVarChar(30)
-  DNI                   String                 @unique(map: "UQ_USERS_DNI") @db.NVarChar(20)
-  PASSWORD_HASH         String                 @db.NVarChar(255)
-  FIRST_NAME            String                 @db.NVarChar(100)
-  LAST_NAME             String                 @db.NVarChar(100)
-  EMAIL                 String                 @unique(map: "UQ_USERS_EMAIL") @db.NVarChar(255)
-  ADMINISTRATOR_PROFILE ADMINISTRATOR_PROFILE?
-  STUDENT_PROFILE       STUDENT_PROFILE?
-  TEACHER_PROFILE       TEACHER_PROFILE?
+model User {
+  userId               Int                   @id(map: "PK_USERS") @default(autoincrement()) @map("USER_ID")
+  role                 String                @map("ROLE") @db.NVarChar(30)
+  dni                  String                @unique(map: "UQ_USERS_DNI") @map("DNI") @db.NVarChar(20)
+  passwordHash         String                @map("PASSWORD_HASH") @db.NVarChar(255)
+  firstName            String                @map("FIRST_NAME") @db.NVarChar(100)
+  lastName             String                @map("LAST_NAME") @db.NVarChar(100)
+  email                String                @unique(map: "UQ_USERS_EMAIL") @map("EMAIL") @db.NVarChar(255)
+  administratorProfile AdministratorProfile?
+  studentProfile       StudentProfile?
+  teacherProfile       TeacherProfile?
 
-  @@index([ROLE], map: "IX_USERS_ROLE")
+  @@index([role], map: "IX_USERS_ROLE")
+  @@map("USERS")
 }
