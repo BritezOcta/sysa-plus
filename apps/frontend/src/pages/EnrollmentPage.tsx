@@ -6,7 +6,12 @@ import ToastViewport from "../components/ui/ToastViewport";
 import { useCourseEnrollment } from "../hooks/useCourseEnrollment";
 import styles from "./EnrollmentPage.module.css";
 
-export default function EnrollmentPage() {
+interface EnrollmentPageProps {
+  /** true cuando se muestra dentro del menú del alumno (oculta el TopNavbar propio) */
+  embedded?: boolean;
+}
+
+export default function EnrollmentPage({ embedded = false }: EnrollmentPageProps) {
   const {
     subjects,
     commissions,
@@ -28,14 +33,16 @@ export default function EnrollmentPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar
-        simulateServerFault={simulateServerError}
-        onToggleServerFault={setSimulateServerError}
-        onResetMockData={() => {}}
-        auditCount={0}
-        unreadAuditCount={0}
-        onOpenAuditDrawer={() => {}}
-      />
+      {!embedded && (
+        <TopNavbar
+          simulateServerFault={simulateServerError}
+          onToggleServerFault={setSimulateServerError}
+          onResetMockData={() => {}}
+          auditCount={0}
+          unreadAuditCount={0}
+          onOpenAuditDrawer={() => {}}
+        />
+      )}
 
       <main className={styles.mainContent}>
         <header className={styles.header}>
