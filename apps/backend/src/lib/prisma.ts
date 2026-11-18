@@ -1,13 +1,8 @@
-import "dotenv/config";
 import { PrismaMssql } from "@prisma/adapter-mssql";
 import { PrismaClient } from "../../generated/prisma/client.js";
+import { env } from "../config/env.js";
 
-const connectionString = process.env.DATABASE_URL;
+const adapter = new PrismaMssql(env.DATABASE_URL);
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL no está definida");
-}
-
-const adapter = new PrismaMssql(connectionString);
-
+// Single shared client for the whole process. Import it only from repositories.
 export const prisma = new PrismaClient({ adapter });
