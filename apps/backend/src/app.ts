@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import { apiRouter } from "./routes/index.js";
 import { notFound } from "./middlewares/notFound.js";
@@ -6,7 +7,9 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 export function createApp() {
   const app = express();
 
+  app.disable("x-powered-by");
   app.use(express.json());
+  app.use(cookieParser());
   app.use("/api", apiRouter);
 
   app.use(notFound);

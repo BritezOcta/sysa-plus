@@ -1,24 +1,36 @@
-import { Link } from 'react-router'
-import { APP_ROUTES, CURRENT_ACADEMIC_USER } from '../../constants'
+import { useNavigate } from 'react-router'
+import { useAuth, useAuthenticatedUser } from '../../auth/AuthContext'
+import { APP_ROUTES, ROLE_LABELS } from '../../constants'
+import { getUserFullName, getUserInitials } from '../../helpers/UserDisplayHelper'
 import styles from '../../pages/AcademicManagementPage.module.css'
 
 export default function UserProfilePill() {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const user = useAuthenticatedUser()
+
+  async function handleLogout() {
+    await logout()
+    navigate(APP_ROUTES.LOGIN, { replace: true })
+  }
+
   return (
     <div className={styles.userProfilePill}>
       <div className={styles.avatarCircle} aria-hidden="true">
-        {CURRENT_ACADEMIC_USER.INITIALS}
+        {getUserInitials(user)}
       </div>
       <div className={styles.userDetails}>
-        <strong>{CURRENT_ACADEMIC_USER.FULL_NAME}</strong>
-        <span>{CURRENT_ACADEMIC_USER.ROLE_SHORT}</span>
+        <strong>{getUserFullName(user)}</strong>
+        <span>{ROLE_LABELS[user.role]}</span>
       </div>
-      <Link
-        to={APP_ROUTES.LOGIN}
+      <button
+        type="button"
+        onClick={() => void handleLogout()}
         className={styles.logoutLink}
         title="Cerrar sesión e ir al inicio de sesión"
       >
         Salir
-      </Link>
+      </button>
     </div>
   )
 }

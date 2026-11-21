@@ -226,7 +226,9 @@
 .logoutLink {
   margin-left: 4px;
   padding: 4px 9px;
+  border: none;
   border-radius: 6px;
+  cursor: pointer;
   background: #334155;
   color: #f1f5f9;
   font-size: 11.5px;

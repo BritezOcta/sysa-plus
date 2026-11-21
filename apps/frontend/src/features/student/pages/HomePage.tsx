@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { useAuthenticatedUser } from "../../../auth/AuthContext";
 import { Icon } from "../../../components/Icon";
 import {
   AVISOS,
@@ -20,6 +21,7 @@ const QUICK_IDS = [
 ];
 
 export function HomePage() {
+  const user = useAuthenticatedUser();
   const r = resumenAcademico();
   const sinLeer = AVISOS.filter((a) => !a.leido).length;
   const quick = QUICK_IDS.map(getNavItem).filter((i): i is NonNullable<typeof i> => Boolean(i));
@@ -29,11 +31,11 @@ export function HomePage() {
       <section className={s.hero}>
         <div>
           <p className={s.heroKicker}>Autogestión alumno</p>
-          <h1 className={s.heroTitle}>Hola, {ESTUDIANTE.nombre}</h1>
+          <h1 className={s.heroTitle}>Hola, {user.firstName}</h1>
           <p className={s.heroText}>{ESTUDIANTE.carrera}</p>
           <div className={s.heroChips}>
             <span className={s.heroChip}>Plan {ESTUDIANTE.plan}</span>
-            <span className={s.heroChip}>Legajo {ESTUDIANTE.legajo}</span>
+            <span className={s.heroChip}>Legajo {user.legajo}</span>
           </div>
         </div>
         <div className={s.heroRight}>

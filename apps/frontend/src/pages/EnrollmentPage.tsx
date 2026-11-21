@@ -1,4 +1,6 @@
+import { useAuthenticatedUser } from "../auth/AuthContext";
 import AvailableSubjectsList from "../components/enrollment/SubjectList";
+import { formatDni, getUserFullName } from "../helpers/UserDisplayHelper";
 import EnrollmentErrorModal from "../components/enrollment/EnrollmentError";
 import MyEnrollmentsSection from "../components/enrollment/EnrollmentSection";
 import TopNavbar from "../components/layout/TopNavbar";
@@ -12,6 +14,7 @@ interface EnrollmentPageProps {
 }
 
 export default function EnrollmentPage({ embedded = false }: EnrollmentPageProps) {
+  const user = useAuthenticatedUser();
   const {
     subjects,
     commissions,
@@ -57,7 +60,8 @@ export default function EnrollmentPage({ embedded = false }: EnrollmentPageProps
 
             <div className={styles.studentCard}>
               <span>
-                <strong>Alumno:</strong> Juan Pérez (DNI: 40.123.456)
+                <strong>Alumno:</strong> {getUserFullName(user)} (DNI:{" "}
+                {formatDni(user.dni)})
               </span>
               <span>
                 <strong>Condición:</strong>{" "}
