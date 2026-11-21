@@ -8,8 +8,27 @@ function required(name: string): string {
   return value;
 }
 
+function positiveInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`Environment variable ${name} must be a positive integer`);
+  }
+  return value;
+}
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 3000),
   DATABASE_URL: required("DATABASE_URL"),
+
+  // RF-01 · Autenticación
+  JWT_SECRET: required("JWT_SECRET"),
+  SESSION_HOURS: positiveInt("SESSION_HOURS", 8),
+  REMEMBER_ME_DAYS: positiveInt("REMEMBER_ME_DAYS", 7),
+  LOGIN_MAX_ATTEMPTS: positiveInt("LOGIN_MAX_ATTEMPTS", 5),
+  LOGIN_LOCK_MINUTES: positiveInt("LOGIN_LOCK_MINUTES", 15),
 } as const;
+
+export const isProduction = env.NODE_ENV === "production";

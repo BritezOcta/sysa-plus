@@ -293,10 +293,31 @@ model User {
   firstName            String                @map("FIRST_NAME") @db.NVarChar(100)
   lastName             String                @map("LAST_NAME") @db.NVarChar(100)
   email                String                @unique(map: "UQ_USERS_EMAIL") @map("EMAIL") @db.NVarChar(255)
+  isActive             Boolean               @default(true, map: "DF_USERS_ACTIVE") @map("IS_ACTIVE")
+  failedLoginAttempts  Int                   @default(0, map: "DF_USERS_FAILED_ATTEMPTS") @map("FAILED_LOGIN_ATTEMPTS") @db.TinyInt
+  lockedUntil          DateTime?             @map("LOCKED_UNTIL")
+  lastLoginAt          DateTime?             @map("LAST_LOGIN_AT")
   administratorProfile AdministratorProfile?
+  auditLogs            AuditLog[]
   studentProfile       StudentProfile?
   teacherProfile       TeacherProfile?
 
   @@index([role], map: "IX_USERS_ROLE")
   @@map("USERS")
+}
+
+model AuditLog {
+  auditLogId Int      @id(map: "PK_AUDIT_LOG") @default(autoincrement()) @map("AUDIT_LOG_ID")
+  userId     Int?     @map("USER_ID")
+  action     String   @map("ACTION") @db.NVarChar(50)
+  entity     String?  @map("ENTITY") @db.NVarChar(50)
+  entityId   String?  @map("ENTITY_ID") @db.NVarChar(50)
+  details    String?  @map("DETAILS") @db.NVarChar(1000)
+  ipAddress  String?  @map("IP_ADDRESS") @db.NVarChar(45)
+  createdAt  DateTime @default(dbgenerated("sysutcdatetime()"), map: "DF_AUDIT_LOG_CREATED_AT") @map("CREATED_AT")
+  user       User?    @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "FK_AUDIT_LOG_USERS")
+
+  @@index([createdAt(sort: Desc)], map: "IX_AUDIT_LOG_CREATED_AT")
+  @@index([userId], map: "IX_AUDIT_LOG_USER")
+  @@map("AUDIT_LOG")
 }
