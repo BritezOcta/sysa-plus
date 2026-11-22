@@ -1,4 +1,4 @@
-import type { UserRole } from '../types/auth.types'
+import type { UserRole } from "../types/auth.types";
 
 export const APP_ROUTES = {
   HOME: "/",
@@ -7,6 +7,9 @@ export const APP_ROUTES = {
   LOGIN: "/login",
   STUDENT_AREA: "/alumno",
   TEACHER_AREA: "/profesor",
+  TEACHER_ATTENDANCE: "/profesor/asistencias",
+  TEACHER_GRADES: "/profesor/notas",
+  TEACHER_STUDENTS: "/profesor/alumnos",
 } as const;
 
 /** Vista principal de cada rol después de iniciar sesión (RF-01). */
