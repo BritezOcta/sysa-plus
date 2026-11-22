@@ -1,0 +1,981 @@
+.canvasWrapper {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: #0b1320;
+  border: 1px solid #1e293b;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 14%);
+}
+
+.canvasToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  border-radius: 11px 11px 0 0;
+  color: #f8fafc;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wireModeSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbarLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-right: 4px;
+}
+
+.wireTypeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.wireTypeBtn:hover {
+  border-color: #94a3b8;
+  color: #ffffff;
+}
+
+.wireTypeBtn:focus-visible,
+.simQuickBtn:focus-visible,
+.clearFocusBtn:focus-visible,
+.guideToggleBtn:focus-visible,
+.hideGuideBtn:focus-visible,
+.simToggleBtn:focus-visible,
+.yearAnualAddBtn:focus-visible,
+.slotAddBtn:focus-visible,
+.iconActionBtn:focus-visible,
+.portOut:focus-visible,
+.cableTypeSwitch:focus-visible,
+.cableDeleteBtn:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.wireTypeBtnActive {
+  background: #0369a1;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.colorDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dotAmber {
+  background: #f59e0b;
+}
+
+.dotBlue {
+  background: #38bdf8;
+}
+
+.dotGreen {
+  background: #10b981;
+}
+
+.simToolbarInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.simToolbarInfo p {
+  font-size: 12.5px;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.simPulseBadge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #047857;
+  border: 1px solid #34d399;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.simQuickBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.simQuickBtn:hover {
+  background: #334155;
+  border-color: #64748b;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.clearFocusBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #38bdf8;
+  background: #0c4a6e;
+  color: #e0f2fe;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clearFocusBtn:hover {
+  background: #075985;
+}
+
+.toggleCablesLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #e2e8f0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggleCablesLabel input {
+  accent-color: #38bdf8;
+}
+
+.guideToggleBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.guideToggleBtn:hover {
+  background: #334155;
+  border-color: #94a3b8;
+  color: #ffffff;
+}
+
+.guideToggleBtnActive {
+  background: #0c4a6e;
+  border-color: #38bdf8;
+  color: #e0f2fe;
+}
+
+.simToggleBtn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #38bdf8;
+  background: #0369a1;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.simToggleBtn:hover {
+  background: #0284c7;
+}
+
+.simToggleBtnActive {
+  background: #047857;
+  border-color: #34d399;
+}
+
+.simToggleBtnActive:hover {
+  background: #059669;
+}
+
+.instructionsStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 9px 18px;
+  background: #111c30;
+  border-bottom: 1px solid #1e293b;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.instructionsItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.instructionsStrip strong {
+  color: #7dd3fc;
+}
+
+.instructionsStrip code {
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.hideGuideBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.hideGuideBtn:hover {
+  background: #1e293b;
+  border-color: #64748b;
+  color: #ffffff;
+}
+
+.boardViewport {
+  width: 100%;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  border-radius: 0 0 11px 11px;
+  background-color: #0b1320;
+  background-image: radial-gradient(#1e293b 1.25px, transparent 1.25px);
+  background-size: 22px 22px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.boardViewport::-webkit-scrollbar,
+.stickyScrollbar::-webkit-scrollbar {
+  height: 14px;
+}
+
+.boardViewport::-webkit-scrollbar-track,
+.stickyScrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-top: 1px solid #1e293b;
+}
+
+.boardViewport::-webkit-scrollbar-thumb,
+.stickyScrollbar::-webkit-scrollbar-thumb {
+  background-color: #38bdf8;
+  border-radius: 99px;
+  border: 3px solid #0f172a;
+}
+
+.boardViewport::-webkit-scrollbar-thumb:hover,
+.stickyScrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #7dd3fc;
+}
+
+.boardViewportStickyActive::-webkit-scrollbar {
+  display: none;
+}
+
+.stickyScrollbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  width: 100%;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  background: #0f172a;
+  border-top: 1px solid #1e293b;
+  border-radius: 0 0 11px 11px;
+}
+
+.stickyScrollbarInner {
+  height: 1px;
+}
+
+.boardSurface {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  padding: 20px;
+  min-width: max-content;
+  min-height: 560px;
+}
+
+.svgOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.cableGroup {
+  transition: opacity 0.18s ease;
+}
+
+.cableDimmed {
+  opacity: 0.16;
+}
+
+.cableHighlighted {
+  opacity: 1;
+}
+
+.animatedDashPath {
+  stroke-dasharray: 7 5;
+}
+
+.cableBadgeForeign {
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.cableMidPill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 99px;
+  background: #0f172a;
+  border: 1.5px solid #475569;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 45%);
+  overflow: hidden;
+}
+
+.cableTypeSwitch {
+  border: none;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.switch_regularizada_cursar {
+  background: #b45309;
+}
+
+.switch_aprobada_cursar {
+  background: #0369a1;
+}
+
+.switch_aprobada_rendir {
+  background: #047857;
+}
+
+.cableDeleteBtn {
+  border: none;
+  background: #1e293b;
+  color: #fecaca;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+.cableDeleteBtn:hover {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.bankColumn {
+  position: relative;
+  z-index: 2;
+  width: 268px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1.5px dashed #64748b;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.bankHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bankHeader h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.bankSub {
+  display: block;
+  font-size: 11.5px;
+  color: #fde68a;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.bankHint {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.yearGroup {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.yearGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.yearBadge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7dd3fc;
+  margin: 0;
+}
+
+.yearAnualAddBtn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.yearAnualAddBtn:hover {
+  border-color: #7dd3fc;
+  color: #ffffff;
+}
+
+.periodsGrid {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+}
+
+.periodColumn {
+  width: 268px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #162033;
+  border: 1.5px solid #334155;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.slotDragOver {
+  border-color: #38bdf8 !important;
+  border-style: solid !important;
+  background: #0c2d48 !important;
+}
+
+.periodHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+}
+
+.periodHeader h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.periodHeader span {
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.slotAddBtn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #38bdf8;
+  background: #0c4a6e;
+  color: #e0f2fe;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.slotAddBtn:hover {
+  background: #0369a1;
+  color: #ffffff;
+}
+
+.slotCardsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.emptySlotBox {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 18px 12px;
+  border-radius: 8px;
+  border: 1px dashed #475569;
+  text-align: center;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.anualNotice {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  text-align: right;
+}
+
+.subjectCard {
+  position: relative;
+  z-index: 5;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #1e293b;
+  border: 1.5px solid #475569;
+  color: #f8fafc;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgb(2 6 23 / 35%);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.subjectCard:hover {
+  border-color: #94a3b8;
+}
+
+.subjectCard:active {
+  cursor: grabbing;
+}
+
+.cardInactive {
+  background: #172030;
+  border-style: dashed;
+  border-color: #64748b;
+}
+
+.cardFocused {
+  border-color: #38bdf8 !important;
+  background: #0f2942 !important;
+  box-shadow: 0 0 0 2px #38bdf8 !important;
+}
+
+.cardPrereqDirect {
+  border-color: #f59e0b !important;
+  background: #2b2111 !important;
+}
+
+.cardPrereqIndirect {
+  border-color: #d97706 !important;
+  background: #231c12 !important;
+}
+
+.cardUnlockedDirect {
+  border-color: #10b981 !important;
+  background: #0d2b24 !important;
+}
+
+.cardUnlockedIndirect {
+  border-color: #059669 !important;
+  background: #0f2421 !important;
+}
+
+.cardDimmed {
+  opacity: 0.35;
+}
+
+.cardDropTargetOk {
+  border-color: #10b981 !important;
+  background: #064e3b !important;
+  box-shadow: 0 0 0 2px #10b981 !important;
+}
+
+.cardDropTargetCycle {
+  border-color: #f43f5e !important;
+  background: #4c0519 !important;
+  box-shadow: 0 0 0 2px #f43f5e !important;
+}
+
+.cardTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.codeAndGrip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gripHandle {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.cardCode {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: #0c4a6e;
+  border: 1px solid #0284c7;
+  color: #e0f2fe;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.anualTag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #3730a3;
+  color: #ffffff;
+}
+
+.inactiveTag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #334155;
+  border: 1px dashed #94a3b8;
+  color: #f1f5f9;
+}
+
+.cardQuickBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.iconActionBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.iconActionBtn:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.iconDeleteBtn:hover {
+  background: #991b1b;
+  border-color: #f87171;
+  color: #ffffff;
+}
+
+.cardMainBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.cardMainBtn:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.cardTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.chainRoleBanner {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 12%);
+  color: #fde68a;
+}
+
+.cycleLiveWarning {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #be123c;
+  color: #ffffff;
+}
+
+.validDropWarning {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #047857;
+  color: #ffffff;
+}
+
+.cardMetaFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: #cbd5e1;
+}
+
+.studentsPillActive {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.studentsPillZero {
+  color: #cbd5e1;
+}
+
+.linksCounter {
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.portDot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  z-index: 8;
+}
+
+.portIn {
+  left: -7px;
+  width: 13px;
+  height: 13px;
+  background: #0f172a;
+  border: 2.5px solid #94a3b8;
+}
+
+.portOut {
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: #0369a1;
+  border: 2px solid #7dd3fc;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: crosshair;
+  padding: 0;
+  touch-action: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.portOut:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.portOutActive {
+  background: #f59e0b;
+  border-color: #fef3c7;
+  color: #0f172a;
+  box-shadow: 0 0 0 3px rgb(245 158 11 / 35%);
+}
+
+.portPlus {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.simCard_aprobada {
+  border-color: #10b981 !important;
+  background: #064e3b !important;
+}
+
+.simCard_regularizada {
+  border-color: #f59e0b !important;
+  background: #451a03 !important;
+}
+
+.simCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.simStatusBadgeRow {
+  display: flex;
+}
+
+.simStatePill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.simPill_pendiente {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.simPill_regularizada {
+  background: #f59e0b;
+  color: #451a03;
+}
+
+.simPill_aprobada {
+  background: #10b981;
+  color: #022c22;
+}
+
+.simEligibilityBox {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.simUnlockedCursar {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgb(16 185 129 / 22%);
+  border: 1px solid #34d399;
+  color: #a7f3d0;
+  font-weight: 700;
+}
+
+.simLockedCursar {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgb(244 63 94 / 20%);
+  border: 1px solid #fb7185;
+  color: #fecdd3;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wireTypeBtn,
+  .simQuickBtn,
+  .simToggleBtn,
+  .cableGroup,
+  .bankColumn,
+  .periodColumn,
+  .slotAddBtn,
+  .subjectCard,
+  .portOut {
+    transition: none;
+  }
+}

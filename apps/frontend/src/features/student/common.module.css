@@ -1,0 +1,249 @@
+/* Estilos compartidos por las pantallas del alumno */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--sa-text-muted);
+  font-size: 15px;
+}
+
+.card {
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
+  box-shadow: var(--sa-shadow);
+}
+
+.cardPad {
+  padding: 20px;
+}
+
+.cardTitle {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sa-border);
+}
+
+.sectionHead h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--sa-text-muted);
+  font-size: 13px;
+}
+
+/* ---------- Controles ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.field {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sa-border);
+  border-radius: 10px;
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sa-text-muted);
+  pointer-events: none;
+}
+
+.search .field {
+  width: 100%;
+  padding-left: 38px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.btnPrimary {
+  background: var(--sa-accent-strong);
+  color: #fff;
+}
+
+.btnPrimary:hover {
+  background: var(--sa-accent);
+}
+
+.btnGhost {
+  background: transparent;
+  border-color: var(--sa-border);
+  color: var(--sa-text);
+}
+
+.btnGhost:hover {
+  border-color: var(--sa-accent);
+  background: var(--sa-accent-soft);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Tablas ---------- */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  padding: 12px 16px;
+  background: var(--sa-surface-2);
+  border-bottom: 1px solid var(--sa-border);
+  color: var(--sa-text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--sa-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover td {
+  background: var(--sa-surface-2);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Etiquetas ---------- */
+.code {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #0a1226;
+  color: #7dd3fc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipOk {
+  background: var(--sa-ok-soft);
+  border-color: color-mix(in srgb, var(--sa-ok) 40%, transparent);
+  color: var(--sa-ok);
+}
+
+.chipWarn {
+  background: var(--sa-warn-soft);
+  border-color: color-mix(in srgb, var(--sa-warn) 40%, transparent);
+  color: var(--sa-warn);
+}
+
+.chipInfo {
+  background: var(--sa-accent-soft);
+  border-color: color-mix(in srgb, var(--sa-accent) 45%, transparent);
+  color: var(--sa-accent-strong);
+}
+
+.chipMuted {
+  background: var(--sa-surface-2);
+  border-color: var(--sa-border);
+  color: var(--sa-text-muted);
+}
+
+:global([data-theme="dark"]) .chipInfo {
+  color: #7dd3fc;
+}
+
+.empty {
+  padding: 40px 20px;
+  color: var(--sa-text-muted);
+  text-align: center;
+}
