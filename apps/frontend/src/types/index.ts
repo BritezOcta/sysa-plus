@@ -1,7 +1,0 @@
-export * from './academic.types'
-export * from './audit.types'
-export * from './canvas.types'
-export * from './correlativity.types'
-export * from './forms.types'
-export * from './simulation.types'
-export * from './ui.types'

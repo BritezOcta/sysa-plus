@@ -1,98 +1,78 @@
-# SysA+ · Sistema Académico UTN-FRGP
+# React + TypeScript + Vite
 
-Sistema de gestión académica para la Facultad Regional General Pacheco (UTN). Monorepo con frontend en React + TypeScript (Vite), backend en Node.js + Express (Prisma ORM) y base de datos Microsoft SQL Server.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🚀 Despliegue Rápido con Docker
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-No necesitas instalar SQL Server ni Node en tu máquina host. Con Docker y Docker Compose puedes levantar la aplicación completa (Base de datos + Backend + Frontend) con un solo comando.
+## React Compiler
 
-### 1. Iniciar los contenedores
+The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
 
-```bash
-docker compose up -d
-```
-*(o usando `pnpm docker:up`)*
+Note: This will impact Vite dev & build performances.
+You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
 
-Esto levantará automáticamente:
-1. **`sqlserver`** (`mcr.microsoft.com/mssql/server:2022-latest`): Servidor Microsoft SQL Server con persistencia en volumen Docker y healthcheck configurado.
-2. **`backend`**: API Express con Node.js 22, Prisma ORM 7, migración/sincronización automática de esquema y seed de datos iniciales.
-3. **`frontend`**: Interfaz de usuario en React compilada y servida con Nginx, con reverse-proxy automático para `/api`.
+## Expanding the ESLint configuration
 
-### 2. Acceder a los servicios
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- **Frontend (Aplicación Web):** [http://localhost:5173](http://localhost:5173) (o también en [http://localhost](http://localhost))
-- **API Backend:** [http://localhost:3000](http://localhost:3000) (ej. [http://localhost:3000/api/health](http://localhost:3000/api/health))
-- **Base de Datos SQL Server:** `localhost:1433`
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
----
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-## 👥 Cuentas de Prueba Pre-configuradas (Seed Inicial)
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 
-Al levantar el contenedor por primera vez, se ejecuta un script de seed automático que registra usuarios de prueba para cada rol:
-
-| Rol | DNI (Usuario) | Contraseña | Destino post-login |
-|---|---|---|---|
-| **Administrador / Director** | `11111111` | `Admin123!` | `/oferta-academica` |
-| **Profesor** | `22222222` | `Profesor123!` | `/profesor` |
-| **Alumno** (Lucía Fernández) | `33333333` | `Alumno123!` | `/alumno` |
-
----
-
-## 🗄️ Conexión directa a SQL Server desde el Host
-
-Si deseas consultar las tablas directamente desde tu herramienta favorita (DBeaver, Azure Data Studio, SSMS, etc.):
-
-- **Host / Servidor:** `localhost,1433`
-- **Usuario:** `sa`
-- **Contraseña:** `SysAPlus2026!Secure` *(o la definida en `.env`)*
-- **Base de Datos:** `sysaplus`
-- **Cifrado / Certificado:** Confiar en el certificado del servidor (`TrustServerCertificate=true`)
-
----
-
-## 🛠️ Comandos útiles de Docker
-
-```bash
-# Ver estado de los contenedores
-docker compose ps
-
-# Ver logs en tiempo real de todos los servicios
-docker compose logs -f
-
-# Ver logs específicos del backend
-docker compose logs -f backend
-
-# Detener los contenedores (preserva datos de la BD)
-docker compose down
-
-# Reconstruir las imágenes si realizas cambios de código
-docker compose up -d --build
 ```
 
----
+You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
 
-## 💻 Desarrollo Local (Sin Docker para Backend/Frontend)
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-Si prefieres ejecutar el backend y frontend en tu máquina host y usar Docker únicamente para SQL Server:
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 
-1. Levanta solo el contenedor de base de datos:
-   ```bash
-   docker compose up -d sqlserver
-   ```
-2. Configura `apps/backend/.env` con la cadena de conexión local:
-   ```env
-   DATABASE_URL="sqlserver://localhost:1433;database=sysaplus;user=sa;password=SysAPlus2026!Secure;encrypt=true;trustServerCertificate=true;"
-   JWT_SECRET="sysaplus_super_secret_jwt_key_2026!"
-   PORT=3000
-   ```
-3. Instala dependencias y corre las aplicaciones:
-   ```bash
-   pnpm install
-   pnpm --filter backend db:generate
-   pnpm --filter backend db:push
-   pnpm --filter backend db:seed
-   pnpm dev:backend
-   pnpm dev:frontend
-   ```
+```
