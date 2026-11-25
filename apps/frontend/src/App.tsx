@@ -7,7 +7,6 @@ import { ESTUDIANTE } from './data/mockStudentData'
 import { StudentArea } from './features/student/StudentArea'
 import { getUserInitials } from './helpers/UserDisplayHelper'
 import AcademicManagementPage from './pages/AcademicManagementPage'
-import EnrollmentPage from './pages/EnrollmentPage'
 import LoginPage from './pages/LoginPage'
 import TeacherHomePage from './pages/TeacherHomePage'
 
@@ -65,13 +64,10 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Ruta vieja: la inscripción a cursada (RF-04) vive dentro del menú del alumno. */}
           <Route
             path={APP_ROUTES.ENROLLMENT}
-            element={
-              <ProtectedRoute roles={['ALUMNO']}>
-                <EnrollmentPage />
-              </ProtectedRoute>
-            }
+            element={<Navigate to={`${APP_ROUTES.STUDENT_AREA}/inscripcion-cursado`} replace />}
           />
           <Route
             path={`${APP_ROUTES.STUDENT_AREA}/*`}
