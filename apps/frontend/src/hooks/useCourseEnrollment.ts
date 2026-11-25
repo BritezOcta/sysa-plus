@@ -1,291 +1,254 @@
-import { useState } from "react";
-import {
-  type CommissionOption,
-  type SubjectOption,
-} from "../components/enrollment/SubjectList";
-import { type EnrollmentItem } from "../components/enrollment/EnrollmentSection";
-import type { ToastMessage } from "../types";
+import { useCallback, useEffect, useState } from 'react'
+import { courseEnrollmentApi } from '../api/courseEnrollment.api'
+import { ApiError, NetworkError } from '../api/httpClient'
+import type {
+  AvailableSubject,
+  Commission,
+  EnrollmentOverview,
+  MissingRequirement,
+  StudentEnrollment,
+  ToastMessage,
+} from '../types'
 
-interface ModalState {
-  title: string;
-  message: string;
-  isConfirmation?: boolean;
-  onConfirm?: () => void;
+export interface EnrollmentModalState {
+  title: string
+  message: string
+  isConfirmation?: boolean
+  confirmLabel?: string
+  cancelLabel?: string
+  onConfirm?: () => void
 }
 
-const INITIAL_SUBJECTS: SubjectOption[] = [
-  { id: "mat-1", name: "Análisis Matemático I", year: 1, period: 1 },
-  { id: "ayed", name: "Algoritmos y Estructuras de Datos", year: 1, period: 1 },
-  { id: "sistemas", name: "Sistemas y Organizaciones", year: 1, period: 1 },
-  { id: "fis-1", name: "Física I", year: 1, period: 1 },
-  { id: "mat-2", name: "Análisis Matemático II", year: 2, period: 1 },
-];
+type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready' }
 
-const INITIAL_COMMISSIONS: CommissionOption[] = [
-  {
-    id: "c1",
-    subjectId: "mat-1",
-    name: "1K1",
-    scheduleText: "Lunes 18:00 a 22:00 hs",
-    day: "Lunes",
-    startHour: 18,
-    endHour: 22,
-    teacher: "Ing. Roberto Gómez",
-    enrolledCount: 25,
-    quota: 30,
-  },
-  {
-    id: "c2",
-    subjectId: "ayed",
-    name: "1K2",
-    scheduleText: "Martes 18:00 a 22:00 hs",
-    day: "Martes",
-    startHour: 18,
-    endHour: 22,
-    teacher: "Lic. Carla Pérez",
-    enrolledCount: 18,
-    quota: 30,
-  },
-  {
-    id: "c3",
-    subjectId: "sistemas",
-    name: "1K3 (Choca con Algoritmos)",
-    scheduleText: "Martes 19:00 a 22:00 hs",
-    day: "Martes",
-    startHour: 19,
-    endHour: 22,
-    teacher: "Ing. Laura Díaz",
-    enrolledCount: 12,
-    quota: 30,
-  },
-  {
-    id: "c4",
-    subjectId: "fis-1",
-    name: "1K1 (Sin cupo)",
-    scheduleText: "Miércoles 18:00 a 22:00 hs",
-    day: "Miércoles",
-    startHour: 18,
-    endHour: 22,
-    teacher: "Dr. Martín Silva",
-    enrolledCount: 30,
-    quota: 30,
-  },
-  {
-    id: "c5",
-    subjectId: "mat-2",
-    name: "2K1",
-    scheduleText: "Jueves 18:00 a 22:00 hs",
-    day: "Jueves",
-    startHour: 18,
-    endHour: 22,
-    teacher: "Ing. Roberto Gómez",
-    enrolledCount: 10,
-    quota: 30,
-  },
-];
+/** Títulos de los modales según el código de error que devuelve el backend. */
+const ERROR_TITLES: Record<string, string> = {
+  CORRELATIVITIES_NOT_MET: 'Correlatividades no cumplidas',
+  STUDENT_INACTIVE: 'Alumno dado de baja o inactivo',
+  COMMISSION_FULL: 'Cupo completo en la comisión',
+  SCHEDULE_CONFLICT: 'Superposición de horarios',
+  ENROLLMENT_PERIOD_CLOSED: 'Período de inscripción cerrado',
+  ALREADY_ENROLLED: 'Ya estás inscripto',
+  ALREADY_ENROLLED_IN_SUBJECT: 'Ya estás inscripto en esta materia',
+  SUBJECT_ALREADY_COMPLETED: 'Materia ya cursada',
+  OFFERING_NOT_AVAILABLE: 'Comisión no disponible',
+  OFFERING_NOT_FOUND: 'Comisión no disponible',
+  NO_ACTIVE_CAREER: 'Sin carrera activa',
+  ENROLLMENT_NOT_FOUND: 'Inscripción inexistente',
+  ENROLLMENT_NOT_ACTIVE: 'Inscripción no vigente',
+  CONCURRENT_UPDATE: 'No se pudo completar la inscripción',
+  UNAUTHENTICATED: 'Sesión expirada',
+}
 
-const CORRELATIVITIES: Record<string, string> = {
-  "mat-2": "Análisis Matemático I (Aprobada)",
-};
+const NETWORK_ERROR_MESSAGE = 'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.'
+
+function describeMissing(missing: MissingRequirement[]): string {
+  return missing
+    .map((m) => `${m.subjectName} (${m.requiredCondition === 'APROBADA' ? 'aprobada' : 'regularizada'})`)
+    .join(', ')
+}
+
+export function teachersLabel(teachers: string[]): string {
+  // TODO(RF-03): cuando exista la asignación de profesores, toda comisión debería tener docente.
+  return teachers.length > 0 ? teachers.join(', ') : 'A designar'
+}
 
 export function useCourseEnrollment() {
-  const [studentStatus, setStudentStatus] = useState<"ACTIVO" | "INACTIVO">(
-    "ACTIVO",
-  );
-  const [periodOpen, setPeriodOpen] = useState<boolean>(true);
-  const [simulateServerError, setSimulateServerError] =
-    useState<boolean>(false);
+  const [overview, setOverview] = useState<EnrollmentOverview | null>(null)
+  const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [modalState, setModalState] = useState<EnrollmentModalState | null>(null)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
 
-  const [approvedSubjects] = useState<string[]>([]);
+  const refresh = useCallback(
+    () =>
+      courseEnrollmentApi.getOverview().then(
+        (data) => {
+          setOverview(data)
+          setLoadState({ status: 'ready' })
+        },
+        (error: unknown) => {
+          setLoadState({
+            status: 'error',
+            message: error instanceof ApiError ? error.message : NETWORK_ERROR_MESSAGE,
+          })
+        },
+      ),
+    [],
+  )
 
-  const [commissions, setCommissions] =
-    useState<CommissionOption[]>(INITIAL_COMMISSIONS);
-  const [myEnrollments, setMyEnrollments] = useState<
-    (EnrollmentItem & { commissionData: CommissionOption })[]
-  >([]);
-  const [modalState, setModalState] = useState<ModalState | null>(null);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  // Carga inicial: el setState ocurre en el callback de la promesa, no en el cuerpo del efecto.
+  useEffect(() => {
+    let cancelled = false
+    courseEnrollmentApi.getOverview().then(
+      (data) => {
+        if (cancelled) return
+        setOverview(data)
+        setLoadState({ status: 'ready' })
+      },
+      (error: unknown) => {
+        if (cancelled) return
+        setLoadState({
+          status: 'error',
+          message: error instanceof ApiError ? error.message : NETWORK_ERROR_MESSAGE,
+        })
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function retryLoad() {
+    setLoadState({ status: 'loading' })
+    void refresh()
+  }
+
+  function pushToast(toast: Omit<ToastMessage, 'id'>) {
+    setToasts((prev) => [...prev, { ...toast, id: `${Date.now()}-${Math.random()}` }])
+  }
 
   function dismissToast(id: string) {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }
 
-  // 1. Validar reglas antes de pedir confirmación de inscripción
-  function handleRequestEnroll(
-    subject: SubjectOption,
-    commission: CommissionOption,
-  ) {
-    if (!periodOpen) {
+  /** Muestra el error de la API en un modal; los errores de red ofrecen reintentar. */
+  function showRequestError(error: unknown, retry: () => void) {
+    if (error instanceof ApiError) {
       setModalState({
-        title: "Período de inscripción cerrado",
-        message:
-          "La inscripción a cursadas no se encuentra habilitada en este momento.",
-      });
-      return;
+        title: ERROR_TITLES[error.code] ?? 'No se pudo completar la operación',
+        message: error.message,
+      })
+      // El rechazo puede deberse a datos desactualizados (cupo, período): se refresca la pantalla.
+      void refresh()
+      return
     }
-
-    if (studentStatus !== "ACTIVO") {
+    if (error instanceof NetworkError) {
       setModalState({
-        title: "Alumno dado de baja o inactivo",
-        message:
-          "Tu estado académico no permite realizar inscripciones. Comunicate con Departamento de Alumnos.",
-      });
-      return;
-    }
-
-    const requiredSubject = CORRELATIVITIES[subject.id];
-    if (requiredSubject && !approvedSubjects.includes("mat-1")) {
-      setModalState({
-        title: "Correlatividades no cumplidas",
-        message: `No podés inscribirte a ${subject.name}. Debés tener previamente: ${requiredSubject}.`,
-      });
-      return;
-    }
-
-    if (commission.enrolledCount >= commission.quota) {
-      setModalState({
-        title: "Cupo completo en la comisión",
-        message: `La comisión ${commission.name} de ${subject.name} ya no cuenta con vacantes disponibles.`,
-      });
-      return;
-    }
-
-    const conflictingEnrollment = myEnrollments.find(
-      (item) =>
-        item.commissionData.day === commission.day &&
-        commission.startHour < item.commissionData.endHour &&
-        commission.endHour > item.commissionData.startHour,
-    );
-
-    if (conflictingEnrollment) {
-      setModalState({
-        title: "Superposición de horarios",
-        message: `El horario de esta comisión (${commission.scheduleText}) se superpone con ${conflictingEnrollment.subject.name}. Por favor elegí otra comisión.`,
-      });
-      return;
-    }
-
-    setModalState({
-      title: "Confirmar inscripción a cursada",
-      message: `¿Confirmás tu inscripción a ${subject.name} en la comisión ${commission.name} (${commission.scheduleText}) con ${commission.teacher}?`,
-      isConfirmation: true,
-      onConfirm: () => executeEnrollment(subject, commission),
-    });
-  }
-
-  function executeEnrollment(
-    subject: SubjectOption,
-    commission: CommissionOption,
-  ) {
-    if (simulateServerError) {
-      setModalState({
-        title: "Error de conexión con el servidor",
-        message:
-          "No se pudo registrar la inscripción por un problema de red. ¿Querés reintentar?",
+        title: 'Error de conexión con el servidor',
+        message: NETWORK_ERROR_MESSAGE,
         isConfirmation: true,
-        onConfirm: () => {
-          setSimulateServerError(false);
-          executeEnrollment(subject, commission);
-        },
-      });
-      return;
+        confirmLabel: 'Reintentar',
+        onConfirm: retry,
+      })
+      return
     }
-
-    setMyEnrollments((prev) => [
-      ...prev,
-      {
-        id: subject.id,
-        subject: { name: subject.name },
-        commission: {
-          id: commission.id,
-          name: commission.name,
-          scheduleText: commission.scheduleText,
-          teacher: commission.teacher,
-        },
-        commissionData: commission,
-      },
-    ]);
-
-    setCommissions((prev) =>
-      prev.map((c) =>
-        c.id === commission.id
-          ? { ...c, enrolledCount: c.enrolledCount + 1 }
-          : c,
-      ),
-    );
-
-    setModalState(null);
-
-    setToasts((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        title: "Inscripción exitosa",
-        message: `${subject.name} - Comisión ${commission.name} (${commission.scheduleText}) - Docente: ${commission.teacher}`,
-        type: "success",
-      },
-    ]);
+    setModalState({ title: 'Error inesperado', message: 'Ocurrió un error inesperado. Intentá nuevamente.' })
   }
 
-  function handleRequestCancel(item: EnrollmentItem) {
-    if (!periodOpen) {
+  // -------------------------------------------------------------------------
+  // Inscripción
+  // -------------------------------------------------------------------------
+
+  /**
+   * Validaciones previas con los datos ya cargados, para avisar antes de confirmar.
+   * El backend vuelve a validar todo (cupo y horarios incluidos) al confirmar.
+   */
+  function handleRequestEnroll(subject: AvailableSubject, commission: Commission) {
+    if (!overview) return
+
+    if (!overview.period?.isOpen) {
       setModalState({
-        title: "Período cerrado",
-        message:
-          "No podés darte de baja porque el período de inscripción ya cerró.",
-      });
-      return;
+        title: ERROR_TITLES.ENROLLMENT_PERIOD_CLOSED,
+        message: 'La inscripción a cursadas no se encuentra habilitada en este momento.',
+      })
+      return
+    }
+
+    if (!overview.student.isActive) {
+      setModalState({
+        title: ERROR_TITLES.STUDENT_INACTIVE,
+        message: 'Tu cuenta se encuentra dada de baja o inactiva, por lo que no podés inscribirte. Comunicate con la Dirección.',
+      })
+      return
+    }
+
+    if (subject.missingRequirements.length > 0) {
+      setModalState({
+        title: ERROR_TITLES.CORRELATIVITIES_NOT_MET,
+        message: `No podés inscribirte a ${subject.subjectName}. Debés tener previamente: ${describeMissing(subject.missingRequirements)}.`,
+      })
+      return
     }
 
     setModalState({
-      title: "Cancelar inscripción",
-      message: `¿Estás seguro de que querés cancelar tu inscripción a ${item.subject.name} (Comisión ${item.commission.name})?`,
+      title: 'Confirmar inscripción a cursada',
+      message: `¿Confirmás tu inscripción a ${subject.subjectName} en la comisión ${commission.name} (${commission.scheduleText}) con ${teachersLabel(commission.teachers)}?`,
       isConfirmation: true,
-      onConfirm: () => executeCancel(item),
-    });
+      confirmLabel: 'Confirmar inscripción',
+      onConfirm: () => void executeEnrollment(subject, commission),
+    })
   }
 
-  function executeCancel(item: EnrollmentItem) {
-    setMyEnrollments((prev) => prev.filter((e) => e.id !== item.id));
+  async function executeEnrollment(subject: AvailableSubject, commission: Commission) {
+    setIsSubmitting(true)
+    try {
+      const enrollment = await courseEnrollmentApi.enroll(commission.courseOfferingId)
+      setModalState(null)
+      pushToast({
+        type: 'success',
+        title: 'Inscripción exitosa',
+        message: `${enrollment.subjectName} - Comisión ${enrollment.commission} (${enrollment.scheduleText}) - Docente: ${teachersLabel(enrollment.teachers)}`,
+      })
+      await refresh()
+    } catch (error) {
+      showRequestError(error, () => void executeEnrollment(subject, commission))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
-    setCommissions((prev) =>
-      prev.map((c) =>
-        c.id === item.commission.id
-          ? { ...c, enrolledCount: Math.max(0, c.enrolledCount - 1) }
-          : c,
-      ),
-    );
+  // -------------------------------------------------------------------------
+  // Cancelación
+  // -------------------------------------------------------------------------
 
-    setModalState(null);
+  function handleRequestCancel(enrollment: StudentEnrollment) {
+    if (!overview?.period?.isOpen) {
+      setModalState({
+        title: ERROR_TITLES.ENROLLMENT_PERIOD_CLOSED,
+        message: 'No podés cancelar la inscripción porque el período de inscripción ya cerró.',
+      })
+      return
+    }
 
-    setToasts((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        title: "Inscripción cancelada",
-        message: `Se dio de baja tu inscripción en ${item.subject.name}.`,
-        type: "info",
-      },
-    ]);
+    setModalState({
+      title: 'Cancelar inscripción',
+      message: `¿Estás seguro de que querés cancelar tu inscripción a ${enrollment.subjectName} (Comisión ${enrollment.commission})? Si querés cambiar de comisión, después podés inscribirte en otra.`,
+      isConfirmation: true,
+      confirmLabel: 'Cancelar inscripción',
+      cancelLabel: 'Volver',
+      onConfirm: () => void executeCancel(enrollment),
+    })
+  }
+
+  async function executeCancel(enrollment: StudentEnrollment) {
+    setIsSubmitting(true)
+    try {
+      await courseEnrollmentApi.cancel(enrollment.courseEnrollmentId)
+      setModalState(null)
+      pushToast({
+        type: 'info',
+        title: 'Inscripción cancelada',
+        message: `Se dio de baja tu inscripción en ${enrollment.subjectName} (Comisión ${enrollment.commission}).`,
+      })
+      await refresh()
+    } catch (error) {
+      showRequestError(error, () => void executeCancel(enrollment))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return {
-    subjects: INITIAL_SUBJECTS,
-    commissions,
-    myEnrollments,
+    overview,
+    loadState,
+    retryLoad,
+    isSubmitting,
     modalState,
     dismissModal: () => setModalState(null),
     toasts,
     dismissToast,
-    studentStatus,
-    toggleStudentStatus: () =>
-      setStudentStatus((prev) => (prev === "ACTIVO" ? "INACTIVO" : "ACTIVO")),
-    periodOpen,
-    togglePeriodOpen: () => setPeriodOpen((prev) => !prev),
-    simulateServerError,
-    setSimulateServerError,
-    toggleServerError: () => setSimulateServerError((prev) => !prev),
     handleRequestEnroll,
     handleRequestCancel,
-  };
+  }
 }

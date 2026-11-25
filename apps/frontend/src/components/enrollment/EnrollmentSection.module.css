@@ -1,3 +1,50 @@
+.section {
+  margin-top: 2rem;
+}
+
+.title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.emptyMessage {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .cancelBtn {
   background-color: #fee2e2;
   color: #dc2626;
@@ -7,8 +54,14 @@
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .cancelBtn:hover {
   background-color: #fecaca;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
