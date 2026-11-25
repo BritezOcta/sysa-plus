@@ -19,6 +19,9 @@ import { getUserInitials } from "./helpers/UserDisplayHelper";
 import AcademicManagementPage from "./pages/AcademicManagementPage";
 import LoginPage from "./pages/LoginPage";
 import TeacherHomePage from "./pages/TeacherHomePage";
+import TeacherAttendancePage from "./pages/TeacherAttendancePage";
+import TeacherGradesPage from "./pages/TeacherGradesPage";
+import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 
 function StudentRoute() {
   const navigate = useNavigate();

@@ -1,155 +1,128 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { useAuthenticatedUser } from "../auth/AuthContext";
+import {
+  teacherApi,
+  type AttendanceStudentRow,
+  type CommissionAttendanceResponse,
+  type TeacherCommissionSummary,
+} from "../api/teacher.api";
 import { APP_ROUTES } from "../constants";
-import { getUserFullName } from "../helpers/UserDisplayHelper";
-import type {
-  AttendanceCommission,
-  AttendanceCondition,
-  AttendanceStatus,
-  AttendanceStudent,
-  ClassAttendanceRecord,
-} from "../types/teacherAttendance.types";
 import styles from "./TeacherAttendancePage.module.css";
 
-const MIN_REGULAR_PERCENT = 75;
-const RISK_THRESHOLD_PERCENT = 80;
+type AttendanceStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO";
 
-const MOCK_COMMISSIONS: AttendanceCommission[] = [
-  {
-    id: "c1",
-    subjectName: "Análisis Matemático I",
-    commissionCode: "1K1",
-    periodStart: "2026-08-01",
-    periodEnd: "2026-12-15",
-  },
-  {
-    id: "c2",
-    subjectName: "Algoritmos y Estructuras de Datos",
-    commissionCode: "1K2",
-    periodStart: "2026-08-01",
-    periodEnd: "2026-12-15",
-  },
-];
+function getTodayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
-const MOCK_STUDENTS: Record<string, AttendanceStudent[]> = {
-  c1: [
-    {
-      enrollmentId: "e1",
-      studentId: "s1",
-      legajo: "30001",
-      fullName: "Juan Pérez",
-      previousTotalClasses: 10,
-      previousAttendedClasses: 9,
-    },
-    {
-      enrollmentId: "e2",
-      studentId: "s2",
-      legajo: "30005",
-      fullName: "Sofía Martínez",
-      previousTotalClasses: 10,
-      previousAttendedClasses: 7,
-    },
-    {
-      enrollmentId: "e3",
-      studentId: "s3",
-      legajo: "30012",
-      fullName: "Lucas Fernández",
-      previousTotalClasses: 10,
-      previousAttendedClasses: 8,
-    },
-  ],
-  c2: [
-    {
-      enrollmentId: "e4",
-      studentId: "s1",
-      legajo: "30001",
-      fullName: "Juan Pérez",
-      previousTotalClasses: 8,
-      previousAttendedClasses: 8,
-    },
-  ],
-};
+function getProjectedStats(
+  student: AttendanceStudentRow,
+  status: AttendanceStatus | "",
+) {
+  const totalClasses = student.previousTotalClasses + (status ? 1 : 0);
+  const attended =
+    student.previousAttendedClasses +
+    (status === "PRESENTE" || status === "JUSTIFICADO" ? 1 : 0);
 
-const INITIAL_SAVED_CLASSES: Record<string, ClassAttendanceRecord[]> = {
-  c1: [
-    {
-      date: "2026-10-15",
-      topic: "Derivadas parciales",
-      records: { e1: "PRESENTE", e2: "AUSENTE", e3: "PRESENTE" },
-      updatedBy: "Laura Díaz",
-      updatedAt: "2026-10-15T20:15:00Z",
-    },
-  ],
-  c2: [],
-};
+  if (totalClasses === 0) {
+    return { percentage: 100, condition: "REGULAR" as const };
+  }
 
-function getCondition(percentage: number): AttendanceCondition {
-  if (percentage < MIN_REGULAR_PERCENT) return "LIBRE";
-  if (percentage < RISK_THRESHOLD_PERCENT) return "EN_RIESGO";
-  return "REGULAR";
+  const percentage = Math.round((attended / totalClasses) * 100);
+  if (percentage < 75) return { percentage, condition: "LIBRE" as const };
+  if (percentage < 80) return { percentage, condition: "EN_RIESGO" as const };
+  return { percentage, condition: "REGULAR" as const };
 }
 
 export default function TeacherAttendancePage() {
-  const user = useAuthenticatedUser();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialCommission =
-    searchParams.get("comision") ?? MOCK_COMMISSIONS[0].id;
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
+    [],
+  );
+  const [selectedCommissionId, setSelectedCommissionId] = useState(
+    searchParams.get("comision") ?? "",
+  );
+  const [selectedDate, setSelectedDate] = useState(getTodayIso());
+  const [topic, setTopic] = useState("");
 
-  const [selectedCommissionId, setSelectedCommissionId] =
-    useState(initialCommission);
-  const [selectedDate, setSelectedDate] = useState(todayIso);
-  const [sessionTopic, setSessionTopic] = useState("");
-  const [savedClassesByCommission, setSavedClassesByCommission] = useState<
-    Record<string, ClassAttendanceRecord[]>
-  >(INITIAL_SAVED_CLASSES);
-
-  const [draftStatuses, setDraftStatuses] = useState<
+  const [attendanceData, setAttendanceData] =
+    useState<CommissionAttendanceResponse | null>(null);
+  const [statuses, setStatuses] = useState<
     Record<string, AttendanceStatus | "">
   >({});
-  const [isEditingExisting, setIsEditingExisting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+
+  const [isLoadingCommissions, setIsLoadingCommissions] = useState(true);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const commission =
-    MOCK_COMMISSIONS.find((c) => c.id === selectedCommissionId) ?? null;
-  const students = commission ? (MOCK_STUDENTS[commission.id] ?? []) : [];
-  const savedClasses = commission
-    ? (savedClassesByCommission[commission.id] ?? [])
-    : [];
+  useEffect(() => {
+    async function loadCommissions() {
+      setIsLoadingCommissions(true);
+      setError(null);
+      try {
+        const list = await teacherApi.getCommissions();
+        setCommissions(list);
 
-  const existingRecord = useMemo(
-    () => savedClasses.find((cls) => cls.date === selectedDate) ?? null,
-    [savedClasses, selectedDate],
-  );
+        if (list.length > 0) {
+          const fromUrl = searchParams.get("comision");
+          const validId = list.some((c) => c.id === fromUrl)
+            ? fromUrl!
+            : list[0].id;
+          setSelectedCommissionId(validId);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar tus comisiones.",
+        );
+      } finally {
+        setIsLoadingCommissions(false);
+      }
+    }
 
-  const isDateOutOfPeriod = useMemo(() => {
-    if (!commission || !selectedDate) return false;
-    return (
-      selectedDate < commission.periodStart ||
-      selectedDate > commission.periodEnd
-    );
-  }, [commission, selectedDate]);
+    void loadCommissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadAttendance(commissionId: string, date: string) {
+    if (!commissionId || !date) return;
+    setIsLoadingAttendance(true);
+    setError(null);
+    setSuccessMessage(null);
+    setConfirmOverwrite(false);
+
+    try {
+      const data = await teacherApi.getAttendance(commissionId, date);
+      setAttendanceData(data);
+      setTopic(data.existingSession?.topic ?? "");
+
+      const initialStatuses: Record<string, AttendanceStatus | ""> = {};
+      for (const student of data.students) {
+        initialStatuses[student.enrollmentId] = student.currentStatus;
+      }
+      setStatuses(initialStatuses);
+    } catch (err) {
+      setAttendanceData(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo cargar la asistencia de la comisión.",
+      );
+    } finally {
+      setIsLoadingAttendance(false);
+    }
+  }
 
   useEffect(() => {
-    setFormError(null);
-    setSuccessMessage(null);
-    setIsEditingExisting(false);
-
-    if (existingRecord) {
-      setSessionTopic(existingRecord.topic);
-      setDraftStatuses(existingRecord.records);
-    } else {
-      setSessionTopic("");
-      const emptyDraft: Record<string, AttendanceStatus | ""> = {};
-      for (const s of students) {
-        emptyDraft[s.enrollmentId] = "";
-      }
-      setDraftStatuses(emptyDraft);
+    if (selectedCommissionId && selectedDate) {
+      void loadAttendance(selectedCommissionId, selectedDate);
     }
-  }, [selectedCommissionId, selectedDate, existingRecord]);
+  }, [selectedCommissionId, selectedDate]);
 
   function handleCommissionChange(newId: string) {
     setSelectedCommissionId(newId);
@@ -157,104 +130,72 @@ export default function TeacherAttendancePage() {
   }
 
   function handleStatusChange(enrollmentId: string, status: AttendanceStatus) {
-    setDraftStatuses((prev) => ({ ...prev, [enrollmentId]: status }));
-    setFormError(null);
+    setStatuses((prev) => ({ ...prev, [enrollmentId]: status }));
     setSuccessMessage(null);
+    setError(null);
   }
 
   function handleMarkAllPresent() {
-    const allPresent: Record<string, AttendanceStatus> = {};
-    for (const s of students) {
-      allPresent[s.enrollmentId] = "PRESENTE";
+    if (!attendanceData) return;
+    const next: Record<string, AttendanceStatus> = {};
+    for (const student of attendanceData.students) {
+      next[student.enrollmentId] = "PRESENTE";
     }
-    setDraftStatuses(allPresent);
-    setFormError(null);
+    setStatuses(next);
+    setError(null);
   }
 
-  function calculateStudentPercentage(student: AttendanceStudent): number {
-    const currentStatus = draftStatuses[student.enrollmentId];
-    const countsAsExtraClass = !existingRecord && currentStatus !== "";
-    const total = student.previousTotalClasses + (countsAsExtraClass ? 1 : 0);
-
-    if (total === 0) return 100;
-
-    let attended = student.previousAttendedClasses;
-    if (
-      countsAsExtraClass &&
-      (currentStatus === "PRESENTE" || currentStatus === "JUSTIFICADO")
-    ) {
-      attended += 1;
-    }
-
-    return Math.round((attended / total) * 100);
-  }
-
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setFormError(null);
+    if (!attendanceData) return;
+
+    setError(null);
     setSuccessMessage(null);
 
-    if (!commission) {
-      setFormError(
-        "Acceso denegado: no estás asignado a la comisión seleccionada.",
+    const students = attendanceData.students;
+    const missing = students.some((s) => !statuses[s.enrollmentId]);
+    if (missing) {
+      setError(
+        "Registro incompleto: debés marcar el estado de todos los alumnos.",
       );
       return;
     }
 
-    if (isDateOutOfPeriod) {
-      setFormError(
-        `La fecha debe estar dentro del período de cursada vigente (${commission.periodStart} al ${commission.periodEnd}).`,
+    if (attendanceData.existingSession && !confirmOverwrite) {
+      setError(
+        "Ya existe una asistencia cargada para esta fecha. Marcá la casilla de confirmación para sobrescribirla.",
       );
       return;
     }
 
-    if (existingRecord && !isEditingExisting) {
-      setFormError(
-        'Ya existe un registro de asistencia para esta fecha. Hacé clic en "Editar registro existente" para modificarlo.',
+    setIsSaving(true);
+    try {
+      const res = await teacherApi.saveAttendance(selectedCommissionId, {
+        date: selectedDate,
+        topic: topic.trim() || undefined,
+        allowOverwrite: Boolean(
+          attendanceData.existingSession && confirmOverwrite,
+        ),
+        records: students.map((s) => ({
+          enrollmentId: s.enrollmentId,
+          status: statuses[s.enrollmentId] as AttendanceStatus,
+        })),
+      });
+
+      setSuccessMessage(
+        `Asistencia del ${res.date} guardada correctamente (${res.updatedStudents} alumnos actualizados).`,
       );
-      return;
-    }
-
-    const missingStudents = students.filter(
-      (s) => !draftStatuses[s.enrollmentId],
-    );
-    if (missingStudents.length > 0) {
-      setFormError(
-        `Registro incompleto: falta indicar la asistencia de ${missingStudents.length} alumno(s) antes de guardar.`,
+      await loadAttendance(selectedCommissionId, selectedDate);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al guardar la asistencia.",
       );
-      return;
+    } finally {
+      setIsSaving(false);
     }
-
-    const completedRecords: Record<string, AttendanceStatus> = {};
-    for (const s of students) {
-      completedRecords[s.enrollmentId] = draftStatuses[
-        s.enrollmentId
-      ] as AttendanceStatus;
-    }
-
-    const newRecord: ClassAttendanceRecord = {
-      date: selectedDate,
-      topic: sessionTopic.trim() || "Clase sin tema especificado",
-      records: completedRecords,
-      updatedBy: getUserFullName(user),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setSavedClassesByCommission((prev) => {
-      const currentList = prev[commission.id] ?? [];
-      const filtered = currentList.filter((item) => item.date !== selectedDate);
-      return { ...prev, [commission.id]: [newRecord, ...filtered] };
-    });
-
-    setIsEditingExisting(false);
-    setSuccessMessage(
-      `Asistencia del ${selectedDate} guardada correctamente por ${getUserFullName(user)}.`,
-    );
   }
 
-  const inputsDisabled = Boolean(
-    (existingRecord && !isEditingExisting) || isDateOutOfPeriod,
-  );
+  const students = attendanceData?.students ?? [];
 
   return (
     <div className={styles.page}>
@@ -267,114 +208,108 @@ export default function TeacherAttendancePage() {
         </div>
       </header>
 
-      {!commission ? (
-        <div className={styles.errorBanner} role="alert">
-          Acceso denegado: no estás asignado a la materia o comisión solicitada.
+      <section className={styles.controls}>
+        <div className={styles.field}>
+          <label htmlFor="commission-select">Materia y Comisión</label>
+          <select
+            id="commission-select"
+            value={selectedCommissionId}
+            onChange={(e) => handleCommissionChange(e.target.value)}
+            disabled={isLoadingCommissions || commissions.length === 0}
+            className={styles.select}
+          >
+            {commissions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.subjectName} — Com. {c.commissionCode}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : (
-        <main className={styles.container}>
-          <section className={styles.controlsCard}>
-            <div className={styles.field}>
-              <label htmlFor="att-commission">Materia y Comisión</label>
-              <select
-                id="att-commission"
-                value={selectedCommissionId}
-                onChange={(e) => handleCommissionChange(e.target.value)}
-                className={styles.input}
-              >
-                {MOCK_COMMISSIONS.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.subjectName} — Com. {c.commissionCode}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            <div className={styles.field}>
-              <label htmlFor="att-date">Fecha de la clase</label>
-              <input
-                id="att-date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className={styles.input}
-              />
-              <span className={styles.hint}>
-                Período vigente: {commission.periodStart} a{" "}
-                {commission.periodEnd}
-              </span>
-            </div>
+        <div className={styles.field}>
+          <label htmlFor="session-date">Fecha de clase</label>
+          <input
+            id="session-date"
+            type="date"
+            value={selectedDate}
+            min={attendanceData?.commission.periodStart}
+            max={attendanceData?.commission.periodEnd}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className={styles.input}
+          />
+        </div>
 
-            <div className={styles.field}>
-              <label htmlFor="att-topic">Tema visto (opcional)</label>
-              <input
-                id="att-topic"
-                type="text"
-                value={sessionTopic}
-                onChange={(e) => setSessionTopic(e.target.value)}
-                disabled={inputsDisabled}
-                placeholder="Ej: Unidad 3 - Integrales"
-                className={styles.input}
-              />
-            </div>
-          </section>
+        <div className={styles.field}>
+          <label htmlFor="session-topic">Tema de la clase (opcional)</label>
+          <input
+            id="session-topic"
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Ej: Derivadas y reglas de derivación"
+            className={styles.input}
+          />
+        </div>
+      </section>
 
-          {isDateOutOfPeriod && (
-            <div className={styles.errorBanner} role="alert">
-              Fecha fuera del período de cursada vigente (
-              {commission.periodStart} al {commission.periodEnd}). Seleccioná
-              una fecha válida para registrar asistencia.
-            </div>
+      {attendanceData?.existingSession && (
+        <div className={styles.warningBanner}>
+          <span>
+            Ya existe un registro de asistencia para el{" "}
+            <strong>{selectedDate}</strong>. Podés editarlo confirmando la
+            sobrescritura abajo.
+          </span>
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.errorBanner} role="alert">
+          {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className={styles.successBanner} role="status">
+          {successMessage}
+        </div>
+      )}
+
+      <form onSubmit={(e) => void handleSave(e)} className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h2>Alumnos inscriptos ({students.length})</h2>
+          {students.length > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllPresent}
+              className={styles.secondaryBtn}
+            >
+              Marcar todos presentes
+            </button>
           )}
+        </div>
 
-          {existingRecord && !isEditingExisting && !isDateOutOfPeriod && (
-            <div className={styles.warningBanner} role="status">
-              <div>
-                <strong>
-                  Ya existe un registro cargado para el {existingRecord.date}
-                </strong>{" "}
-                (última edición por {existingRecord.updatedBy}).
-              </div>
-              <button
-                type="button"
-                className={styles.editBtn}
-                onClick={() => setIsEditingExisting(true)}
-              >
-                Editar registro existente
-              </button>
-            </div>
-          )}
-
-          <form onSubmit={handleSave} className={styles.tableCard}>
-            <div className={styles.tableHeader}>
-              <h2>Listado de Alumnos ({students.length})</h2>
-              {!inputsDisabled && (
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  onClick={handleMarkAllPresent}
-                >
-                  Marcar todos presentes
-                </button>
-              )}
-            </div>
-
+        {isLoadingCommissions || isLoadingAttendance ? (
+          <p className={styles.muted}>Cargando datos...</p>
+        ) : students.length === 0 ? (
+          <p className={styles.muted}>
+            No hay alumnos inscriptos en esta comisión.
+          </p>
+        ) : (
+          <>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>Legajo</th>
                   <th>Alumno</th>
-                  <th>Estado ({selectedDate})</th>
-                  <th>% Acumulado</th>
+                  <th>Estado</th>
+                  <th>% Proyectado</th>
                   <th>Condición</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((student) => {
-                  const pct = calculateStudentPercentage(student);
-                  const condition = getCondition(pct);
-                  const currentVal = draftStatuses[student.enrollmentId] ?? "";
-
+                  const current = statuses[student.enrollmentId] ?? "";
+                  const stats = getProjectedStats(student, current);
                   return (
                     <tr key={student.enrollmentId}>
                       <td>{student.legajo}</td>
@@ -382,79 +317,57 @@ export default function TeacherAttendancePage() {
                       <td>
                         <div className={styles.statusGroup}>
                           {(
-                            [
-                              "PRESENTE",
-                              "AUSENTE",
-                              "JUSTIFICADO",
-                            ] as AttendanceStatus[]
-                          ).map((st) => (
-                            <label key={st} className={styles.radioLabel}>
-                              <input
-                                type="radio"
-                                name={`status-${student.enrollmentId}`}
-                                value={st}
-                                checked={currentVal === st}
-                                disabled={inputsDisabled}
-                                onChange={() =>
-                                  handleStatusChange(student.enrollmentId, st)
-                                }
-                              />
-                              {st === "PRESENTE"
-                                ? "Presente"
-                                : st === "AUSENTE"
-                                  ? "Ausente"
-                                  : "Justificado"}
-                            </label>
+                            ["PRESENTE", "AUSENTE", "JUSTIFICADO"] as const
+                          ).map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                handleStatusChange(student.enrollmentId, opt)
+                              }
+                              className={
+                                current === opt
+                                  ? styles.statusBtnActive
+                                  : styles.statusBtn
+                              }
+                            >
+                              {opt}
+                            </button>
                           ))}
                         </div>
                       </td>
-                      <td>
-                        <strong>{pct}%</strong>
-                      </td>
-                      <td>
-                        {condition === "REGULAR" && (
-                          <span className={styles.badgeRegular}>Regular</span>
-                        )}
-                        {condition === "EN_RIESGO" && (
-                          <span className={styles.badgeRisk}>
-                            En riesgo (límite {MIN_REGULAR_PERCENT}%)
-                          </span>
-                        )}
-                        {condition === "LIBRE" && (
-                          <span className={styles.badgeLibre}>
-                            Libre por inasistencias
-                          </span>
-                        )}
-                      </td>
+                      <td>{stats.percentage}%</td>
+                      <td>{stats.condition}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
 
-            {formError && (
-              <p className={styles.formError} role="alert">
-                {formError}
-              </p>
-            )}
-            {successMessage && (
-              <p className={styles.formSuccess} role="status">
-                {successMessage}
-              </p>
+            {attendanceData?.existingSession && (
+              <label className={styles.overwriteCheck}>
+                <input
+                  type="checkbox"
+                  checked={confirmOverwrite}
+                  onChange={(e) => setConfirmOverwrite(e.target.checked)}
+                />
+                Confirmo que quiero sobrescribir la asistencia ya registrada
+                para esta fecha.
+              </label>
             )}
 
-            {!inputsDisabled && (
-              <div className={styles.footerActions}>
-                <button type="submit" className={styles.saveBtn}>
-                  {isEditingExisting
-                    ? "Actualizar asistencia"
-                    : "Guardar asistencia"}
-                </button>
-              </div>
-            )}
-          </form>
-        </main>
-      )}
+            <div className={styles.footerActions}>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className={styles.saveBtn}
+              >
+                {isSaving ? "Guardando..." : "Guardar asistencia"}
+              </button>
+            </div>
+          </>
+        )}
+      </form>
     </div>
   );
 }
