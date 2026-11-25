@@ -1,25 +1,18 @@
+import { teachersLabel } from "../../hooks/useCourseEnrollment";
+import type { StudentEnrollment } from "../../types";
 import styles from "./EnrollmentSection.module.css";
 
-export interface EnrollmentItem {
-  id: number | string;
-  subject: {
-    name: string;
-  };
-  commission: {
-    id: string;
-    name: string;
-    scheduleText: string;
-    teacher: string;
-  };
-}
-
 interface MyEnrollmentsSectionProps {
-  enrollments: EnrollmentItem[];
-  onCancelEnrollment: (item: EnrollmentItem) => void;
+  enrollments: StudentEnrollment[];
+  canCancel: boolean;
+  disabled?: boolean;
+  onCancelEnrollment: (item: StudentEnrollment) => void;
 }
 
 export default function MyEnrollmentsSection({
   enrollments,
+  canCancel,
+  disabled = false,
   onCancelEnrollment,
 }: MyEnrollmentsSectionProps) {
   return (
@@ -31,36 +24,42 @@ export default function MyEnrollmentsSection({
           Aún no te has inscripto a ninguna materia en este período.
         </p>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Materia</th>
-              <th>Comisión</th>
-              <th>Horario</th>
-              <th>Docente a cargo</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {enrollments.map((item) => (
-              <tr key={item.id}>
-                <td>{item.subject.name}</td>
-                <td>{item.commission.name}</td>
-                <td>{item.commission.scheduleText}</td>
-                <td>{item.commission.teacher}</td>
-                <td>
-                  <button
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={() => onCancelEnrollment(item)}
-                  >
-                    Cancelar inscripción
-                  </button>
-                </td>
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Materia</th>
+                <th>Comisión</th>
+                <th>Horario</th>
+                <th>Docente a cargo</th>
+                {canCancel && <th aria-label="Acciones" />}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {enrollments.map((item) => (
+                <tr key={item.courseEnrollmentId}>
+                  <td>{item.subjectName}</td>
+                  <td>{item.commission}</td>
+                  <td>{item.scheduleText}</td>
+                  <td>{teachersLabel(item.teachers)}</td>
+                  {canCancel && (
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.cancelBtn}
+                        disabled={disabled}
+                        onClick={() => onCancelEnrollment(item)}
+                      >
+                        Cancelar inscripción
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

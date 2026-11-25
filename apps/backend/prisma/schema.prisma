@@ -8,12 +8,16 @@ datasource db {
 }
 
 model AcademicPeriod {
-  academicPeriodId Int              @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement()) @map("ACADEMIC_PERIOD_ID")
-  year             Int              @map("YEAR") @db.SmallInt
-  semester         Int              @map("SEMESTER") @db.TinyInt
-  periodStartDate  DateTime         @map("PERIOD_START_DATE") @db.Date
-  periodEndDate    DateTime         @map("PERIOD_END_DATE") @db.Date
-  courseOfferings  CourseOffering[]
+  academicPeriodId    Int              @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement()) @map("ACADEMIC_PERIOD_ID")
+  year                Int              @map("YEAR") @db.SmallInt
+  semester            Int              @map("SEMESTER") @db.TinyInt
+  periodStartDate     DateTime         @map("PERIOD_START_DATE") @db.Date
+  periodEndDate       DateTime         @map("PERIOD_END_DATE") @db.Date
+  /// Ventana de inscripción a cursadas (RF-04). null = sin ventana configurada → inscripción cerrada.
+  /// TODO(admin): hoy se carga por seed; falta el ABM de períodos académicos para el Administrador.
+  enrollmentStartDate DateTime?        @map("ENROLLMENT_START_DATE") @db.Date
+  enrollmentEndDate   DateTime?        @map("ENROLLMENT_END_DATE") @db.Date
+  courseOfferings     CourseOffering[]
 
   @@unique([year, semester], map: "UQ_ACADEMIC_PERIOD")
   @@map("ACADEMIC_PERIOD")
@@ -118,6 +122,7 @@ model CourseOffering {
   assessments        Assessment[]
   classSessions      ClassSession[]
   courseEnrollments  CourseEnrollment[]
+  schedules          CourseSchedule[]
   academicPeriod     AcademicPeriod      @relation(fields: [academicPeriodId], references: [academicPeriodId], onUpdate: NoAction, map: "FK_CO_PERIOD")
   studyPlanSubject   StudyPlanSubject    @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CO_SPS")
   teacherAssignments TeacherAssignment[]
@@ -125,6 +130,20 @@ model CourseOffering {
   @@unique([studyPlanSubjectId, academicPeriodId, commission], map: "UQ_COURSE_OFFERING")
   @@index([academicPeriodId], map: "IX_CO_PERIOD")
   @@map("COURSE_OFFERING")
+}
+
+/// Franja horaria semanal de una comisión (RF-04). Una comisión puede cursar varios días.
+model CourseSchedule {
+  courseScheduleId Int            @id(map: "PK_COURSE_SCHEDULE") @default(autoincrement()) @map("COURSE_SCHEDULE_ID")
+  courseOfferingId Int            @map("COURSE_OFFERING_ID")
+  /// 1 = Lunes ... 7 = Domingo (ISO 8601)
+  dayOfWeek        Int            @map("DAY_OF_WEEK") @db.TinyInt
+  startTime        DateTime       @map("START_TIME") @db.Time
+  endTime          DateTime       @map("END_TIME") @db.Time
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CSCH_OFFERING")
+
+  @@index([courseOfferingId], map: "IX_CSCH_OFFERING")
+  @@map("COURSE_SCHEDULE")
 }
 
 model ExamCall {
