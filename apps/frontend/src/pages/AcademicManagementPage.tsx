@@ -72,12 +72,16 @@ export default function AcademicManagementPage() {
   return (
     <div className={styles.pageLayout}>
       <TopNavbar
-        simulateServerFault={simulateServerFault}
-        onToggleServerFault={setSimulateServerFault}
-        onResetMockData={handleResetMockData}
-        auditCount={auditLogs.length}
-        unreadAuditCount={unreadAuditCount}
-        onOpenAuditDrawer={openAuditDrawer}
+        simulation={{
+          simulateServerFault,
+          onToggleServerFault: setSimulateServerFault,
+          onResetMockData: handleResetMockData,
+        }}
+        audit={{
+          auditCount: auditLogs.length,
+          unreadAuditCount,
+          onOpenAuditDrawer: openAuditDrawer,
+        }}
       />
 
       <main className={styles.mainContent}>

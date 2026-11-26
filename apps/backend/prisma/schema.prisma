@@ -311,6 +311,10 @@ model TeacherAssignment {
   teacherAssignmentId Int            @id(map: "PK_TEACHER_ASSIGNMENT") @default(autoincrement()) @map("TEACHER_ASSIGNMENT_ID")
   teacherId           Int            @map("TEACHER_ID")
   courseOfferingId    Int            @map("COURSE_OFFERING_ID")
+  /// RF-03: TITULAR o AYUDANTE (ver ASSIGNMENT_ROLE en src/types/academic.ts).
+  assignmentRole      String         @default("TITULAR", map: "DF_TA_ROLE") @map("ASSIGNMENT_ROLE") @db.NVarChar(20)
+  /// RF-03: fecha de la asignación.
+  assignedAt          DateTime       @default(dbgenerated("sysutcdatetime()"), map: "DF_TA_ASSIGNED_AT") @map("ASSIGNED_AT")
   courseOffering      CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_TA_OFFERING")
   teacherProfile      TeacherProfile @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, map: "FK_TA_TEACHER")
 

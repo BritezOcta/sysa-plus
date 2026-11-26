@@ -5,25 +5,26 @@ import styles from '../../pages/AcademicManagementPage.module.css'
 import SimulationToolbarGroup from './SimulationToolbarGroup'
 import UserProfilePill from './UserProfilePill'
 
-interface TopNavbarProps {
+/** Herramientas de simulación del prototipo (solo Oferta académica las usa). */
+interface SimulationToolsProps {
   simulateServerFault: boolean
   onToggleServerFault: (enabled: boolean) => void
   onResetMockData: () => void
   resetButtonLabel?: string
+}
+
+interface AuditButtonProps {
   auditCount: number
   unreadAuditCount: number
   onOpenAuditDrawer: () => void
 }
 
-export default function TopNavbar({
-  simulateServerFault,
-  onToggleServerFault,
-  onResetMockData,
-  resetButtonLabel = 'Recargar datos',
-  auditCount,
-  unreadAuditCount,
-  onOpenAuditDrawer,
-}: TopNavbarProps) {
+interface TopNavbarProps {
+  simulation?: SimulationToolsProps
+  audit?: AuditButtonProps
+}
+
+export default function TopNavbar({ simulation, audit }: TopNavbarProps) {
   return (
     <header className={styles.topNavbar}>
       <div className={styles.brandBlock}>
@@ -44,13 +45,21 @@ export default function TopNavbar({
       </div>
 
       <div className={styles.navControls}>
-        <SimulationToolbarGroup
-          simulateServerFault={simulateServerFault}
-          onToggleServerFault={onToggleServerFault}
-          onResetMockData={onResetMockData}
-          resetButtonLabel={resetButtonLabel}
-        />
+        {simulation && (
+          <SimulationToolbarGroup
+            simulateServerFault={simulation.simulateServerFault}
+            onToggleServerFault={simulation.onToggleServerFault}
+            onResetMockData={simulation.onResetMockData}
+            resetButtonLabel={simulation.resetButtonLabel ?? 'Recargar datos'}
+          />
+        )}
 
+        <Link to={APP_ROUTES.ACADEMIC_OFFER} className={styles.auditBtn}>
+          Oferta académica
+        </Link>
+        <Link to={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS} className={styles.auditBtn}>
+          Docentes
+        </Link>
         <Link to={APP_ROUTES.ADMIN_STUDENTS} className={styles.auditBtn}>
           Alumnos
         </Link>
@@ -58,16 +67,18 @@ export default function TopNavbar({
           Actas
         </Link>
 
-        <button
-          type="button"
-          onClick={onOpenAuditDrawer}
-          className={styles.auditBtn}
-        >
-          Auditoría ({auditCount})
-          {unreadAuditCount > 0 && (
-            <span className={styles.unreadDot}>+{unreadAuditCount}</span>
-          )}
-        </button>
+        {audit && (
+          <button
+            type="button"
+            onClick={audit.onOpenAuditDrawer}
+            className={styles.auditBtn}
+          >
+            Auditoría ({audit.auditCount})
+            {audit.unreadAuditCount > 0 && (
+              <span className={styles.unreadDot}>+{audit.unreadAuditCount}</span>
+            )}
+          </button>
+        )}
 
         <UserProfilePill />
       </div>
