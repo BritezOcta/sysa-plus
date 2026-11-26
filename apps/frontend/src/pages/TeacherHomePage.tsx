@@ -48,13 +48,18 @@ export default function TeacherHomePage() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className={styles.logoutButton}
-        >
-          Cerrar sesión
-        </button>
+        <div className={styles.headerActions}>
+          <Link to={APP_ROUTES.CHANGE_PASSWORD} className={styles.logoutButton}>
+            Cambiar contraseña
+          </Link>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className={styles.logoutButton}
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <main className={styles.container}>

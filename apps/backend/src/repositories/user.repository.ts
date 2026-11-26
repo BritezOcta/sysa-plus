@@ -40,6 +40,10 @@ export const userRepository = {
     });
   },
 
+  updatePasswordHash(userId: number, passwordHash: string) {
+    return prisma.user.update({ where: { userId }, data: { passwordHash } });
+  },
+
   registerSuccessfulLogin(userId: number, at: Date) {
     return prisma.user.update({
       where: { userId },

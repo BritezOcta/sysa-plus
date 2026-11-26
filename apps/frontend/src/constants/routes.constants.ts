@@ -12,6 +12,7 @@ export const APP_ROUTES = {
   TEACHER_GRADES: "/profesor/notas",
   TEACHER_STUDENTS: "/profesor/alumnos",
   ADMIN_STUDENTS: "/admin/alumnos",
+  CHANGE_PASSWORD: "/cuenta/contrasena",
 } as const;
 
 export const ROLE_HOME_ROUTES: Record<UserRole, string> = {
