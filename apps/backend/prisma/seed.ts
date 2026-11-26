@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma.js";
 import { timeFromString } from "../src/lib/schedule.js";
-import { CORRELATIVITY_TYPE, ENROLLMENT_STATUS, OFFERING_STATUS } from "../src/types/academic.js";
+import { CORRELATIVITY_TYPE, ENROLLMENT_STATUS, FINAL_EXAM_PASSING_GRADE, OFFERING_STATUS } from "../src/types/academic.js";
 
 // ===========================================================================
 // 1. Usuarios base (RF-01)
@@ -145,9 +145,15 @@ const CURRENT_OFFERINGS: {
 /** Historial de Lucía en un período anterior. */
 const STUDENT_HISTORY: { subject: SubjectCode; status: string }[] = [
   { subject: "AM1", status: ENROLLMENT_STATUS.REGULAR },
-  { subject: "AGA", status: ENROLLMENT_STATUS.APROBADA },
+  { subject: "AGA", status: ENROLLMENT_STATUS.REGULAR },
   { subject: "AYED", status: ENROLLMENT_STATUS.REGULAR },
-  { subject: "SYO", status: ENROLLMENT_STATUS.APROBADA },
+  { subject: "SYO", status: ENROLLMENT_STATUS.APROBADA }, // promoción
+];
+
+/** Finales de Lucía en la mesa de diciembre del período anterior (RF-09: materias rendidas). */
+const STUDENT_FINALS: { subject: SubjectCode; grade: number }[] = [
+  { subject: "AGA", grade: 8 }, // aprobada por final
+  { subject: "AM1", grade: 4 }, // desaprobado: sigue regular
 ];
 
 function utcDate(year: number, month: number, day: number): Date {
@@ -235,7 +241,9 @@ async function seedAcademicData() {
   const today = utcDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
   const current =
     now.getMonth() < 5 ? { year: now.getFullYear(), semester: 2 } : { year: now.getFullYear() + 1, semester: 1 };
-  const previous = { year: current.year - 1, semester: 2 };
+  // Siempre el 2° cuatrimestre del año pasado: tiene que estar terminado para que el historial
+  // cuente como cursadas cerradas (RF-09). current.year - 1 caía en el cuatrimestre en curso entre junio y diciembre.
+  const previous = { year: now.getFullYear() - 1, semester: 2 };
 
   const previousPeriod = await prisma.academicPeriod.create({
     data: { ...previous, ...semesterDates(previous.year, previous.semester) },
@@ -327,6 +335,38 @@ async function seedAcademicData() {
         courseOfferingId: offering.courseOfferingId,
         enrollmentDate: semesterDates(previous.year, previous.semester).periodStartDate,
         enrollmentStatus: h.status,
+      },
+    });
+  }
+
+  // --- Finales de Lucía (mesa de diciembre del período anterior) -------------
+  const examDate = utcDate(previous.year, 12, 15);
+  const examSession = await prisma.examSession.create({
+    data: {
+      examName: `Mesa de diciembre ${previous.year}`,
+      examYear: previous.year,
+      sessionStartDate: utcDate(previous.year, 12, 9),
+      sessionEndDate: utcDate(previous.year, 12, 20),
+      sessionStatus: "CERRADA",
+    },
+  });
+  const luciaPlan = await prisma.studentStudyPlan.findFirstOrThrow({ where: { studentCareerId: luciaCareerId } });
+  for (const f of STUDENT_FINALS) {
+    const call = await prisma.examCall.create({
+      data: {
+        studyPlanSubjectId: spsByCode.get(f.subject)!,
+        examSessionId: examSession.examSessionId,
+        callDate: examDate,
+        callStatus: "CERRADA",
+      },
+    });
+    await prisma.examEnrollment.create({
+      data: {
+        examCallId: call.examCallId,
+        studentCareerId: luciaCareerId,
+        studentStudyPlanId: luciaPlan.studentStudyPlanId,
+        examStatus: f.grade >= FINAL_EXAM_PASSING_GRADE ? "APROBADO" : "DESAPROBADO",
+        examGrade: f.grade,
       },
     });
   }

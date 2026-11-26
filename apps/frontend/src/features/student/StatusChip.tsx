@@ -1,14 +1,16 @@
-import type { EstadoMateria } from "../../data/mockStudentData";
+import type { SubjectStatus } from "../../types/academicStatus.types";
 import common from "./common.module.css";
+import { STATUS_LABELS } from "./statusLabels";
 
-const MAP: Record<EstadoMateria, { label: string; cls: string }> = {
-  aprobada: { label: "Aprobada", cls: common.chipOk },
-  regular: { label: "Regular", cls: common.chipInfo },
-  cursando: { label: "Cursando", cls: common.chipWarn },
-  pendiente: { label: "Pendiente", cls: common.chipMuted },
+const CLASSES: Record<SubjectStatus, string> = {
+  APROBADA: common.chipOk,
+  REGULAR: common.chipInfo,
+  CURSANDO: common.chipWarn,
+  LIBRE: common.chipDanger,
+  DESAPROBADA: common.chipDanger,
+  PENDIENTE: common.chipMuted,
 };
 
-export function StatusChip({ estado }: { estado: EstadoMateria }) {
-  const { label, cls } = MAP[estado];
-  return <span className={`${common.chip} ${cls}`}>{label}</span>;
+export function StatusChip({ estado }: { estado: SubjectStatus }) {
+  return <span className={`${common.chip} ${CLASSES[estado]}`}>{STATUS_LABELS[estado]}</span>;
 }

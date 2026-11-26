@@ -238,6 +238,12 @@
   color: var(--sa-text-muted);
 }
 
+.chipDanger {
+  background: var(--sa-danger-soft);
+  border-color: color-mix(in srgb, var(--sa-danger) 40%, transparent);
+  color: var(--sa-danger);
+}
+
 :global([data-theme="dark"]) .chipInfo {
   color: #7dd3fc;
 }

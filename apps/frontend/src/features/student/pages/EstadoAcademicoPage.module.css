@@ -113,3 +113,28 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Listas de materias habilitadas (RF-09) ---------- */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--sa-border);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.reqs {
+  margin: 0;
+  padding-left: 18px;
+}
