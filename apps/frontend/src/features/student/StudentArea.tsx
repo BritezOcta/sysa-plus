@@ -5,12 +5,12 @@ import { StudentLayout, type StudentUser } from './StudentLayout'
 import { HomePage } from './pages/HomePage'
 import { PlanMateriasPage } from './pages/PlanMateriasPage'
 import { EstadoAcademicoPage } from './pages/EstadoAcademicoPage'
+import { ExamenesPage } from './pages/ExamenesPage'
 import { InscripcionExamenPage } from './pages/InscripcionExamenPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
-  'examenes',
   'cursado',
   'correlatividad-cursar',
   'correlatividad-rendir',
@@ -47,6 +47,8 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route index element={<HomePage />} />
         <Route path="plan" element={<PlanMateriasPage />} />
         <Route path="estado" element={<EstadoAcademicoPage />} />
+        <Route path="examenes" element={<ExamenesPage />} />
+        {/* RF-06: inscripción a exámenes finales */}
         <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
         {/* RF-04: inscripción a cursadas */}
         <Route path="inscripcion-cursado" element={<EnrollmentPage />} />

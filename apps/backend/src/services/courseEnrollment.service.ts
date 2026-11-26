@@ -46,7 +46,7 @@ export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function formatDisplayDate(date: Date): string {
+export function formatDisplayDate(date: Date): string {
   const [year, month, day] = toIsoDate(date).split("-");
   return `${day}/${month}/${year}`;
 }

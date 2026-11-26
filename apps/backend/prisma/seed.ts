@@ -1,7 +1,14 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma.js";
 import { timeFromString } from "../src/lib/schedule.js";
-import { CORRELATIVITY_TYPE, ENROLLMENT_STATUS, FINAL_EXAM_PASSING_GRADE, OFFERING_STATUS } from "../src/types/academic.js";
+import {
+  CORRELATIVITY_TYPE,
+  ENROLLMENT_STATUS,
+  EXAM_CALL_STATUS,
+  EXAM_STATUS,
+  FINAL_EXAM_PASSING_GRADE,
+  OFFERING_STATUS,
+} from "../src/types/academic.js";
 
 // ===========================================================================
 // 1. Usuarios base (RF-01)
@@ -422,9 +429,167 @@ async function seedAcademicData() {
   console.log("  - Alumnos adicionales: DNI 44444444 y 55555555 / Clave: Alumno123!");
 }
 
+// ===========================================================================
+// 3. Turno de examen con inscripción abierta (RF-06)
+//
+// Va aparte de seedAcademicData para poder cargarse sobre una base ya sembrada.
+// TODO(admin): turnos y mesas deberían cargarse desde un ABM del Administrador.
+//
+// Casos de prueba:
+//   Lucía (33333333): AM1 regular · AGA aprobada · AYED regular
+//     - Análisis Matemático I 1° y 2° llamado → habilitada; al anotarse a uno, el otro queda bloqueado.
+//     - Algoritmos 1° llamado                 → sin cupo.  2° llamado → habilitada.
+//     - Álgebra                               → aprobada: no se lista.
+//     - Análisis Matemático II                → no la regularizó.
+//   Martín (44444444):
+//     - Análisis Matemático II                → regular, pero le falta AM1 aprobada (correlativa para rendir).
+//     - Sintaxis y Semántica                  → regularizada hace 3 años: regularidad vencida.
+// ===========================================================================
+
+const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+/** Mesas del turno. day: días desde hoy; teacher: DNI del docente o null = a designar. */
+const EXAM_CALLS: {
+  key: string;
+  subject: SubjectCode;
+  day: number;
+  time: [hour: number, minute: number];
+  classroom: string | null;
+  capacity: number | null;
+  teacher: string | null;
+}[] = [
+  { key: "AM1-1", subject: "AM1", day: 10, time: [9, 0], classroom: "Aula 304", capacity: null, teacher: "22222222" },
+  { key: "AM1-2", subject: "AM1", day: 24, time: [9, 0], classroom: "Aula 304", capacity: null, teacher: "22222222" },
+  { key: "AGA-1", subject: "AGA", day: 11, time: [14, 0], classroom: "Aula 210", capacity: null, teacher: "22222222" },
+  { key: "AYED-1", subject: "AYED", day: 12, time: [18, 30], classroom: "Laboratorio 2", capacity: 2, teacher: "22222223" },
+  { key: "AYED-2", subject: "AYED", day: 19, time: [18, 30], classroom: "Laboratorio 2", capacity: 30, teacher: "22222223" },
+  { key: "AM2-1", subject: "AM2", day: 13, time: [9, 0], classroom: "Aula 105", capacity: null, teacher: "22222222" },
+  { key: "SSL-1", subject: "SSL", day: 14, time: [18, 0], classroom: null, capacity: null, teacher: null },
+];
+
+async function seedExamSession() {
+  const existing = await prisma.examSession.count({ where: { enrollmentStartDate: { not: null } } });
+  if (existing > 0) {
+    console.log("Ya existe un turno de examen con inscripción configurada. Omitiendo seed de RF-06.");
+    return;
+  }
+
+  const planSubjects = await prisma.studyPlanSubject.findMany({
+    where: { studyPlan: { career: { careerCode: "ISI" } } },
+    select: { studyPlanSubjectId: true, subject: { select: { subjectCode: true } } },
+  });
+  if (planSubjects.length === 0) {
+    console.log("No existe la carrera ISI. Omitiendo seed de RF-06.");
+    return;
+  }
+  const spsByCode = new Map(planSubjects.map((sps) => [sps.subject.subjectCode, sps.studyPlanSubjectId]));
+
+  console.log("Inicializando turno de examen de prueba (RF-06)...");
+
+  const now = new Date();
+  const today = utcDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const firstCall = addDays(today, 10);
+  const sessionName = `Mesas de ${MONTHS[firstCall.getUTCMonth()]} ${firstCall.getUTCFullYear()}`;
+
+  const session = await prisma.examSession.create({
+    data: {
+      examName: sessionName,
+      examYear: firstCall.getUTCFullYear(),
+      sessionStartDate: firstCall,
+      sessionEndDate: addDays(today, 24),
+      sessionStatus: "ABIERTA",
+      enrollmentStartDate: addDays(today, -3),
+      enrollmentEndDate: addDays(today, 7),
+    },
+  });
+
+  const teacherIdByDni = new Map<string, number>();
+  for (const dni of ["22222222", "22222223"]) {
+    const teacher = await prisma.teacherProfile.findFirst({ where: { user: { dni } } });
+    if (teacher) teacherIdByDni.set(dni, teacher.teacherId);
+  }
+
+  const callIdByKey = new Map<string, number>();
+  for (const c of EXAM_CALLS) {
+    const day = addDays(today, c.day);
+    const call = await prisma.examCall.create({
+      data: {
+        studyPlanSubjectId: spsByCode.get(c.subject)!,
+        examSessionId: session.examSessionId,
+        callDate: new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), c.time[0], c.time[1])),
+        callStatus: EXAM_CALL_STATUS.ABIERTA,
+        classroom: c.classroom,
+        capacity: c.capacity,
+        teacherId: c.teacher ? (teacherIdByDni.get(c.teacher) ?? null) : null,
+      },
+    });
+    callIdByKey.set(c.key, call.examCallId);
+  }
+
+  async function studentCareerOf(dni: string) {
+    return prisma.studentCareer.findFirst({
+      where: { studentProfile: { user: { dni } }, career: { careerCode: "ISI" } },
+      select: { studentCareerId: true, studentStudyPlans: { select: { studentStudyPlanId: true }, take: 1 } },
+    });
+  }
+
+  // Algoritmos 1° llamado queda sin cupo (Martín y Sofía ocupan las 2 vacantes).
+  for (const dni of ["44444444", "55555555"]) {
+    const sc = await studentCareerOf(dni);
+    if (!sc || sc.studentStudyPlans.length === 0) continue;
+    await prisma.examEnrollment.create({
+      data: {
+        examCallId: callIdByKey.get("AYED-1")!,
+        studentCareerId: sc.studentCareerId,
+        studentStudyPlanId: sc.studentStudyPlans[0]!.studentStudyPlanId,
+        examStatus: EXAM_STATUS.INSCRIPTO,
+      },
+    });
+  }
+
+  // Historial de Martín para los casos de rechazo.
+  const martin = await studentCareerOf("44444444");
+  if (martin) {
+    const lastYear = { year: now.getFullYear() - 1, semester: 2 };
+    const threeYearsAgo = { year: now.getFullYear() - 3, semester: 1 };
+    const history: { subject: SubjectCode; period: { year: number; semester: number } }[] = [
+      { subject: "AM2", period: lastYear },
+      { subject: "SSL", period: threeYearsAgo },
+    ];
+    for (const h of history) {
+      const period =
+        (await prisma.academicPeriod.findUnique({ where: { year_semester: h.period } })) ??
+        (await prisma.academicPeriod.create({ data: { ...h.period, ...semesterDates(h.period.year, h.period.semester) } }));
+      const offering = await prisma.courseOffering.create({
+        data: {
+          studyPlanSubjectId: spsByCode.get(h.subject)!,
+          academicPeriodId: period.academicPeriodId,
+          commission: "HIST",
+          capacity: 40,
+          offeringStatus: OFFERING_STATUS.CERRADA,
+        },
+      });
+      await prisma.courseEnrollment.create({
+        data: {
+          studentCareerId: martin.studentCareerId,
+          courseOfferingId: offering.courseOfferingId,
+          enrollmentDate: period.periodStartDate,
+          enrollmentStatus: ENROLLMENT_STATUS.REGULAR,
+        },
+      });
+    }
+  }
+
+  console.log(
+    `✔ Turno "${sessionName}" con ${EXAM_CALLS.length} mesas; inscripción abierta del ` +
+      `${addDays(today, -3).toISOString().slice(0, 10)} al ${addDays(today, 7).toISOString().slice(0, 10)}`,
+  );
+}
+
 async function main() {
   await seedUsers();
   await seedAcademicData();
+  await seedExamSession();
 }
 
 main()

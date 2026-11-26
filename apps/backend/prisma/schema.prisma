@@ -154,6 +154,13 @@ model ExamCall {
   examSessionId      Int              @map("EXAM_SESSION_ID")
   callDate           DateTime         @map("CALL_DATE")
   callStatus         String           @map("CALL_STATUS") @db.NVarChar(30)
+  /// RF-06: datos de la mesa que se informan al alumno. null = a confirmar.
+  classroom          String?          @map("CLASSROOM") @db.NVarChar(50)
+  /// RF-06: null = sin límite de inscriptos.
+  capacity           Int?             @map("CAPACITY")
+  /// RF-06: profesor a cargo de la mesa. null = a designar.
+  teacherId          Int?             @map("TEACHER_ID")
+  teacherProfile     TeacherProfile?  @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, map: "FK_EC_TEACHER")
   examSession        ExamSession      @relation(fields: [examSessionId], references: [examSessionId], onUpdate: NoAction, map: "FK_EC_SESSION")
   studyPlanSubject   StudyPlanSubject @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_EC_SPS")
   examEnrollments    ExamEnrollment[]
@@ -185,6 +192,10 @@ model ExamSession {
   sessionStartDate DateTime   @map("SESSION_START_DATE") @db.Date
   sessionEndDate   DateTime   @map("SESSION_END_DATE") @db.Date
   sessionStatus    String     @map("SESSION_STATUS") @db.NVarChar(30)
+  /// Ventana de inscripción a las mesas del turno (RF-06). null = sin ventana configurada → inscripción cerrada.
+  /// TODO(admin): hoy se carga por seed; falta el ABM de turnos de examen para el Administrador.
+  enrollmentStartDate DateTime? @map("ENROLLMENT_START_DATE") @db.Date
+  enrollmentEndDate   DateTime? @map("ENROLLMENT_END_DATE") @db.Date
   examCalls        ExamCall[]
 
   @@map("EXAM_SESSION")
@@ -301,6 +312,7 @@ model TeacherProfile {
   teacherId          Int                 @id(map: "PK_TEACHER_PROFILE") @default(autoincrement()) @map("TEACHER_ID")
   userId             Int                 @unique(map: "UQ_TEACHER_USER") @map("USER_ID")
   teacherAssignments TeacherAssignment[]
+  examCalls          ExamCall[]
   user               User                @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_TEACHER_USERS")
   studentObservations StudentObservation[]
 

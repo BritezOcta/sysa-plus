@@ -10,6 +10,7 @@ import type {
 } from "../types/academicStatus.js";
 import type { AuthUser } from "../types/auth.js";
 import { loadStudentContext, todayAsDate, toIsoDate } from "./courseEnrollment.service.js";
+import { regularityExpiry } from "./examEnrollment.service.js";
 
 type PlanSubject = Awaited<ReturnType<typeof repo.findPlanSubjects>>[number];
 type CourseRecord = Awaited<ReturnType<typeof repo.findCourseEnrollments>>[number];
@@ -20,6 +21,8 @@ interface SubjectRecord {
   approvedByFinal: { grade: number; date: Date } | null;
   promotedOn: Date | null;
   regular: boolean;
+  /** Fin del cuatrimestre de la regularización más reciente (para su vencimiento, RF-06). */
+  regularSince: Date | null;
   inProgress: boolean;
   /** Resultado de la última cursada terminada que no la regularizó. */
   lastFailure: "LIBRE" | "DESAPROBADA" | null;
@@ -29,6 +32,7 @@ const emptyRecord = (): SubjectRecord => ({
   approvedByFinal: null,
   promotedOn: null,
   regular: false,
+  regularSince: null,
   inProgress: false,
   lastFailure: null,
 });
@@ -66,6 +70,8 @@ function buildRecords(courses: CourseRecord[], exams: ExamRecord[], today: Date)
         break;
       case ENROLLMENT_STATUS.REGULAR:
         r.regular = true;
+        // Recorrido cronológico: queda la regularización más reciente.
+        r.regularSince = course.courseOffering.academicPeriod.periodEndDate;
         break;
       case ENROLLMENT_STATUS.LIBRE:
       case ENROLLMENT_STATUS.DESAPROBADA:
@@ -199,6 +205,8 @@ export const academicStatusService = {
       }
 
       const canBeTaken = status === "PENDIENTE" || status === "LIBRE" || status === "DESAPROBADA";
+      // Mismo criterio que la inscripción a mesas (RF-06): con la regularidad vencida no se rinde como regular.
+      const regularityValid = !!record?.regularSince && regularityExpiry(record.regularSince) >= today;
       return {
         studyPlanSubjectId: sps.studyPlanSubjectId,
         subjectCode: sps.subject.subjectCode,
@@ -215,7 +223,7 @@ export const academicStatusService = {
             : toIsoDate(record!.approvedByFinal?.date ?? record!.promotedOn!),
         approvedBy: status !== "APROBADA" ? null : record!.approvedByFinal ? "FINAL" : "PROMOCION",
         canEnroll: canBeTaken && missingToEnroll.length === 0,
-        canTakeExam: status === "REGULAR" && missingForExam.length === 0,
+        canTakeExam: status === "REGULAR" && regularityValid && missingForExam.length === 0,
         missingToEnroll: canBeTaken ? missingToEnroll : [],
         missingForExam: status === "REGULAR" ? missingForExam : [],
       };
