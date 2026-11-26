@@ -48,8 +48,8 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route path="plan" element={<PlanMateriasPage />} />
         <Route path="estado" element={<EstadoAcademicoPage />} />
         <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
-        {/* Tu página de inscripción existente, dentro del menú (sin su TopNavbar) */}
-        <Route path="inscripcion-cursado" element={<EnrollmentPage embedded />} />
+        {/* RF-04: inscripción a cursadas */}
+        <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
         {PLACEHOLDERS.map((id) => (
           <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
         ))}

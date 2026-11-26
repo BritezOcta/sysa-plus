@@ -1,37 +1,152 @@
-import { useNavigate } from 'react-router'
-import utnLogo from '../assets/images/utn-logotipo.svg'
-import { useAuth, useAuthenticatedUser } from '../auth/AuthContext'
-import { APP_ROUTES, INSTITUTION_BRAND, ROLE_LABELS } from '../constants'
-import { getUserFullName } from '../helpers/UserDisplayHelper'
-import styles from './TeacherHomePage.module.css'
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { teacherApi, type TeacherCommissionSummary } from "../api/teacher.api";
+import { APP_ROUTES } from "../constants";
+import { useAuth } from "../auth/AuthContext";
+import styles from "./TeacherHomePage.module.css";
 
-/**
- * Vista principal mínima del rol Profesor (RF-01).
- * Las funcionalidades docentes llegan con RF-03, RF-05, RF-07 y RF-08.
- */
 export default function TeacherHomePage() {
-  const navigate = useNavigate()
-  const { logout } = useAuth()
-  const user = useAuthenticatedUser()
+  const { user, logout } = useAuth();
+  const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
+    [],
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleLogout() {
-    await logout()
-    navigate(APP_ROUTES.LOGIN, { replace: true })
-  }
+  useEffect(() => {
+    async function loadCommissions() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const list = await teacherApi.getCommissions();
+        setCommissions(list);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar las comisiones.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadCommissions();
+  }, []);
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card}>
-        <img src={utnLogo} alt={INSTITUTION_BRAND.LOGO_ALT} className={styles.logo} />
-        <h1>Hola, {getUserFullName(user)}</h1>
-        <p className={styles.role}>{ROLE_LABELS[user.role]}</p>
-        <p className={styles.muted}>
-          El módulo docente (carga de notas, asistencias y listado de alumnos) estará disponible próximamente.
-        </p>
-        <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
+    <div className={styles.page}>
+      <header className={styles.topbar}>
+        <div className={styles.brand}>
+          <div>
+            <h1 className={styles.title}>Panel Docente</h1>
+            <p className={styles.subtitle}>
+              Bienvenido/a,{" "}
+              {user ? `${user.firstName} ${user.lastName}` : "Docente"}{" "}
+              <span className={styles.role}>· Profesor</span>
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className={styles.logoutButton}
+        >
           Cerrar sesión
         </button>
-      </section>
-    </main>
-  )
+      </header>
+
+      <main className={styles.container}>
+        <section>
+          <h2 className={styles.sectionTitle}>Accesos rápidos</h2>
+          <div className={styles.modulesGrid}>
+            <Link
+              to={APP_ROUTES.TEACHER_ATTENDANCE}
+              className={styles.moduleCard}
+            >
+              <h3>Asistencias</h3>
+              <p>
+                Registrar y consultar la asistencia diaria de tus comisiones.
+              </p>
+            </Link>
+
+            <Link to={APP_ROUTES.TEACHER_GRADES} className={styles.moduleCard}>
+              <h3>Notas y Actas</h3>
+              <p>
+                Cargar calificaciones de parciales, recuperatorios y cerrar
+                actas.
+              </p>
+            </Link>
+
+            <Link
+              to={APP_ROUTES.TEACHER_STUDENTS}
+              className={styles.moduleCard}
+            >
+              <h3>Alumnos y Observaciones</h3>
+              <p>
+                Consultar el listado de inscriptos y cargar observaciones
+                privadas.
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        <section>
+          <h2 className={styles.sectionTitle}>Mis comisiones asignadas</h2>
+
+          {error && <p className={styles.meta}>{error}</p>}
+
+          {isLoading ? (
+            <p className={styles.meta}>Cargando comisiones...</p>
+          ) : commissions.length === 0 ? (
+            <p className={styles.meta}>
+              No tenés comisiones asignadas en este período.
+            </p>
+          ) : (
+            <div className={styles.commissionsGrid}>
+              {commissions.map((c) => (
+                <article key={c.id} className={styles.commissionCard}>
+                  <div className={styles.commissionHeader}>
+                    <h3>{c.subjectName}</h3>
+                    <span className={styles.badge}>
+                      {c.subjectCode} · {c.commissionCode}
+                    </span>
+                  </div>
+
+                  <p className={styles.meta}>
+                    Inscriptos: <strong>{c.enrolledCount}</strong>
+                  </p>
+                  <p className={styles.meta}>
+                    Período: {c.periodStart} al {c.periodEnd}
+                  </p>
+
+                  <div className={styles.cardActions}>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_ATTENDANCE}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Asistencias
+                    </Link>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_GRADES}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Notas
+                    </Link>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_STUDENTS}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Alumnos
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
 }

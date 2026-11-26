@@ -1,24 +1,36 @@
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router'
-import { AuthProvider, useAuth, useAuthenticatedUser } from './auth/AuthContext'
-import { GuestOnlyRoute, ProtectedRoute } from './auth/ProtectedRoute'
-import { WelcomeToast } from './auth/WelcomeToast'
-import { APP_ROUTES } from './constants'
-import { ESTUDIANTE } from './data/mockStudentData'
-import { StudentArea } from './features/student/StudentArea'
-import { getUserInitials } from './helpers/UserDisplayHelper'
-import AcademicManagementPage from './pages/AcademicManagementPage'
-import EnrollmentPage from './pages/EnrollmentPage'
-import LoginPage from './pages/LoginPage'
-import TeacherHomePage from './pages/TeacherHomePage'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router";
+import {
+  AuthProvider,
+  useAuth,
+  useAuthenticatedUser,
+} from "./auth/AuthContext";
+import { GuestOnlyRoute, ProtectedRoute } from "./auth/ProtectedRoute";
+import { WelcomeToast } from "./auth/WelcomeToast";
+import { APP_ROUTES } from "./constants";
+import { ESTUDIANTE } from "./data/mockStudentData";
+import { StudentArea } from "./features/student/StudentArea";
+import { getUserInitials } from "./helpers/UserDisplayHelper";
+import AcademicManagementPage from "./pages/AcademicManagementPage";
+import LoginPage from "./pages/LoginPage";
+import TeacherHomePage from "./pages/TeacherHomePage";
+import TeacherAttendancePage from "./pages/TeacherAttendancePage";
+import TeacherGradesPage from "./pages/TeacherGradesPage";
+import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 
 function StudentRoute() {
-  const navigate = useNavigate()
-  const { logout } = useAuth()
-  const user = useAuthenticatedUser()
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const user = useAuthenticatedUser();
 
   async function handleLogout() {
-    await logout()
-    navigate(APP_ROUTES.LOGIN, { replace: true })
+    await logout();
+    navigate(APP_ROUTES.LOGIN, { replace: true });
   }
 
   return (
@@ -26,14 +38,14 @@ function StudentRoute() {
       user={{
         nombre: user.firstName,
         apellido: user.lastName,
-        legajo: user.legajo ?? '',
+        legajo: user.legajo ?? "",
         iniciales: getUserInitials(user),
         // Carrera: sigue mockeada hasta el RF-09 (estado académico).
         carrera: ESTUDIANTE.carrera,
       }}
       onLogout={() => void handleLogout()}
     />
-  )
+  );
 }
 
 function App() {
@@ -60,23 +72,25 @@ function App() {
           <Route
             path={APP_ROUTES.ACADEMIC_OFFER}
             element={
-              <ProtectedRoute roles={['ADMINISTRADOR']}>
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AcademicManagementPage />
               </ProtectedRoute>
             }
           />
+          {/* Ruta vieja: la inscripción a cursada (RF-04) vive dentro del menú del alumno. */}
           <Route
             path={APP_ROUTES.ENROLLMENT}
             element={
-              <ProtectedRoute roles={['ALUMNO']}>
-                <EnrollmentPage />
-              </ProtectedRoute>
+              <Navigate
+                to={`${APP_ROUTES.STUDENT_AREA}/inscripcion-cursado`}
+                replace
+              />
             }
           />
           <Route
             path={`${APP_ROUTES.STUDENT_AREA}/*`}
             element={
-              <ProtectedRoute roles={['ALUMNO']}>
+              <ProtectedRoute roles={["ALUMNO"]}>
                 <StudentRoute />
               </ProtectedRoute>
             }
@@ -84,8 +98,32 @@ function App() {
           <Route
             path={APP_ROUTES.TEACHER_AREA}
             element={
-              <ProtectedRoute roles={['PROFESOR']}>
+              <ProtectedRoute roles={["PROFESOR"]}>
                 <TeacherHomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.TEACHER_ATTENDANCE}
+            element={
+              <ProtectedRoute roles={["PROFESOR"]}>
+                <TeacherAttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.TEACHER_GRADES}
+            element={
+              <ProtectedRoute roles={["PROFESOR"]}>
+                <TeacherGradesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.TEACHER_STUDENTS}
+            element={
+              <ProtectedRoute roles={["PROFESOR"]}>
+                <TeacherListStudentsPage />
               </ProtectedRoute>
             }
           />
@@ -94,7 +132,7 @@ function App() {
         <WelcomeToast />
       </AuthProvider>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

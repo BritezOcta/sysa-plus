@@ -8,12 +8,16 @@ datasource db {
 }
 
 model AcademicPeriod {
-  academicPeriodId Int              @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement()) @map("ACADEMIC_PERIOD_ID")
-  year             Int              @map("YEAR") @db.SmallInt
-  semester         Int              @map("SEMESTER") @db.TinyInt
-  periodStartDate  DateTime         @map("PERIOD_START_DATE") @db.Date
-  periodEndDate    DateTime         @map("PERIOD_END_DATE") @db.Date
-  courseOfferings  CourseOffering[]
+  academicPeriodId    Int              @id(map: "PK_ACADEMIC_PERIOD") @default(autoincrement()) @map("ACADEMIC_PERIOD_ID")
+  year                Int              @map("YEAR") @db.SmallInt
+  semester            Int              @map("SEMESTER") @db.TinyInt
+  periodStartDate     DateTime         @map("PERIOD_START_DATE") @db.Date
+  periodEndDate       DateTime         @map("PERIOD_END_DATE") @db.Date
+  /// Ventana de inscripción a cursadas (RF-04). null = sin ventana configurada → inscripción cerrada.
+  /// TODO(admin): hoy se carga por seed; falta el ABM de períodos académicos para el Administrador.
+  enrollmentStartDate DateTime?        @map("ENROLLMENT_START_DATE") @db.Date
+  enrollmentEndDate   DateTime?        @map("ENROLLMENT_END_DATE") @db.Date
+  courseOfferings     CourseOffering[]
 
   @@unique([year, semester], map: "UQ_ACADEMIC_PERIOD")
   @@map("ACADEMIC_PERIOD")
@@ -49,6 +53,7 @@ model Assessment {
   assessmentType   String            @map("ASSESSMENT_TYPE") @db.NVarChar(50)
   assessmentGrades AssessmentGrade[]
   courseOffering   CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_ASSESS_OFFERING")
+  isClosed Boolean @default(false, map: "DF_ASSESSMENTS_IS_CLOSED") @map("IS_CLOSED")
 
   @@index([courseOfferingId], map: "IX_ASSESS_OFFERING")
   @@map("ASSESSMENTS")
@@ -100,6 +105,7 @@ model CourseEnrollment {
   enrollmentStatus   String            @map("ENROLLMENT_STATUS") @db.NVarChar(30)
   assessmentGrades   AssessmentGrade[]
   attendances        Attendance[]
+  studentObservations StudentObservation[]
   courseOffering     CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CE_OFFERING")
   studentCareer      StudentCareer     @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_CE_STUDENT_CAREER")
 
@@ -118,6 +124,7 @@ model CourseOffering {
   assessments        Assessment[]
   classSessions      ClassSession[]
   courseEnrollments  CourseEnrollment[]
+  schedules          CourseSchedule[]
   academicPeriod     AcademicPeriod      @relation(fields: [academicPeriodId], references: [academicPeriodId], onUpdate: NoAction, map: "FK_CO_PERIOD")
   studyPlanSubject   StudyPlanSubject    @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CO_SPS")
   teacherAssignments TeacherAssignment[]
@@ -125,6 +132,20 @@ model CourseOffering {
   @@unique([studyPlanSubjectId, academicPeriodId, commission], map: "UQ_COURSE_OFFERING")
   @@index([academicPeriodId], map: "IX_CO_PERIOD")
   @@map("COURSE_OFFERING")
+}
+
+/// Franja horaria semanal de una comisión (RF-04). Una comisión puede cursar varios días.
+model CourseSchedule {
+  courseScheduleId Int            @id(map: "PK_COURSE_SCHEDULE") @default(autoincrement()) @map("COURSE_SCHEDULE_ID")
+  courseOfferingId Int            @map("COURSE_OFFERING_ID")
+  /// 1 = Lunes ... 7 = Domingo (ISO 8601)
+  dayOfWeek        Int            @map("DAY_OF_WEEK") @db.TinyInt
+  startTime        DateTime       @map("START_TIME") @db.Time
+  endTime          DateTime       @map("END_TIME") @db.Time
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CSCH_OFFERING")
+
+  @@index([courseOfferingId], map: "IX_CSCH_OFFERING")
+  @@map("COURSE_SCHEDULE")
 }
 
 model ExamCall {
@@ -281,6 +302,7 @@ model TeacherProfile {
   userId             Int                 @unique(map: "UQ_TEACHER_USER") @map("USER_ID")
   teacherAssignments TeacherAssignment[]
   user               User                @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_TEACHER_USERS")
+  studentObservations StudentObservation[]
 
   @@map("TEACHER_PROFILE")
 }
@@ -320,4 +342,17 @@ model AuditLog {
   @@index([createdAt(sort: Desc)], map: "IX_AUDIT_LOG_CREATED_AT")
   @@index([userId], map: "IX_AUDIT_LOG_USER")
   @@map("AUDIT_LOG")
+}
+
+model StudentObservation {
+  observationId      Int              @id(map: "PK_STUDENT_OBSERVATION") @default(autoincrement()) @map("OBSERVATION_ID")
+  courseEnrollmentId Int              @map("COURSE_ENROLLMENT_ID")
+  teacherId          Int              @map("TEACHER_ID")
+  observationText    String           @map("OBSERVATION_TEXT") @db.NVarChar(1000)
+  createdAt          DateTime         @default(dbgenerated("sysutcdatetime()"), map: "DF_SO_CREATED_AT") @map("CREATED_AT")
+  courseEnrollment   CourseEnrollment @relation(fields: [courseEnrollmentId], references: [courseEnrollmentId], onUpdate: NoAction, map: "FK_SO_ENROLLMENT")
+  teacherProfile     TeacherProfile   @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, map: "FK_SO_TEACHER")
+
+  @@index([courseEnrollmentId], map: "IX_SO_ENROLLMENT")
+  @@map("STUDENT_OBSERVATION")
 }

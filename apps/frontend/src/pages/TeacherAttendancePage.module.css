@@ -1,0 +1,215 @@
+.page {
+  min-height: 100vh;
+  background-color: #f3f6fa;
+  padding: 2rem;
+  color: #1e293b;
+}
+
+.header,
+.container {
+  max-width: 1150px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.backLink {
+  color: #0284c7;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.title {
+  margin: 0.35rem 0 0;
+  font-size: 1.5rem;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.controlsCard,
+.tableCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.controlsCard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.input {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #ffffff;
+}
+
+.hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.errorBanner,
+.warningBanner {
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.errorBanner {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.warningBanner {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.editBtn {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #92400e;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #92400e;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tableHeader h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.secondaryBtn {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  background: #e2e8f0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.statusGroup {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.badgeRegular,
+.badgeRisk,
+.badgeLibre {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badgeRegular {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badgeRisk {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgeLibre {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.formError {
+  margin: 1rem 0 0;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.formSuccess {
+  margin: 1rem 0 0;
+  color: #15803d;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.footerActions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveBtn {
+  padding: 0.65rem 1.3rem;
+  border: none;
+  border-radius: 8px;
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #0369a1;
+}
