@@ -35,15 +35,6 @@ export interface Aviso {
   leido: boolean;
 }
 
-export interface MesaExamen {
-  id: string;
-  codigo: string;
-  fecha: string;
-  hora: string;
-  aula: string;
-  llamado: string;
-}
-
 export const ESTUDIANTE: Estudiante = {
   nombre: "Lucía",
   apellido: "Fernández",
@@ -68,23 +59,11 @@ export const PLAN: Materia[] = [
   { codigo: "ISI-206", nombre: "Física II", anio: 2, cuatrimestre: 2, horasSemana: 6, estado: "pendiente", correlativas: ["ISI-101"] },
 ];
 
-export const MESAS: MesaExamen[] = [
-  { id: "m1", codigo: "ISI-105", fecha: "2026-12-02", hora: "09:00", aula: "Aula 304", llamado: "1° llamado" },
-  { id: "m2", codigo: "ISI-105", fecha: "2026-12-16", hora: "14:00", aula: "Aula 210", llamado: "2° llamado" },
-  { id: "m3", codigo: "ISI-203", fecha: "2026-12-09", hora: "18:30", aula: "Laboratorio 2", llamado: "1° llamado" },
-  { id: "m4", codigo: "ISI-201", fecha: "2026-12-11", hora: "09:00", aula: "Aula 105", llamado: "1° llamado" },
-  { id: "m5", codigo: "ISI-106", fecha: "2026-12-04", hora: "16:00", aula: "Aula 301", llamado: "1° llamado" },
-];
-
 export const AVISOS: Aviso[] = [
   { id: "a1", titulo: "Abierta la inscripción a mesas de diciembre", cuerpo: "Podés inscribirte a las mesas de examen hasta 48 horas antes de cada fecha.", fecha: "2026-11-16", tipo: "importante", leido: false },
   { id: "a2", titulo: "Relevamiento de datos censales 2026", cuerpo: "Completá tus datos antes del cierre del ciclo lectivo para poder inscribirte a cursar en 2027.", fecha: "2026-11-10", tipo: "importante", leido: false },
   { id: "a3", titulo: "Cierre de cursadas del 2º cuatrimestre", cuerpo: "Las notas de parciales recuperatorios se publican hasta el 27 de noviembre.", fecha: "2026-11-05", tipo: "info", leido: true },
 ];
-
-export function getMateria(codigo: string): Materia | undefined {
-  return PLAN.find((m) => m.codigo === codigo);
-}
 
 export function resumenAcademico(materias: Materia[] = PLAN) {
   const aprobadas = materias.filter((m) => m.estado === "aprobada");

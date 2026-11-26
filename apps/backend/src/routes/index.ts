@@ -3,6 +3,7 @@ import { academicRouter } from "./academic.routes.js";
 import { academicStatusRouter } from "./academicStatus.routes.js";
 import { authRouter } from "./auth.routes.js";
 import { courseEnrollmentRouter } from "./courseEnrollment.routes.js";
+import { examEnrollmentRouter } from "./examEnrollment.routes.js";
 import { healthRouter } from "./health.routes.js";
 import { teacherRouter } from "./teacher.routes.js";
 
@@ -13,4 +14,5 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/academic", academicRouter);
 apiRouter.use("/academic-status", academicStatusRouter);
 apiRouter.use("/course-enrollments", courseEnrollmentRouter);
+apiRouter.use("/exam-enrollments", examEnrollmentRouter);
 apiRouter.use("/teacher", teacherRouter);
