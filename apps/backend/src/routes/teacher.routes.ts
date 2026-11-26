@@ -17,3 +17,27 @@ teacherRouter.put(
   "/commissions/:commissionId/attendance",
   teacherController.saveAttendance,
 );
+teacherRouter.get(
+  "/commissions/:commissionId/students",
+  teacherController.getStudents,
+);
+teacherRouter.post(
+  "/commissions/:commissionId/students/:enrollmentId/observations",
+  teacherController.addObservation,
+);
+teacherRouter.get(
+  "/commissions/:commissionId/grades",
+  teacherController.getGrades,
+);
+teacherRouter.post(
+  "/commissions/:commissionId/assessments",
+  teacherController.createAssessment,
+);
+teacherRouter.put(
+  "/commissions/:commissionId/assessments/:assessmentId/grades",
+  teacherController.saveGrades,
+);
+teacherRouter.post(
+  "/commissions/:commissionId/assessments/:assessmentId/close",
+  teacherController.closeAssessment,
+);

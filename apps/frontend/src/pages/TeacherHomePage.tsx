@@ -1,69 +1,65 @@
-import { Link, useNavigate } from "react-router";
-import utnLogo from "../assets/images/utn-logotipo.svg";
-import { useAuth, useAuthenticatedUser } from "../auth/AuthContext";
-import { APP_ROUTES, INSTITUTION_BRAND, ROLE_LABELS } from "../constants";
-import { getUserFullName } from "../helpers/UserDisplayHelper";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { teacherApi, type TeacherCommissionSummary } from "../api/teacher.api";
+import { APP_ROUTES } from "../constants";
+import { useAuth } from "../auth/AuthContext";
 import styles from "./TeacherHomePage.module.css";
 
-// Datos de prueba hasta conectar con el endpoint de comisiones del docente
-const MOCK_COMMISSIONS = [
-  {
-    id: "c1",
-    subject: "Análisis Matemático I",
-    commission: "1K1",
-    schedule: "Lunes y Miércoles 18:00 hs",
-    studentsCount: 32,
-  },
-  {
-    id: "c2",
-    subject: "Algoritmos y Estructuras de Datos",
-    commission: "1K2",
-    schedule: "Martes y Jueves 19:30 hs",
-    studentsCount: 28,
-  },
-];
-
 export default function TeacherHomePage() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-  const user = useAuthenticatedUser();
+  const { user, logout } = useAuth();
+  const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
+    [],
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleLogout() {
-    await logout();
-    navigate(APP_ROUTES.LOGIN, { replace: true });
-  }
+  useEffect(() => {
+    async function loadCommissions() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const list = await teacherApi.getCommissions();
+        setCommissions(list);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar las comisiones.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadCommissions();
+  }, []);
 
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
         <div className={styles.brand}>
-          <img
-            src={utnLogo}
-            alt={INSTITUTION_BRAND.LOGO_ALT}
-            className={styles.logo}
-          />
           <div>
             <h1 className={styles.title}>Panel Docente</h1>
             <p className={styles.subtitle}>
-              {getUserFullName(user)} ·{" "}
-              <span className={styles.role}>{ROLE_LABELS[user.role]}</span>
+              Bienvenido/a,{" "}
+              {user ? `${user.firstName} ${user.lastName}` : "Docente"}{" "}
+              <span className={styles.role}>· Profesor</span>
             </p>
           </div>
         </div>
 
         <button
           type="button"
+          onClick={() => void logout()}
           className={styles.logoutButton}
-          onClick={() => void handleLogout()}
         >
           Cerrar sesión
         </button>
       </header>
 
       <main className={styles.container}>
-        {/* Accesos principales a los requerimientos docentes */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Gestión Académica</h2>
+        <section>
+          <h2 className={styles.sectionTitle}>Accesos rápidos</h2>
           <div className={styles.modulesGrid}>
             <Link
               to={APP_ROUTES.TEACHER_ATTENDANCE}
@@ -71,16 +67,15 @@ export default function TeacherHomePage() {
             >
               <h3>Asistencias</h3>
               <p>
-                Registrá presentes y ausentes por clase y consultá el porcentaje
-                acumulado de regularidad por alumno.
+                Registrar y consultar la asistencia diaria de tus comisiones.
               </p>
             </Link>
 
             <Link to={APP_ROUTES.TEACHER_GRADES} className={styles.moduleCard}>
-              <h3>Notas y Aprobación</h3>
+              <h3>Notas y Actas</h3>
               <p>
-                Cargá parciales, recuperatorios y finales para actualizar
-                automáticamente la condición del alumno en la materia.
+                Cargar calificaciones de parciales, recuperatorios y cerrar
+                actas.
               </p>
             </Link>
 
@@ -90,53 +85,66 @@ export default function TeacherHomePage() {
             >
               <h3>Alumnos y Observaciones</h3>
               <p>
-                Consultá los inscriptos por comisión y registrá observaciones
-                privadas de seguimiento individual.
+                Consultar el listado de inscriptos y cargar observaciones
+                privadas.
               </p>
             </Link>
           </div>
         </section>
 
-        {/* Comisiones asignadas al docente */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Mis Comisiones Activas</h2>
-          <div className={styles.commissionsGrid}>
-            {MOCK_COMMISSIONS.map((item) => (
-              <article key={item.id} className={styles.commissionCard}>
-                <div className={styles.commissionHeader}>
-                  <h3>{item.subject}</h3>
-                  <span className={styles.badge}>
-                    Comisión {item.commission}
-                  </span>
-                </div>
-                <p className={styles.meta}>{item.schedule}</p>
-                <p className={styles.meta}>
-                  {item.studentsCount} alumnos inscriptos
-                </p>
+        <section>
+          <h2 className={styles.sectionTitle}>Mis comisiones asignadas</h2>
 
-                <div className={styles.cardActions}>
-                  <Link
-                    to={`${APP_ROUTES.TEACHER_ATTENDANCE}?comision=${item.id}`}
-                    className={styles.actionBtn}
-                  >
-                    Asistencia
-                  </Link>
-                  <Link
-                    to={`${APP_ROUTES.TEACHER_GRADES}?comision=${item.id}`}
-                    className={styles.actionBtn}
-                  >
-                    Notas
-                  </Link>
-                  <Link
-                    to={`${APP_ROUTES.TEACHER_STUDENTS}?comision=${item.id}`}
-                    className={styles.actionBtn}
-                  >
-                    Alumnos
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
+          {error && <p className={styles.meta}>{error}</p>}
+
+          {isLoading ? (
+            <p className={styles.meta}>Cargando comisiones...</p>
+          ) : commissions.length === 0 ? (
+            <p className={styles.meta}>
+              No tenés comisiones asignadas en este período.
+            </p>
+          ) : (
+            <div className={styles.commissionsGrid}>
+              {commissions.map((c) => (
+                <article key={c.id} className={styles.commissionCard}>
+                  <div className={styles.commissionHeader}>
+                    <h3>{c.subjectName}</h3>
+                    <span className={styles.badge}>
+                      {c.subjectCode} · {c.commissionCode}
+                    </span>
+                  </div>
+
+                  <p className={styles.meta}>
+                    Inscriptos: <strong>{c.enrolledCount}</strong>
+                  </p>
+                  <p className={styles.meta}>
+                    Período: {c.periodStart} al {c.periodEnd}
+                  </p>
+
+                  <div className={styles.cardActions}>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_ATTENDANCE}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Asistencias
+                    </Link>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_GRADES}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Notas
+                    </Link>
+                    <Link
+                      to={`${APP_ROUTES.TEACHER_STUDENTS}?comision=${c.id}`}
+                      className={styles.actionBtn}
+                    >
+                      Alumnos
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>

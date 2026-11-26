@@ -12,7 +12,6 @@ export const APP_ROUTES = {
   TEACHER_STUDENTS: "/profesor/alumnos",
 } as const;
 
-/** Vista principal de cada rol después de iniciar sesión (RF-01). */
 export const ROLE_HOME_ROUTES: Record<UserRole, string> = {
   ALUMNO: APP_ROUTES.STUDENT_AREA,
   PROFESOR: APP_ROUTES.TEACHER_AREA,

@@ -53,6 +53,7 @@ model Assessment {
   assessmentType   String            @map("ASSESSMENT_TYPE") @db.NVarChar(50)
   assessmentGrades AssessmentGrade[]
   courseOffering   CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_ASSESS_OFFERING")
+  isClosed Boolean @default(false, map: "DF_ASSESSMENTS_IS_CLOSED") @map("IS_CLOSED")
 
   @@index([courseOfferingId], map: "IX_ASSESS_OFFERING")
   @@map("ASSESSMENTS")
@@ -104,6 +105,7 @@ model CourseEnrollment {
   enrollmentStatus   String            @map("ENROLLMENT_STATUS") @db.NVarChar(30)
   assessmentGrades   AssessmentGrade[]
   attendances        Attendance[]
+  studentObservations StudentObservation[]
   courseOffering     CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CE_OFFERING")
   studentCareer      StudentCareer     @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_CE_STUDENT_CAREER")
 
@@ -300,6 +302,7 @@ model TeacherProfile {
   userId             Int                 @unique(map: "UQ_TEACHER_USER") @map("USER_ID")
   teacherAssignments TeacherAssignment[]
   user               User                @relation(fields: [userId], references: [userId], onUpdate: NoAction, map: "FK_TEACHER_USERS")
+  studentObservations StudentObservation[]
 
   @@map("TEACHER_PROFILE")
 }
@@ -339,4 +342,17 @@ model AuditLog {
   @@index([createdAt(sort: Desc)], map: "IX_AUDIT_LOG_CREATED_AT")
   @@index([userId], map: "IX_AUDIT_LOG_USER")
   @@map("AUDIT_LOG")
+}
+
+model StudentObservation {
+  observationId      Int              @id(map: "PK_STUDENT_OBSERVATION") @default(autoincrement()) @map("OBSERVATION_ID")
+  courseEnrollmentId Int              @map("COURSE_ENROLLMENT_ID")
+  teacherId          Int              @map("TEACHER_ID")
+  observationText    String           @map("OBSERVATION_TEXT") @db.NVarChar(1000)
+  createdAt          DateTime         @default(dbgenerated("sysutcdatetime()"), map: "DF_SO_CREATED_AT") @map("CREATED_AT")
+  courseEnrollment   CourseEnrollment @relation(fields: [courseEnrollmentId], references: [courseEnrollmentId], onUpdate: NoAction, map: "FK_SO_ENROLLMENT")
+  teacherProfile     TeacherProfile   @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, map: "FK_SO_TEACHER")
+
+  @@index([courseEnrollmentId], map: "IX_SO_ENROLLMENT")
+  @@map("STUDENT_OBSERVATION")
 }

@@ -7,6 +7,107 @@ export const teacherRepository = {
     });
   },
 
+  async findCommissionStudents(courseOfferingId: number) {
+    const [enrollments, totalSessions] = await Promise.all([
+      prisma.courseEnrollment.findMany({
+        where: { courseOfferingId },
+        include: {
+          studentCareer: {
+            include: {
+              studentProfile: {
+                include: {
+                  user: {
+                    select: { firstName: true, lastName: true, email: true },
+                  },
+                },
+              },
+            },
+          },
+          attendances: true,
+          studentObservations: {
+            include: {
+              teacherProfile: {
+                include: {
+                  user: { select: { firstName: true, lastName: true } },
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+        orderBy: {
+          studentCareer: {
+            studentProfile: { legajo: "asc" },
+          },
+        },
+      }),
+      prisma.classSession.count({ where: { courseOfferingId } }),
+    ]);
+
+    return { enrollments, totalSessions };
+  },
+
+  async findEnrollmentInCommission(
+    courseEnrollmentId: number,
+    courseOfferingId: number,
+  ) {
+    return prisma.courseEnrollment.findFirst({
+      where: { courseEnrollmentId, courseOfferingId },
+      include: {
+        studentCareer: {
+          include: {
+            studentProfile: {
+              include: {
+                user: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async createStudentObservation(params: {
+    courseEnrollmentId: number;
+    teacherId: number;
+    observationText: string;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const observation = await tx.studentObservation.create({
+        data: {
+          courseEnrollmentId: params.courseEnrollmentId,
+          teacherId: params.teacherId,
+          observationText: params.observationText,
+        },
+        include: {
+          teacherProfile: {
+            include: {
+              user: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "ALTA_OBSERVACION",
+          entity: "STUDENT_OBSERVATION",
+          entityId: String(observation.observationId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return observation;
+    });
+  },
+
   async findAssignedCommissions(teacherId: number) {
     return prisma.teacherAssignment.findMany({
       where: { teacherId },
@@ -157,6 +258,163 @@ export const teacherRepository = {
       });
 
       return session;
+    });
+  },
+
+  async findCommissionGradesData(courseOfferingId: number) {
+    const [assessments, enrollments] = await Promise.all([
+      prisma.assessment.findMany({
+        where: { courseOfferingId },
+        include: {
+          assessmentGrades: true,
+        },
+        orderBy: [{ assessmentDate: "asc" }, { assessmentId: "asc" }],
+      }),
+      prisma.courseEnrollment.findMany({
+        where: { courseOfferingId },
+        include: {
+          studentCareer: {
+            include: {
+              studentProfile: {
+                include: {
+                  user: { select: { firstName: true, lastName: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          studentCareer: {
+            studentProfile: { legajo: "asc" },
+          },
+        },
+      }),
+    ]);
+
+    return { assessments, enrollments };
+  },
+
+  async findAssessmentInCommission(
+    assessmentId: number,
+    courseOfferingId: number,
+  ) {
+    return prisma.assessment.findFirst({
+      where: { assessmentId, courseOfferingId },
+    });
+  },
+
+  async createAssessment(params: {
+    courseOfferingId: number;
+    assessmentName: string;
+    assessmentType: string;
+    assessmentDate: Date | null;
+    maxScore: number;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const assessment = await tx.assessment.create({
+        data: {
+          courseOfferingId: params.courseOfferingId,
+          assessmentName: params.assessmentName,
+          assessmentType: params.assessmentType,
+          assessmentDate: params.assessmentDate,
+          maxScore: params.maxScore,
+          isClosed: false,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "ALTA_EVALUACION",
+          entity: "ASSESSMENTS",
+          entityId: String(assessment.assessmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return assessment;
+    });
+  },
+
+  async saveAssessmentGrades(params: {
+    assessmentId: number;
+    grades: { courseEnrollmentId: number; score: number }[];
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      for (const item of params.grades) {
+        const existing = await tx.assessmentGrade.findFirst({
+          where: {
+            assessmentId: params.assessmentId,
+            courseEnrollmentId: item.courseEnrollmentId,
+          },
+        });
+
+        if (existing) {
+          await tx.assessmentGrade.update({
+            where: { assessmentGradeId: existing.assessmentGradeId },
+            data: { gradeScore: item.score },
+          });
+        } else {
+          await tx.assessmentGrade.create({
+            data: {
+              assessmentId: params.assessmentId,
+              courseEnrollmentId: item.courseEnrollmentId,
+              gradeScore: item.score,
+            },
+          });
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CARGA_NOTAS",
+          entity: "ASSESSMENT_GRADES",
+          entityId: String(params.assessmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+    });
+  },
+
+  async closeAssessment(params: {
+    assessmentId: number;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.assessment.update({
+        where: { assessmentId: params.assessmentId },
+        data: { isClosed: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CIERRE_ACTA",
+          entity: "ASSESSMENTS",
+          entityId: String(params.assessmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return updated;
     });
   },
 };
