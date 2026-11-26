@@ -9,7 +9,7 @@ export const teacherRepository = {
   },
 
   async findCommissionStudents(courseOfferingId: number) {
-    const [enrollments, totalSessions] = await Promise.all([
+    const [enrollments, totalSessions, assessments] = await Promise.all([
       prisma.courseEnrollment.findMany({
         where: { courseOfferingId },
         include: {
@@ -43,9 +43,14 @@ export const teacherRepository = {
         },
       }),
       prisma.classSession.count({ where: { courseOfferingId } }),
+      prisma.assessment.findMany({
+        where: { courseOfferingId },
+        include: { assessmentGrades: true },
+        orderBy: [{ assessmentDate: "asc" }, { assessmentId: "asc" }],
+      }),
     ]);
 
-    return { enrollments, totalSessions };
+    return { enrollments, totalSessions, assessments };
   },
 
   async findEnrollmentInCommission(
@@ -263,7 +268,7 @@ export const teacherRepository = {
   },
 
   async findCommissionGradesData(courseOfferingId: number) {
-    const [assessments, enrollments] = await Promise.all([
+    const [assessments, enrollments, totalSessions] = await Promise.all([
       prisma.assessment.findMany({
         where: { courseOfferingId },
         include: {
@@ -283,6 +288,7 @@ export const teacherRepository = {
               },
             },
           },
+          attendances: { select: { attendanceStatus: true } },
         },
         orderBy: {
           studentCareer: {
@@ -290,9 +296,10 @@ export const teacherRepository = {
           },
         },
       }),
+      prisma.classSession.count({ where: { courseOfferingId } }),
     ]);
 
-    return { assessments, enrollments };
+    return { assessments, enrollments, totalSessions };
   },
 
   async findAssessmentInCommission(
@@ -310,6 +317,7 @@ export const teacherRepository = {
     assessmentType: string;
     assessmentDate: Date | null;
     maxScore: number;
+    recoversAssessmentId: number | null;
     audit: {
       userId: number;
       details: string;
@@ -324,6 +332,7 @@ export const teacherRepository = {
           assessmentType: params.assessmentType,
           assessmentDate: params.assessmentDate,
           maxScore: params.maxScore,
+          recoversAssessmentId: params.recoversAssessmentId,
           isClosed: false,
         },
       });
@@ -419,9 +428,10 @@ export const teacherRepository = {
     });
   },
 
-  async updateCourseEnrollmentStatus(params: {
-    courseEnrollmentId: number;
-    enrollmentStatus: string;
+  /** RF-07: guarda la condición final de cada alumno, cierra las actas abiertas y la cursada. */
+  async closeCourse(params: {
+    courseOfferingId: number;
+    conditions: { courseEnrollmentId: number; enrollmentStatus: string }[];
     audit: {
       userId: number;
       details: string;
@@ -429,23 +439,35 @@ export const teacherRepository = {
     };
   }) {
     return prisma.$transaction(async (tx) => {
-      const updated = await tx.courseEnrollment.update({
-        where: { courseEnrollmentId: params.courseEnrollmentId },
-        data: { enrollmentStatus: params.enrollmentStatus },
+      for (const c of params.conditions) {
+        await tx.courseEnrollment.update({
+          where: { courseEnrollmentId: c.courseEnrollmentId },
+          data: { enrollmentStatus: c.enrollmentStatus },
+        });
+      }
+
+      await tx.assessment.updateMany({
+        where: { courseOfferingId: params.courseOfferingId, isClosed: false },
+        data: { isClosed: true },
+      });
+
+      const offering = await tx.courseOffering.update({
+        where: { courseOfferingId: params.courseOfferingId },
+        data: { gradesClosedAt: new Date() },
       });
 
       await tx.auditLog.create({
         data: {
           userId: params.audit.userId,
-          action: "ACTUALIZACION_CONDICION",
-          entity: "COURSE_ENROLLMENT",
-          entityId: String(params.courseEnrollmentId),
+          action: "CIERRE_CURSADA",
+          entity: "COURSE_OFFERING",
+          entityId: String(params.courseOfferingId),
           details: params.audit.details,
           ipAddress: params.audit.ipAddress,
         },
       });
 
-      return updated;
+      return offering;
     });
   },
 

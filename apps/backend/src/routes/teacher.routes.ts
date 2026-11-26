@@ -41,9 +41,9 @@ teacherRouter.post(
   "/commissions/:commissionId/assessments/:assessmentId/close",
   teacherController.closeAssessment,
 );
-teacherRouter.patch(
-  "/commissions/:commissionId/enrollments/:enrollmentId/status",
-  teacherController.updateEnrollmentStatus,
+teacherRouter.post(
+  "/commissions/:commissionId/close",
+  teacherController.closeCourse,
 );
 teacherRouter.get("/exam-calls", teacherController.getExamCalls);
 teacherRouter.get(

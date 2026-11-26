@@ -1,5 +1,6 @@
+import { Link } from 'react-router'
 import utnLogo from '../../assets/images/utn-logotipo.svg'
-import { INSTITUTION_BRAND } from '../../constants'
+import { APP_ROUTES, INSTITUTION_BRAND } from '../../constants'
 import styles from '../../pages/AcademicManagementPage.module.css'
 import SimulationToolbarGroup from './SimulationToolbarGroup'
 import UserProfilePill from './UserProfilePill'
@@ -49,6 +50,13 @@ export default function TopNavbar({
           onResetMockData={onResetMockData}
           resetButtonLabel={resetButtonLabel}
         />
+
+        <Link to={APP_ROUTES.ADMIN_STUDENTS} className={styles.auditBtn}>
+          Alumnos
+        </Link>
+        <Link to={APP_ROUTES.ADMIN_RECORDS} className={styles.auditBtn}>
+          Actas
+        </Link>
 
         <button
           type="button"

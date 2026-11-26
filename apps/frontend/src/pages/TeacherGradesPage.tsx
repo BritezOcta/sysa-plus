@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router";
 import {
   teacherApi,
   type AssessmentItem,
+  type CommissionGradesResponse,
+  type CourseCondition,
   type ExamCallStudentItem,
   type TeacherCommissionSummary,
   type TeacherExamCallSummary,
@@ -10,20 +12,31 @@ import {
 import { APP_ROUTES } from "../constants";
 import styles from "./TeacherGradesPage.module.css";
 
-interface StudentRow {
-  enrollmentId: string;
-  legajo: string;
-  fullName: string;
-  enrollmentStatus: string;
-}
+type StudentRow = CommissionGradesResponse["students"][number];
 
-const COURSE_STATUSES = [
-  "INSCRIPTO",
-  "REGULAR",
-  "APROBADA",
-  "LIBRE",
-  "DESAPROBADA",
-] as const;
+const CONDITION_LABELS: Record<CourseCondition, string> = {
+  APROBADA: "Promocionada",
+  REGULAR: "Regular",
+  DESAPROBADA: "Desaprobada",
+  LIBRE: "Libre",
+};
+
+const CONDITION_BADGE: Record<CourseCondition, string> = {
+  APROBADA: styles.badge_APROBADO,
+  REGULAR: styles.badge_REGULAR,
+  DESAPROBADA: styles.badge_DESAPROBADO,
+  LIBRE: styles.badge_LIBRE,
+};
+
+function ConditionBadge({ condition }: { condition: string | null }) {
+  if (!condition) return <span className={styles.badge_PENDIENTE}>Cancelada</span>;
+  const known = condition in CONDITION_LABELS ? (condition as CourseCondition) : null;
+  return (
+    <span className={known ? CONDITION_BADGE[known] : styles.badge_PENDIENTE}>
+      {known ? CONDITION_LABELS[known] : condition}
+    </span>
+  );
+}
 
 export default function TeacherGradesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,6 +58,11 @@ export default function TeacherGradesPage() {
   const [newType, setNewType] = useState("PARCIAL");
   const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
   const [newMaxScore, setNewMaxScore] = useState("10");
+  const [newRecoversId, setNewRecoversId] = useState("");
+  const [courseInfo, setCourseInfo] = useState<
+    CommissionGradesResponse["commission"] | null
+  >(null);
+  const [gradesVersion, setGradesVersion] = useState(0);
 
   // Estado Mesas de Final
   const [examCalls, setExamCalls] = useState<TeacherExamCallSummary[]>([]);
@@ -104,12 +122,16 @@ export default function TeacherGradesPage() {
       setError(null);
       try {
         const data = await teacherApi.getGrades(selectedCommissionId);
+        setCourseInfo(data.commission);
         setStudents(data.students);
         setAssessments(data.assessments);
-        setSelectedAssessmentId(
-          data.assessments.length > 0 ? data.assessments[0].id : "",
+        setSelectedAssessmentId((prev) =>
+          data.assessments.some((a) => a.id === prev)
+            ? prev
+            : (data.assessments[0]?.id ?? ""),
         );
       } catch (err) {
+        setCourseInfo(null);
         setStudents([]);
         setAssessments([]);
         setError(
@@ -123,7 +145,7 @@ export default function TeacherGradesPage() {
     }
 
     void loadGrades();
-  }, [selectedCommissionId]);
+  }, [selectedCommissionId, gradesVersion]);
 
   useEffect(() => {
     if (!selectedExamCallId) return;
@@ -154,6 +176,17 @@ export default function TeacherGradesPage() {
 
   const activeAssessment =
     assessments.find((a) => a.id === selectedAssessmentId) ?? null;
+  const isCourseClosed = Boolean(courseInfo?.closedAt);
+  // Parciales que todavía no tienen recuperatorio (RF-07).
+  const recoverableParciales = assessments.filter(
+    (a) =>
+      a.type === "PARCIAL" &&
+      !assessments.some((r) => r.recoversAssessmentId === a.id),
+  );
+  const assessmentLabel = (a: AssessmentItem) => {
+    const recovered = assessments.find((p) => p.id === a.recoversAssessmentId);
+    return recovered ? `${a.name} (recupera ${recovered.name})` : `${a.name} (${a.type})`;
+  };
   const activeExamCall =
     examCalls.find((c) => c.id === selectedExamCallId) ?? null;
 
@@ -177,6 +210,10 @@ export default function TeacherGradesPage() {
   async function handleCreateAssessment(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedCommissionId) return;
+    if (newType === "RECUPERATORIO" && !newRecoversId) {
+      setError("Elegí el parcial que recupera este recuperatorio.");
+      return;
+    }
 
     setIsSaving(true);
     setError(null);
@@ -187,10 +224,12 @@ export default function TeacherGradesPage() {
         type: newType,
         date: newDate,
         maxScore: Number(newMaxScore),
+        ...(newType === "RECUPERATORIO" ? { recoversAssessmentId: newRecoversId } : {}),
       });
       setAssessments((prev) => [...prev, created]);
       setSelectedAssessmentId(created.id);
       setNewName("");
+      setNewRecoversId("");
       setSuccessMessage(`Evaluación "${created.name}" creada correctamente.`);
     } catch (err) {
       setError(
@@ -236,11 +275,8 @@ export default function TeacherGradesPage() {
         activeAssessment.id,
         gradesToSave,
       );
-      setAssessments((prev) =>
-        prev.map((a) =>
-          a.id === activeAssessment.id ? { ...a, grades: gradesToSave } : a,
-        ),
-      );
+      // Recarga para actualizar la condición proyectada de cada alumno.
+      setGradesVersion((v) => v + 1);
       setSuccessMessage("Notas de cursada guardadas correctamente.");
     } catch (err) {
       setError(
@@ -253,29 +289,30 @@ export default function TeacherGradesPage() {
     }
   }
 
-  async function handleStatusChange(enrollmentId: string, newStatus: string) {
+  async function handleCloseCourse() {
+    if (!selectedCommissionId) return;
+    if (
+      !window.confirm(
+        "¿Cerrar la cursada? Se guardará la condición final de cada alumno según los criterios de la materia y se cerrarán todas las actas. Solo el Administrador/Director podrá reabrirla.",
+      )
+    )
+      return;
+
+    setIsSaving(true);
     setError(null);
     setSuccessMessage(null);
     try {
-      await teacherApi.updateEnrollmentStatus(
-        selectedCommissionId,
-        enrollmentId,
-        newStatus,
+      const { closedCount } = await teacherApi.closeCourse(selectedCommissionId);
+      setGradesVersion((v) => v + 1);
+      setSuccessMessage(
+        `Cursada cerrada: se guardó la condición final de ${closedCount} alumno(s).`,
       );
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.enrollmentId === enrollmentId
-            ? { ...s, enrollmentStatus: newStatus }
-            : s,
-        ),
-      );
-      setSuccessMessage("Condición académica actualizada.");
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudo actualizar la condición.",
+        err instanceof Error ? err.message : "No se pudo cerrar la cursada.",
       );
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -462,7 +499,8 @@ export default function TeacherGradesPage() {
                 ) : (
                   assessments.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name} ({a.type}){a.isClosed ? " [CERRADA]" : ""}
+                      {assessmentLabel(a)}
+                      {a.isClosed ? " [CERRADA]" : ""}
                     </option>
                   ))
                 )}
@@ -470,6 +508,27 @@ export default function TeacherGradesPage() {
             </div>
           </section>
 
+          {courseInfo && (
+            <p className={styles.criteriaHint}>
+              Criterios de la materia: cada parcial (o su recuperatorio) con{" "}
+              {courseInfo.criteria.regularGrade} o más regulariza
+              {courseInfo.criteria.promotionGrade !== null
+                ? `; con ${courseInfo.criteria.promotionGrade} o más en todos promociona`
+                : "; la materia no tiene promoción"}
+              . Asistencia menor al 75% → Libre. Los TP no cuentan para la condición.
+            </p>
+          )}
+
+          {isCourseClosed && courseInfo?.closedAt && (
+            <div className={styles.warningBanner} role="status">
+              Cursada cerrada el{" "}
+              {new Date(courseInfo.closedAt).toLocaleDateString("es-AR")}. Las
+              condiciones son definitivas; para modificarlas solicitá la
+              reapertura al Administrador/Director.
+            </div>
+          )}
+
+          {!isCourseClosed && (
           <section className={styles.card}>
             <h2>Nueva evaluación</h2>
             <form
@@ -493,6 +552,26 @@ export default function TeacherGradesPage() {
                 <option value="RECUPERATORIO">Recuperatorio</option>
                 <option value="TP">Trabajo Práctico</option>
               </select>
+              {newType === "RECUPERATORIO" && (
+                <select
+                  value={newRecoversId}
+                  onChange={(e) => setNewRecoversId(e.target.value)}
+                  className={styles.select}
+                  aria-label="Parcial que recupera"
+                  required
+                >
+                  <option value="">
+                    {recoverableParciales.length === 0
+                      ? "No hay parciales sin recuperatorio"
+                      : "¿Qué parcial recupera?"}
+                  </option>
+                  {recoverableParciales.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <input
                 type="date"
                 value={newDate}
@@ -516,6 +595,7 @@ export default function TeacherGradesPage() {
               </button>
             </form>
           </section>
+          )}
 
           <section className={styles.card}>
             <h2>
@@ -541,7 +621,10 @@ export default function TeacherGradesPage() {
                       {activeAssessment && (
                         <th>Nota (0 - {activeAssessment.maxScore})</th>
                       )}
-                      <th>Condición de cursada</th>
+                      <th>Asistencia</th>
+                      <th>
+                        {isCourseClosed ? "Condición final" : "Condición proyectada"}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -568,23 +651,17 @@ export default function TeacherGradesPage() {
                             />
                           </td>
                         )}
+                        <td>{s.attendancePercentage}%</td>
                         <td>
-                          <select
-                            value={s.enrollmentStatus}
-                            onChange={(e) =>
-                              void handleStatusChange(
-                                s.enrollmentId,
-                                e.target.value,
-                              )
+                          <ConditionBadge
+                            condition={
+                              isCourseClosed
+                                ? s.enrollmentStatus === "CANCELADA"
+                                  ? null
+                                  : s.enrollmentStatus
+                                : s.projectedCondition
                             }
-                            className={styles.select}
-                          >
-                            {COURSE_STATUSES.map((st) => (
-                              <option key={st} value={st}>
-                                {st}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </td>
                       </tr>
                     ))}
@@ -610,6 +687,26 @@ export default function TeacherGradesPage() {
                       {activeAssessment.isClosed
                         ? "Acta cerrada"
                         : "Cerrar acta"}
+                    </button>
+                  </div>
+                )}
+
+                {activeAssessment?.isClosed && !isCourseClosed && (
+                  <p className={styles.criteriaHint}>
+                    El acta está cerrada. Para modificarla solicitá la reapertura
+                    al Administrador/Director.
+                  </p>
+                )}
+
+                {!isCourseClosed && (
+                  <div className={styles.footerActions}>
+                    <button
+                      type="button"
+                      onClick={() => void handleCloseCourse()}
+                      disabled={isSaving}
+                      className={styles.closeActBtn}
+                    >
+                      Cerrar cursada y guardar condiciones
                     </button>
                   </div>
                 )}

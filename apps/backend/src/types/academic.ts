@@ -60,6 +60,9 @@ export const EXAM_CALL_STATUS = {
  */
 export const REGULARITY_VALID_YEARS = 2;
 
+/** Porcentaje mínimo de asistencia para no quedar LIBRE (RF-05 / RF-07). */
+export const MIN_ATTENDANCE_PERCENT = 75;
+
 /**
  * Nota mínima de un final para considerar la materia aprobada.
  * TODO(RF-07): el PDF habla de "criterios de aprobación configurados por materia";

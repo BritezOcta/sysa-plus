@@ -23,6 +23,9 @@ interface SubjectMetadataFieldsProps {
   period: SubjectPeriod
   enrolledStudents: number
   status: EntityStatus
+  regularGrade: string
+  promotionGrade: string
+  criteriaError: string | null
   careers: Career[]
   selectedCareer: Career
   validation: SubjectValidationResult
@@ -41,6 +44,8 @@ interface SubjectMetadataFieldsProps {
   onPeriodChange: (period: SubjectPeriod) => void
   onEnrolledStudentsChange: (count: number) => void
   onStatusChange: (status: EntityStatus) => void
+  onRegularGradeChange: (value: string) => void
+  onPromotionGradeChange: (value: string) => void
 }
 
 export default function SubjectMetadataFields({
@@ -54,6 +59,9 @@ export default function SubjectMetadataFields({
   period,
   enrolledStudents,
   status,
+  regularGrade,
+  promotionGrade,
+  criteriaError,
   careers,
   selectedCareer,
   validation,
@@ -72,6 +80,8 @@ export default function SubjectMetadataFields({
   onPeriodChange,
   onEnrolledStudentsChange,
   onStatusChange,
+  onRegularGradeChange,
+  onPromotionGradeChange,
 }: SubjectMetadataFieldsProps) {
   const careerYears = Array.from(
     { length: selectedCareer.durationYears },
@@ -198,6 +208,52 @@ export default function SubjectMetadataFields({
               validation.totalError ? 'subj-total-error' : undefined
             }
             className={validation.totalError ? styles.inputError : ''}
+          />
+        </FormField>
+      </div>
+
+      <div className={styles.grid2}>
+        <FormField
+          htmlFor="subj-regular-grade"
+          label="Nota para regularizar (cada parcial)"
+          required
+          error={criteriaError}
+          errorId="subj-criteria-error"
+        >
+          <input
+            id="subj-regular-grade"
+            name="regularGrade"
+            type="number"
+            min={1}
+            max={10}
+            step={0.5}
+            value={regularGrade}
+            onChange={(e) => onRegularGradeChange(e.target.value)}
+            aria-required="true"
+            aria-invalid={Boolean(criteriaError)}
+            aria-describedby={criteriaError ? 'subj-criteria-error' : undefined}
+            className={criteriaError ? styles.inputError : ''}
+          />
+        </FormField>
+
+        <FormField
+          htmlFor="subj-promotion-grade"
+          label="Nota para promocionar (cada parcial)"
+          hint="Vacío = la materia no tiene promoción."
+          hintId="subj-promotion-hint"
+        >
+          <input
+            id="subj-promotion-grade"
+            name="promotionGrade"
+            type="number"
+            min={1}
+            max={10}
+            step={0.5}
+            value={promotionGrade}
+            onChange={(e) => onPromotionGradeChange(e.target.value)}
+            aria-describedby="subj-promotion-hint"
+            aria-invalid={Boolean(criteriaError)}
+            className={criteriaError ? styles.inputError : ''}
           />
         </FormField>
       </div>

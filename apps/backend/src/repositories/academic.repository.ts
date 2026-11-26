@@ -372,6 +372,8 @@ export const academicRepository = {
     weeklyHours: number;
     totalHours: number;
     isActive: boolean;
+    regularGrade: number;
+    promotionGrade: number | null;
     requirements: Array<{ requiresSubjectId: number; type: string }>;
   }): Promise<number> {
     try {
@@ -414,6 +416,8 @@ export const academicRepository = {
               weeklyHours: params.weeklyHours,
               totalHours: params.totalHours,
               isActive: params.isActive,
+              regularGrade: params.regularGrade,
+              promotionGrade: params.promotionGrade,
             },
           });
         } else {
@@ -452,6 +456,8 @@ export const academicRepository = {
               weeklyHours: params.weeklyHours,
               totalHours: params.totalHours,
               isActive: params.isActive,
+              regularGrade: params.regularGrade,
+              promotionGrade: params.promotionGrade,
             },
           });
           currentSpsId = createdSps.studyPlanSubjectId;

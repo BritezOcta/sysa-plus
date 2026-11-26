@@ -54,6 +54,10 @@ model Assessment {
   assessmentGrades AssessmentGrade[]
   courseOffering   CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_ASSESS_OFFERING")
   isClosed Boolean @default(false, map: "DF_ASSESSMENTS_IS_CLOSED") @map("IS_CLOSED")
+  /// RF-07: parcial que recupera este RECUPERATORIO. null para parciales y TP.
+  recoversAssessmentId Int?        @map("RECOVERS_ASSESSMENT_ID")
+  recoversAssessment   Assessment?  @relation("AssessmentRecovery", fields: [recoversAssessmentId], references: [assessmentId], onDelete: NoAction, onUpdate: NoAction, map: "FK_ASSESS_RECOVERS")
+  recoveries           Assessment[] @relation("AssessmentRecovery")
 
   @@index([courseOfferingId], map: "IX_ASSESS_OFFERING")
   @@map("ASSESSMENTS")
@@ -121,6 +125,8 @@ model CourseOffering {
   commission         String              @map("COMMISSION") @db.NVarChar(20)
   capacity           Int                 @map("CAPACITY")
   offeringStatus     String              @map("OFFERING_STATUS") @db.NVarChar(30)
+  /// RF-07: fecha en que el profesor cerró la cursada (condiciones finales calculadas). null = abierta.
+  gradesClosedAt     DateTime?           @map("GRADES_CLOSED_AT")
   assessments        Assessment[]
   classSessions      ClassSession[]
   courseEnrollments  CourseEnrollment[]
@@ -262,6 +268,10 @@ model StudyPlanSubject {
   weeklyHours        Int?                   @map("WEEKLY_HOURS")
   totalHours         Int?                   @map("TOTAL_HOURS")
   isActive           Boolean                @default(true, map: "DF_SPS_ACTIVE") @map("IS_ACTIVE")
+  /// RF-07: nota mínima (escala 0-10) de cada parcial para regularizar la cursada.
+  regularGrade       Decimal                @default(6, map: "DF_SPS_REGULAR_GRADE") @map("REGULAR_GRADE") @db.Decimal(4, 2)
+  /// RF-07: nota mínima de cada parcial para promocionar. null = la materia no tiene promoción.
+  promotionGrade     Decimal?               @map("PROMOTION_GRADE") @db.Decimal(4, 2)
   courseOfferings    CourseOffering[]
   examCalls          ExamCall[]
   studyPlan          StudyPlan              @relation(fields: [studyPlanId], references: [studyPlanId], onUpdate: NoAction, map: "FK_SPS_STUDY_PLAN")

@@ -64,6 +64,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 142,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-102',
@@ -76,6 +78,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 138,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-103',
@@ -88,6 +92,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 164,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-104',
@@ -100,6 +106,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 112,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-105',
@@ -112,6 +120,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 119,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-106',
@@ -125,6 +135,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     status: 'active',
     // Zero enrolled students allows testing physical deletion without triggering the 2.5 student block
     enrolledStudents: 0,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-201',
@@ -137,6 +149,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 88,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-202',
@@ -149,6 +163,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 94,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-203',
@@ -161,6 +177,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 97,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-204',
@@ -173,6 +191,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 73,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-205',
@@ -185,6 +205,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 81,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-206',
@@ -197,6 +219,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 64,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-301',
@@ -209,6 +233,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 58,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-302',
@@ -221,6 +247,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 69,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-303',
@@ -233,6 +261,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 52,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-304',
@@ -245,6 +275,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 44,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-305',
@@ -257,6 +289,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 0,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-bank-1',
@@ -269,6 +303,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: null,
     status: 'active',
     enrolledStudents: 0,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-isi-bank-2',
@@ -281,6 +317,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: null,
     status: 'active',
     enrolledStudents: 29,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-101',
@@ -293,6 +331,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 210,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-102',
@@ -305,6 +345,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 198,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-103',
@@ -317,6 +359,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 195,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-104',
@@ -329,6 +373,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 154,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-105',
@@ -341,6 +387,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 148,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-201',
@@ -353,6 +401,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 92,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-202',
@@ -365,6 +415,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 86,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-tup-203',
@@ -377,6 +429,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 61,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-imec-101',
@@ -389,6 +443,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 95,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-imec-102',
@@ -401,6 +457,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 91,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-imec-103',
@@ -413,6 +471,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 78,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-imec-201',
@@ -425,6 +485,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 1,
     status: 'active',
     enrolledStudents: 54,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
   {
     id: 'sub-imec-202',
@@ -437,6 +499,8 @@ export const INITIAL_SUBJECTS: Subject[] = [
     period: 2,
     status: 'active',
     enrolledStudents: 48,
+    regularGrade: 6,
+    promotionGrade: 8,
   },
 ]
 
