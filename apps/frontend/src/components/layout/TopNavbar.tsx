@@ -8,6 +8,7 @@ interface TopNavbarProps {
   simulateServerFault: boolean
   onToggleServerFault: (enabled: boolean) => void
   onResetMockData: () => void
+  resetButtonLabel?: string
   auditCount: number
   unreadAuditCount: number
   onOpenAuditDrawer: () => void
@@ -17,6 +18,7 @@ export default function TopNavbar({
   simulateServerFault,
   onToggleServerFault,
   onResetMockData,
+  resetButtonLabel = 'Recargar datos',
   auditCount,
   unreadAuditCount,
   onOpenAuditDrawer,
@@ -45,6 +47,7 @@ export default function TopNavbar({
           simulateServerFault={simulateServerFault}
           onToggleServerFault={onToggleServerFault}
           onResetMockData={onResetMockData}
+          resetButtonLabel={resetButtonLabel}
         />
 
         <button

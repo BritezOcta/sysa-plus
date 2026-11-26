@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { PendingFailedOperation } from '../types'
 
 export function useServerFaultSimulation() {
@@ -29,11 +29,26 @@ export function useServerFaultSimulation() {
     setPendingFailedOperation(null)
   }
 
+  /** Registra un fallo real de conexión para ofrecer "Reintentar" (RF-02 2.5). */
+  const reportFailedOperation = useCallback(
+    (description: string, retry: () => void) => {
+      setPendingFailedOperation({
+        description,
+        retryFn: () => {
+          setPendingFailedOperation(null)
+          retry()
+        },
+      })
+    },
+    [],
+  )
+
   return {
     simulateServerFault,
     setSimulateServerFault,
     pendingFailedOperation,
     runWithServerCheck,
+    reportFailedOperation,
     dismissFailedOperation,
   }
 }
