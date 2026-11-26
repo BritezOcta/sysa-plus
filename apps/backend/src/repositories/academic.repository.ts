@@ -1,6 +1,6 @@
-import { UTN_SEED_CAREERS, UTN_SEED_CORRELATIVITIES, UTN_SEED_SUBJECTS } from "../data/utnAcademicSeed.js";
 import { AppError } from "../lib/AppError.js";
 import { prisma } from "../lib/prisma.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 
 function mapDbError(err: unknown, context: string): never {
   if (err instanceof AppError) throw err;
@@ -29,85 +29,14 @@ function mapDbError(err: unknown, context: string): never {
   throw err;
 }
 
-export const academicRepository = {
-  async ensureInitialSeedIfEmpty() {
-    const existingCount = await prisma.career.count();
-    if (existingCount > 0) return;
-
-    await prisma.$transaction(async (tx) => {
-      const doubleCheck = await tx.career.count();
-      if (doubleCheck > 0) return;
-
-      const planIdByCareerKey = new Map<string, number>();
-
-      for (const c of UTN_SEED_CAREERS) {
-        const career = await tx.career.create({
-          data: {
-            careerCode: c.code,
-            careerName: c.name,
-            durationYears: c.durationYears,
-            careerDescription: c.description,
-            isActive: c.isActive,
-          },
-        });
-        const plan = await tx.studyPlan.create({
-          data: {
-            careerId: career.careerId,
-            resolution: c.studyPlan,
-            isActive: true,
-          },
-        });
-        planIdByCareerKey.set(c.key, plan.studyPlanId);
-      }
-
-      const spsIdBySubjectKey = new Map<string, number>();
-
-      for (const s of UTN_SEED_SUBJECTS) {
-        const planId = planIdByCareerKey.get(s.careerKey);
-        if (!planId) continue;
-
-        const subject = await tx.subject.upsert({
-          where: { subjectCode: s.code },
-          update: { subjectName: s.name },
-          create: { subjectCode: s.code, subjectName: s.name },
-        });
-
-        const sps = await tx.studyPlanSubject.create({
-          data: {
-            studyPlanId: planId,
-            subjectId: subject.subjectId,
-            subjectYear: s.year,
-            semester: s.semester,
-            weeklyHours: s.weeklyHours,
-            totalHours: s.totalHours,
-            isActive: s.isActive,
-          },
-        });
-        spsIdBySubjectKey.set(s.key, sps.studyPlanSubjectId);
-      }
-
-      for (const corr of UTN_SEED_CORRELATIVITIES) {
-        const requiredId = spsIdBySubjectKey.get(corr.requiresKey);
-        const targetId = spsIdBySubjectKey.get(corr.targetKey);
-        if (!requiredId || !targetId) continue;
-
-        await tx.subjectCorrelativity.create({
-          data: {
-            targetSubjectId: targetId,
-            requiredSubjectId: requiredId,
-            correlativityType: corr.type,
-          },
-        });
-      }
-    });
-  },
-
+/** Queries share the transaction supplied by the service. */
+export const createAcademicRepository = (db: Prisma.TransactionClient) => ({
   countCareers() {
-    return prisma.career.count();
+    return db.career.count();
   },
 
   listCareersWithMeta() {
-    return prisma.career.findMany({
+    return db.career.findMany({
       orderBy: [{ isActive: "desc" }, { careerCode: "asc" }],
       include: {
         studyPlans: {
@@ -151,7 +80,7 @@ export const academicRepository = {
   },
 
   findCareerById(careerId: number) {
-    return prisma.career.findUnique({
+    return db.career.findUnique({
       where: { careerId },
       include: {
         studyPlans: {
@@ -176,7 +105,7 @@ export const academicRepository = {
   },
 
   findCareerByCode(careerCode: string) {
-    return prisma.career.findUnique({ where: { careerCode } });
+    return db.career.findUnique({ where: { careerCode } });
   },
 
   async createCareerWithDefaultPlan(data: {
@@ -188,27 +117,25 @@ export const academicRepository = {
     resolution: string;
   }) {
     try {
-      return await prisma.$transaction(async (tx) => {
-        const career = await tx.career.create({
-          data: {
-            careerCode: data.careerCode,
-            careerName: data.careerName,
-            durationYears: data.durationYears,
-            careerDescription: data.careerDescription,
-            isActive: data.isActive,
-          },
-        });
-
-        const plan = await tx.studyPlan.create({
-          data: {
-            careerId: career.careerId,
-            resolution: data.resolution,
-            isActive: true,
-          },
-        });
-
-        return { career, plan };
+      const career = await db.career.create({
+        data: {
+          careerCode: data.careerCode,
+          careerName: data.careerName,
+          durationYears: data.durationYears,
+          careerDescription: data.careerDescription,
+          isActive: data.isActive,
+        },
       });
+
+      const plan = await db.studyPlan.create({
+        data: {
+          careerId: career.careerId,
+          resolution: data.resolution,
+          isActive: true,
+        },
+      });
+
+      return { career, plan };
     } catch (err) {
       mapDbError(err, `carrera ${data.careerCode}`);
     }
@@ -226,41 +153,39 @@ export const academicRepository = {
     },
   ) {
     try {
-      return await prisma.$transaction(async (tx) => {
-        const career = await tx.career.update({
-          where: { careerId },
-          data: {
-            careerCode: data.careerCode,
-            careerName: data.careerName,
-            durationYears: data.durationYears,
-            careerDescription: data.careerDescription,
-            ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-          },
-        });
-
-        if (data.resolution !== undefined) {
-          const activePlan = await tx.studyPlan.findFirst({
-            where: { careerId, isActive: true },
-            orderBy: { studyPlanId: "desc" },
-          });
-          if (activePlan) {
-            await tx.studyPlan.update({
-              where: { studyPlanId: activePlan.studyPlanId },
-              data: { resolution: data.resolution },
-            });
-          } else {
-            await tx.studyPlan.create({
-              data: {
-                careerId,
-                resolution: data.resolution,
-                isActive: true,
-              },
-            });
-          }
-        }
-
-        return career;
+      const career = await db.career.update({
+        where: { careerId },
+        data: {
+          careerCode: data.careerCode,
+          careerName: data.careerName,
+          durationYears: data.durationYears,
+          careerDescription: data.careerDescription,
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        },
       });
+
+      if (data.resolution !== undefined) {
+        const activePlan = await db.studyPlan.findFirst({
+          where: { careerId, isActive: true },
+          orderBy: { studyPlanId: "desc" },
+        });
+        if (activePlan) {
+          await db.studyPlan.update({
+            where: { studyPlanId: activePlan.studyPlanId },
+            data: { resolution: data.resolution },
+          });
+        } else {
+          await db.studyPlan.create({
+            data: {
+              careerId,
+              resolution: data.resolution,
+              isActive: true,
+            },
+          });
+        }
+      }
+
+      return career;
     } catch (err) {
       mapDbError(err, `carrera ${data.careerCode}`);
     }
@@ -268,61 +193,59 @@ export const academicRepository = {
 
   async deleteCareerCascadePlan(careerId: number) {
     try {
-      await prisma.$transaction(async (tx) => {
-        const plans = await tx.studyPlan.findMany({
-          where: { careerId },
-          select: { studyPlanId: true },
+      const plans = await db.studyPlan.findMany({
+        where: { careerId },
+        select: { studyPlanId: true },
+      });
+      const planIds = plans.map((p) => p.studyPlanId);
+
+      if (planIds.length > 0) {
+        const spsList = await db.studyPlanSubject.findMany({
+          where: { studyPlanId: { in: planIds } },
+          select: { studyPlanSubjectId: true },
         });
-        const planIds = plans.map((p) => p.studyPlanId);
+        const spsIds = spsList.map((s) => s.studyPlanSubjectId);
 
-        if (planIds.length > 0) {
-          const spsList = await tx.studyPlanSubject.findMany({
-            where: { studyPlanId: { in: planIds } },
-            select: { studyPlanSubjectId: true },
+        if (spsIds.length > 0) {
+          await db.subjectCorrelativity.deleteMany({
+            where: {
+              OR: [
+                { targetSubjectId: { in: spsIds } },
+                { requiredSubjectId: { in: spsIds } },
+              ],
+            },
           });
-          const spsIds = spsList.map((s) => s.studyPlanSubjectId);
-
-          if (spsIds.length > 0) {
-            await tx.subjectCorrelativity.deleteMany({
-              where: {
-                OR: [
-                  { targetSubjectId: { in: spsIds } },
-                  { requiredSubjectId: { in: spsIds } },
-                ],
-              },
-            });
-            await tx.studyPlanSubject.deleteMany({
-              where: { studyPlanSubjectId: { in: spsIds } },
-            });
-          }
-
-          await tx.studyPlan.deleteMany({
-            where: { studyPlanId: { in: planIds } },
+          await db.studyPlanSubject.deleteMany({
+            where: { studyPlanSubjectId: { in: spsIds } },
           });
         }
 
-        await tx.career.delete({ where: { careerId } });
-      });
+        await db.studyPlan.deleteMany({
+          where: { studyPlanId: { in: planIds } },
+        });
+      }
+
+      await db.career.delete({ where: { careerId } });
     } catch (err) {
       mapDbError(err, `baja de carrera #${careerId}`);
     }
   },
 
   async ensureActiveStudyPlanId(careerId: number, fallbackResolution: string): Promise<number> {
-    const existing = await prisma.studyPlan.findFirst({
+    const existing = await db.studyPlan.findFirst({
       where: { careerId, isActive: true },
       orderBy: { studyPlanId: "desc" },
     });
     if (existing) return existing.studyPlanId;
 
-    const created = await prisma.studyPlan.create({
+    const created = await db.studyPlan.create({
       data: { careerId, resolution: fallbackResolution, isActive: true },
     });
     return created.studyPlanId;
   },
 
   findStudyPlanSubjectById(studyPlanSubjectId: number) {
-    return prisma.studyPlanSubject.findUnique({
+    return db.studyPlanSubject.findUnique({
       where: { studyPlanSubjectId },
       include: {
         subject: true,
@@ -339,13 +262,13 @@ export const academicRepository = {
 
   countStudyPlanSubjectsInPlan(studyPlanId: number, studyPlanSubjectIds: number[]) {
     if (studyPlanSubjectIds.length === 0) return Promise.resolve(0);
-    return prisma.studyPlanSubject.count({
+    return db.studyPlanSubject.count({
       where: { studyPlanId, studyPlanSubjectId: { in: studyPlanSubjectIds } },
     });
   },
 
   async findMaxSubjectYearForCareer(careerId: number): Promise<number | null> {
-    const result = await prisma.studyPlanSubject.aggregate({
+    const result = await db.studyPlanSubject.aggregate({
       where: { studyPlan: { careerId, isActive: true } },
       _max: { subjectYear: true },
     });
@@ -353,7 +276,7 @@ export const academicRepository = {
   },
 
   listPlanCorrelativityEdgesExcludingTarget(studyPlanId: number, excludedTargetId?: number) {
-    return prisma.subjectCorrelativity.findMany({
+    return db.subjectCorrelativity.findMany({
       where: {
         targetSubject: { studyPlanId },
         ...(excludedTargetId !== undefined ? { NOT: { targetSubjectId: excludedTargetId } } : {}),
@@ -375,118 +298,109 @@ export const academicRepository = {
     requirements: Array<{ requiresSubjectId: number; type: string }>;
   }): Promise<number> {
     try {
-      return await prisma.$transaction(async (tx) => {
-        let currentSpsId: number;
+      let currentSpsId: number;
 
-        if (params.studyPlanSubjectId !== undefined) {
-          currentSpsId = params.studyPlanSubjectId;
-          const existingSps = await tx.studyPlanSubject.findUnique({
-            where: { studyPlanSubjectId: currentSpsId },
-            select: { subjectId: true },
-          });
-          if (!existingSps) {
-            throw new AppError(404, "SUBJECT_NOT_FOUND", "La materia del plan no existe");
-          }
-
-          const codeOwner = await tx.subject.findUnique({
-            where: { subjectCode: params.code },
-            select: { subjectId: true },
-          });
-          if (codeOwner && codeOwner.subjectId !== existingSps.subjectId) {
-            throw new AppError(
-              409,
-              "DUPLICATE_SUBJECT_CODE",
-              `El código de materia ${params.code} ya pertenece a otra materia`,
-            );
-          }
-
-          await tx.subject.update({
-            where: { subjectId: existingSps.subjectId },
-            data: { subjectCode: params.code, subjectName: params.name },
-          });
-
-          await tx.studyPlanSubject.update({
-            where: { studyPlanSubjectId: currentSpsId },
-            data: {
-              studyPlanId: params.planId,
-              subjectYear: params.year,
-              semester: params.semester,
-              weeklyHours: params.weeklyHours,
-              totalHours: params.totalHours,
-              isActive: params.isActive,
-            },
-          });
-        } else {
-          let subjectRecord = await tx.subject.findUnique({
-            where: { subjectCode: params.code },
-          });
-
-          if (subjectRecord) {
-            const duplicateInPlan = await tx.studyPlanSubject.findUnique({
-              where: {
-                studyPlanId_subjectId: {
-                  studyPlanId: params.planId,
-                  subjectId: subjectRecord.subjectId,
-                },
-              },
-            });
-            if (duplicateInPlan) {
-              throw new AppError(
-                409,
-                "DUPLICATE_SUBJECT_CODE",
-                `La materia con código ${params.code} ya se encuentra cargada en este plan de estudios`,
-              );
-            }
-          } else {
-            subjectRecord = await tx.subject.create({
-              data: { subjectCode: params.code, subjectName: params.name },
-            });
-          }
-
-          const createdSps = await tx.studyPlanSubject.create({
-            data: {
-              studyPlanId: params.planId,
-              subjectId: subjectRecord.subjectId,
-              subjectYear: params.year,
-              semester: params.semester,
-              weeklyHours: params.weeklyHours,
-              totalHours: params.totalHours,
-              isActive: params.isActive,
-            },
-          });
-          currentSpsId = createdSps.studyPlanSubjectId;
+      if (params.studyPlanSubjectId !== undefined) {
+        currentSpsId = params.studyPlanSubjectId;
+        const existingSps = await db.studyPlanSubject.findUnique({
+          where: { studyPlanSubjectId: currentSpsId },
+          select: { subjectId: true },
+        });
+        if (!existingSps) {
+          throw new AppError(404, "SUBJECT_NOT_FOUND", "La materia del plan no existe");
         }
 
-        await tx.subjectCorrelativity.deleteMany({
-          where: { targetSubjectId: currentSpsId },
+        const codeOwner = await db.subject.findUnique({
+          where: { subjectCode: params.code },
+          select: { subjectId: true },
+        });
+        if (codeOwner && codeOwner.subjectId !== existingSps.subjectId) {
+          throw new AppError(
+            409,
+            "DUPLICATE_SUBJECT_CODE",
+            `El código de materia ${params.code} ya pertenece a otra materia`,
+          );
+        }
+
+        await db.subject.update({
+          where: { subjectId: existingSps.subjectId },
+          data: { subjectCode: params.code, subjectName: params.name },
         });
 
-        if (params.requirements.length > 0) {
-          await tx.subjectCorrelativity.createMany({
-            data: params.requirements.map((req) => ({
-              targetSubjectId: currentSpsId,
-              requiredSubjectId: req.requiresSubjectId,
-              correlativityType: req.type,
-            })),
-          });
-        }
+        await db.studyPlanSubject.update({
+          where: { studyPlanSubjectId: currentSpsId },
+          data: {
+            studyPlanId: params.planId,
+            subjectYear: params.year,
+            semester: params.semester,
+            weeklyHours: params.weeklyHours,
+            totalHours: params.totalHours,
+            isActive: params.isActive,
+          },
+        });
+      } else {
+        const subjectRecord = await db.subject.findUnique({
+          where: { subjectCode: params.code },
+          include: { _count: { select: { studyPlanSubjects: true } } },
+        });
 
-        return currentSpsId;
+        if (subjectRecord && subjectRecord._count.studyPlanSubjects > 0) {
+          throw new AppError(409, "DUPLICATE_SUBJECT_CODE", "El código de materia ya existe. Editá la materia existente o usá otro código.");
+        }
+        // A deleted plan subject may leave an unused catalog row. Reuse only
+        // that orphan, never rename a subject still attached to another plan.
+        const catalogSubject = subjectRecord
+          ? await db.subject.update({
+              where: { subjectId: subjectRecord.subjectId },
+              data: { subjectName: params.name },
+            })
+          : await db.subject.create({
+              data: { subjectCode: params.code, subjectName: params.name },
+            });
+
+        const createdSps = await db.studyPlanSubject.create({
+          data: {
+            studyPlanId: params.planId,
+            subjectId: catalogSubject.subjectId,
+            subjectYear: params.year,
+            semester: params.semester,
+            weeklyHours: params.weeklyHours,
+            totalHours: params.totalHours,
+            isActive: params.isActive,
+          },
+        });
+        currentSpsId = createdSps.studyPlanSubjectId;
+      }
+
+      await db.subjectCorrelativity.deleteMany({
+        where: { targetSubjectId: currentSpsId },
       });
+
+      if (params.requirements.length > 0) {
+        await db.subjectCorrelativity.createMany({
+          data: params.requirements.map((req) => ({
+            targetSubjectId: currentSpsId,
+            requiredSubjectId: req.requiresSubjectId,
+            correlativityType: req.type,
+          })),
+        });
+      }
+
+      return currentSpsId;
     } catch (err) {
       mapDbError(err, `materia ${params.code}`);
     }
   },
 
   updateStudyPlanSubjectSlot(studyPlanSubjectId: number, year: number | null, semester: number | null) {
-    return prisma.studyPlanSubject.update({
+    return db.studyPlanSubject.update({
       where: { studyPlanSubjectId },
       data: { subjectYear: year, semester },
     });
   },
 
   updateStudyPlanSubjectStatus(studyPlanSubjectId: number, isActive: boolean) {
-    return prisma.studyPlanSubject.update({
+    return db.studyPlanSubject.update({
       where: { studyPlanSubjectId },
       data: { isActive },
     });
@@ -494,18 +408,16 @@ export const academicRepository = {
 
   async deleteStudyPlanSubjectCascadeCorrelativities(studyPlanSubjectId: number) {
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.subjectCorrelativity.deleteMany({
-          where: {
-            OR: [
-              { targetSubjectId: studyPlanSubjectId },
-              { requiredSubjectId: studyPlanSubjectId },
-            ],
-          },
-        });
-        await tx.studyPlanSubject.delete({
-          where: { studyPlanSubjectId },
-        });
+      await db.subjectCorrelativity.deleteMany({
+        where: {
+          OR: [
+            { targetSubjectId: studyPlanSubjectId },
+            { requiredSubjectId: studyPlanSubjectId },
+          ],
+        },
+      });
+      await db.studyPlanSubject.delete({
+        where: { studyPlanSubjectId },
       });
     } catch (err) {
       mapDbError(err, `baja de materia #${studyPlanSubjectId}`);
@@ -513,13 +425,13 @@ export const academicRepository = {
   },
 
   findCorrelativityByPair(targetSubjectId: number, requiredSubjectId: number) {
-    return prisma.subjectCorrelativity.findFirst({
+    return db.subjectCorrelativity.findFirst({
       where: { targetSubjectId, requiredSubjectId },
     });
   },
 
   findCorrelativityById(correlativityId: number) {
-    return prisma.subjectCorrelativity.findUnique({
+    return db.subjectCorrelativity.findUnique({
       where: { correlativityId },
     });
   },
@@ -529,18 +441,18 @@ export const academicRepository = {
     requiredSubjectId: number;
     correlativityType: string;
   }) {
-    return prisma.subjectCorrelativity.create({ data });
+    return db.subjectCorrelativity.create({ data });
   },
 
   updateCorrelativityType(correlativityId: number, correlativityType: string) {
-    return prisma.subjectCorrelativity.update({
+    return db.subjectCorrelativity.update({
       where: { correlativityId },
       data: { correlativityType },
     });
   },
 
   deleteCorrelativity(correlativityId: number) {
-    return prisma.subjectCorrelativity.delete({
+    return db.subjectCorrelativity.delete({
       where: { correlativityId },
     });
   },
@@ -553,7 +465,7 @@ export const academicRepository = {
     details: string;
     ipAddress: string | null;
   }) {
-    return prisma.auditLog.create({
+    return db.auditLog.create({
       data: {
         userId: entry.userId,
         action: entry.action,
@@ -566,9 +478,11 @@ export const academicRepository = {
   },
 
   listAcademicAuditLogs(limit = 100) {
-    return prisma.auditLog.findMany({
+    return db.auditLog.findMany({
       where: {
         entity: { in: ["CARRERA", "MATERIA", "CORRELATIVIDAD"] },
+        // Old seed events have no actor; never display them as actual user activity.
+        userId: { not: null },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -583,4 +497,23 @@ export const academicRepository = {
       },
     });
   },
-};
+});
+
+export type AcademicRepository = ReturnType<typeof createAcademicRepository>;
+export const academicRepository = createAcademicRepository(prisma);
+
+/** Validate, mutate and audit as one serializable unit, including concurrent graph edits. */
+export async function runAcademicTransaction<T>(work: (repository: AcademicRepository) => Promise<T>): Promise<T> {
+  try {
+    return await prisma.$transaction(tx => work(createAcademicRepository(tx)), {
+      isolationLevel: "Serializable",
+      maxWait: 5000,
+      timeout: 15000,
+    });
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "code" in err && err.code === "P2034") {
+      throw new AppError(409, "CONCURRENT_UPDATE", "Otro usuario modificó estos datos. Recargá la oferta académica e intentá nuevamente.");
+    }
+    mapDbError(err, "gestión académica");
+  }
+}

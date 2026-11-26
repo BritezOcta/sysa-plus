@@ -36,10 +36,10 @@ export const academicApi = {
     })
   },
 
-  toggleCareerStatus(careerId: string): Promise<{ status: 'active' | 'inactive' }> {
+  toggleCareerStatus(careerId: string, status: 'active' | 'inactive'): Promise<{ status: 'active' | 'inactive' }> {
     return apiRequest<{ status: 'active' | 'inactive' }>(
       `/academic/careers/${careerId}/status`,
-      { method: 'PATCH' },
+      { method: 'PATCH', body: { status } },
     )
   },
 

@@ -6,10 +6,6 @@ export const TOAST_CONFIG = {
   MAX_PREVIOUS_KEPT: 3,
 } as const
 
-export const NETWORK_SIMULATION_CONFIG = {
-  RETRY_DELAY_MS: 450,
-} as const
-
 export const ID_COUNTER_CONFIG = {
   INITIAL_SEED: 1000,
 } as const

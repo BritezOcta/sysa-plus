@@ -1,13 +1,10 @@
 import utnLogo from '../../assets/images/utn-logotipo.svg'
 import { INSTITUTION_BRAND } from '../../constants'
 import styles from '../../pages/AcademicManagementPage.module.css'
-import SimulationToolbarGroup from './SimulationToolbarGroup'
 import UserProfilePill from './UserProfilePill'
 
 interface TopNavbarProps {
-  simulateServerFault: boolean
-  onToggleServerFault: (enabled: boolean) => void
-  onResetMockData: () => void
+  onReloadData: () => void
   resetButtonLabel?: string
   auditCount: number
   unreadAuditCount: number
@@ -15,9 +12,7 @@ interface TopNavbarProps {
 }
 
 export default function TopNavbar({
-  simulateServerFault,
-  onToggleServerFault,
-  onResetMockData,
+  onReloadData,
   resetButtonLabel = 'Recargar datos',
   auditCount,
   unreadAuditCount,
@@ -43,12 +38,9 @@ export default function TopNavbar({
       </div>
 
       <div className={styles.navControls}>
-        <SimulationToolbarGroup
-          simulateServerFault={simulateServerFault}
-          onToggleServerFault={onToggleServerFault}
-          onResetMockData={onResetMockData}
-          resetButtonLabel={resetButtonLabel}
-        />
+        <button type="button" onClick={onReloadData} className={styles.resetMockBtn}>
+          {resetButtonLabel}
+        </button>
 
         <button
           type="button"

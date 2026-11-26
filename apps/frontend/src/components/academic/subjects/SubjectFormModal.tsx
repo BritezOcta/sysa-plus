@@ -78,8 +78,6 @@ export default function SubjectFormModal({
   const [year, setYear] = useState<number>(initialYear)
   const [period, setPeriod] = useState<SubjectPeriod>(initialPeriod)
   const [status, setStatus] = useState<EntityStatus>(initialStatus)
-  const [enrolledStudents, setEnrolledStudents] =
-    useState<number>(initialEnrolled)
   const [touched, setTouched] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [cycleErrorMessage, setCycleErrorMessage] = useState<string | null>(
@@ -114,7 +112,6 @@ export default function SubjectFormModal({
     year !== initialYear ||
     period !== initialPeriod ||
     status !== initialStatus ||
-    enrolledStudents !== initialEnrolled ||
     !CorrelativityGraphHelper.areRequirementsEqual(requirements, initialReqs)
 
   const validation = AcademicValidationHelper.validateSubjectForm(
@@ -128,7 +125,6 @@ export default function SubjectFormModal({
       year,
       period,
       status,
-      enrolledStudents,
     },
     selectedCareer,
     allSubjects,
@@ -250,10 +246,6 @@ export default function SubjectFormModal({
         year: isUnassigned ? null : Number(year),
         period: isUnassigned ? null : period,
         status,
-        enrolledStudents: Math.max(
-          SUBJECT_RULES.MIN_ENROLLED_STUDENTS,
-          Number(enrolledStudents),
-        ),
       },
       requirements,
     )
@@ -319,7 +311,7 @@ export default function SubjectFormModal({
             isUnassigned={isUnassigned}
             year={year}
             period={period}
-            enrolledStudents={enrolledStudents}
+            enrolledStudents={initialEnrolled}
             status={status}
             careers={careers}
             selectedCareer={selectedCareer}
@@ -337,7 +329,6 @@ export default function SubjectFormModal({
             onUnassignedChange={setIsUnassigned}
             onYearChange={setYear}
             onPeriodChange={setPeriod}
-            onEnrolledStudentsChange={setEnrolledStudents}
             onStatusChange={setStatus}
           />
 

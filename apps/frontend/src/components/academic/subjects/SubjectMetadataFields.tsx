@@ -39,7 +39,6 @@ interface SubjectMetadataFieldsProps {
   onUnassignedChange: (unassigned: boolean) => void
   onYearChange: (year: number) => void
   onPeriodChange: (period: SubjectPeriod) => void
-  onEnrolledStudentsChange: (count: number) => void
   onStatusChange: (status: EntityStatus) => void
 }
 
@@ -70,7 +69,6 @@ export default function SubjectMetadataFields({
   onUnassignedChange,
   onYearChange,
   onPeriodChange,
-  onEnrolledStudentsChange,
   onStatusChange,
 }: SubjectMetadataFieldsProps) {
   const careerYears = Array.from(
@@ -270,7 +268,7 @@ export default function SubjectMetadataFields({
         <FormField
           htmlFor="subj-students"
           label="Alumnos cursando o inscriptos"
-          hint="Si supera 0, el sistema bloqueará su eliminación física."
+          hint="Cantidad registrada por el sistema. Las inscripciones se gestionan desde el módulo de alumnos."
           hintId="subj-students-hint"
         >
           <input
@@ -280,7 +278,7 @@ export default function SubjectMetadataFields({
             min={SUBJECT_RULES.MIN_ENROLLED_STUDENTS}
             max={SUBJECT_RULES.MAX_ENROLLED_STUDENTS}
             value={enrolledStudents}
-            onChange={(e) => onEnrolledStudentsChange(Number(e.target.value))}
+            readOnly
             aria-describedby="subj-students-hint"
           />
         </FormField>

@@ -1,5 +1,5 @@
 import { AppError } from "../lib/AppError.js";
-import { academicRepository } from "../repositories/academic.repository.js";
+import { academicRepository, runAcademicTransaction, type AcademicRepository } from "../repositories/academic.repository.js";
 
 type UiCorrelativityType =
   | "regularizada_cursar"
@@ -12,7 +12,7 @@ function mapSemesterToPeriod(semester: number | null): UiPeriod {
   if (semester === null || semester === undefined) return null;
   if (semester === 0) return "anual";
   if (semester === 1 || semester === 2) return semester;
-  return 1;
+  return null;
 }
 
 function mapPeriodToSemester(period: UiPeriod): number | null {
@@ -27,7 +27,7 @@ const CORRELATIVITY_TYPES: readonly UiCorrelativityType[] = [
   "aprobada_rendir",
 ];
 
-const MAX_CAREER_DURATION_YEARS = 10;
+const MAX_CAREER_DURATION_YEARS = 8;
 
 function validationError(message: string, details?: Record<string, unknown>): AppError {
   return new AppError(400, "VALIDATION_ERROR", message, details);
@@ -61,7 +61,13 @@ function assertNonNegativeInt(value: number, label: string) {
  * `year = null` deja la materia en el banco sin ubicar (borrador del plan).
  */
 function assertValidSlot(year: number | null, period: UiPeriod, durationYears: number) {
-  if (year === null) return;
+  if (year === null) {
+    if (period !== null) throw validationError("Una materia sin año asignado tampoco puede tener período");
+    return;
+  }
+  if (period !== 1 && period !== 2 && period !== "anual") {
+    throw validationError("El período debe ser 1, 2 o anual");
+  }
   if (!Number.isInteger(year) || year < 1 || year > durationYears) {
     throw validationError(
       `El año de la materia debe estar entre 1 y ${durationYears} (duración de la carrera)`,
@@ -117,10 +123,8 @@ function detectCycleBfs(
   return { hasCycle: false, cyclePath: [] };
 }
 
-export const academicService = {
+export const createAcademicService = (academicRepository: AcademicRepository) => ({
   async getSnapshot() {
-    await academicRepository.ensureInitialSeedIfEmpty();
-
     const [careersRaw, auditRaw] = await Promise.all([
       academicRepository.listCareersWithMeta(),
       academicRepository.listAcademicAuditLogs(100),
@@ -234,11 +238,14 @@ export const academicService = {
   ) {
     const code = input.code.trim().toUpperCase();
     const name = input.name.trim();
-    const studyPlan = input.studyPlan.trim() || `Plan ${code}`;
+    const studyPlan = input.studyPlan.trim();
     const description = input.description.trim() || null;
 
-    if (!code || !name) {
-      throw validationError("Código y nombre de carrera son obligatorios");
+    if (!code || !name || !studyPlan) {
+      throw validationError("Código, nombre y plan de carrera son obligatorios");
+    }
+    if (code.length > 20 || name.length > 150 || studyPlan.length > 100 || (description?.length ?? 0) > 500) {
+      throw validationError("Los datos de la carrera superan la longitud permitida");
     }
     if (
       !Number.isInteger(input.durationYears) ||
@@ -318,13 +325,15 @@ export const academicService = {
   async toggleCareerStatus(
     careerId: number,
     actor: { userId: number; ipAddress: string | null },
+    desiredStatus?: "active" | "inactive",
   ) {
     const career = await academicRepository.findCareerById(careerId);
     if (!career) {
       throw new AppError(404, "CAREER_NOT_FOUND", "La carrera no existe");
     }
 
-    const nextActive = !career.isActive;
+    const nextActive = desiredStatus === undefined ? !career.isActive : desiredStatus === "active";
+    if (career.isActive === nextActive) return { status: nextActive ? "active" : "inactive" };
     await academicRepository.updateCareerAndPlan(careerId, {
       careerCode: career.careerCode,
       careerName: career.careerName,
@@ -406,6 +415,12 @@ export const academicService = {
 
     if (!code || !name) {
       throw validationError("Código y nombre de la materia son obligatorios");
+    }
+    if (code.length > 20 || name.length > 150) {
+      throw validationError("El código admite hasta 20 caracteres y el nombre hasta 150");
+    }
+    if (input.weeklyHours <= 0 || input.totalHours <= 0 || input.weeklyHours > 2147483647 || input.totalHours > 2147483647) {
+      throw validationError("La carga horaria debe ser un entero positivo válido");
     }
     assertNonNegativeInt(input.weeklyHours, "La carga horaria semanal");
     assertNonNegativeInt(input.totalHours, "La carga horaria total");
@@ -744,4 +759,33 @@ export const academicService = {
       ipAddress: actor.ipAddress,
     });
   },
+});
+
+type AcademicService = ReturnType<typeof createAcademicService>;
+const queries = createAcademicService(academicRepository);
+
+export const academicService = {
+  getSnapshot: () => queries.getSnapshot(),
+  saveCareer: (...args: Parameters<AcademicService["saveCareer"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).saveCareer(...args)),
+  toggleCareerStatus: (...args: Parameters<AcademicService["toggleCareerStatus"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).toggleCareerStatus(...args)),
+  deleteCareer: (...args: Parameters<AcademicService["deleteCareer"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).deleteCareer(...args)),
+  saveSubject: (...args: Parameters<AcademicService["saveSubject"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).saveSubject(...args)),
+  moveSubjectSlot: (...args: Parameters<AcademicService["moveSubjectSlot"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).moveSubjectSlot(...args)),
+  setSubjectStatus: (...args: Parameters<AcademicService["setSubjectStatus"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).setSubjectStatus(...args)),
+  toggleSubjectStatus: (...args: Parameters<AcademicService["toggleSubjectStatus"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).toggleSubjectStatus(...args)),
+  deleteSubject: (...args: Parameters<AcademicService["deleteSubject"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).deleteSubject(...args)),
+  connectCorrelativity: (...args: Parameters<AcademicService["connectCorrelativity"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).connectCorrelativity(...args)),
+  updateCorrelativityType: (...args: Parameters<AcademicService["updateCorrelativityType"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).updateCorrelativityType(...args)),
+  removeCorrelativity: (...args: Parameters<AcademicService["removeCorrelativity"]>) =>
+    runAcademicTransaction(repository => createAcademicService(repository).removeCorrelativity(...args)),
 };

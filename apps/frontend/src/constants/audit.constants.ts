@@ -33,13 +33,6 @@ export const AUDIT_ENTITY_FILTER_LABELS: Record<AuditEntityFilter, string> = {
   CORRELATIVIDAD: 'Correlatividades',
 } as const
 
-export const CURRENT_ACADEMIC_USER = {
-  INITIALS: 'CG',
-  FULL_NAME: 'Ing. Carlos Gómez',
-  ROLE_SHORT: 'Director Académico',
-  ROLE_AUDIT: 'Director Académico FRGP',
-} as const
-
 export const LOCALE_CONFIG = {
   AR: 'es-AR',
 } as const

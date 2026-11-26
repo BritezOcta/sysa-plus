@@ -80,14 +80,6 @@ export const STUDENT_SIM_STATUS_ORDER: readonly StudentSimStatus[] = [
   STUDENT_SIM_STATUS.APPROVED,
 ] as const
 
-export const INITIAL_SIMULATION_STATE: Readonly<
-  Record<string, StudentSimStatus>
-> = {
-  'sub-isi-101': STUDENT_SIM_STATUS.APPROVED,
-  'sub-isi-102': STUDENT_SIM_STATUS.REGULAR,
-  'sub-isi-103': STUDENT_SIM_STATUS.APPROVED,
-} as const
-
 export const CAREER_RULES = {
   MIN_DURATION_YEARS: 1,
   MAX_DURATION_YEARS: 8,
@@ -95,10 +87,9 @@ export const CAREER_RULES = {
   SELECTABLE_DURATION_YEARS: [1, 2, 3, 4, 5, 6] as const,
   TERMS_PER_YEAR: 2,
   MIN_SYSTEM_CAREERS: 1,
-  DEFAULT_STUDY_PLAN: 'Plan 2026 (Ord. 1950)',
-  DEFAULT_DESCRIPTION:
-    'Oferta académica oficial de la UTN Facultad Regional General Pacheco.',
-  FALLBACK_CAREER_ID: 'car-isi',
+  DEFAULT_STUDY_PLAN: '',
+  DEFAULT_DESCRIPTION: '',
+  FALLBACK_CAREER_ID: '',
 } as const
 
 export const SUBJECT_RULES = {

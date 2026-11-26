@@ -72,6 +72,10 @@ model Attendance {
 }
 
 model Career {
+  /// Preserved from the earlier local migration; the API uses StudyPlan.resolution.
+  legacyStudyPlan String? @map("STUDY_PLAN") @db.NVarChar(100) @ignore
+  legacySubjects StudyPlanSubject[] @relation("LegacySubjectCareer") @ignore
+  legacyCorrelativities SubjectCorrelativity[] @relation("LegacyCorrelativityCareer") @ignore
   careerId          Int             @id(map: "PK_CAREERS") @default(autoincrement()) @map("CAREER_ID")
   careerName        String          @map("CAREER_NAME") @db.NVarChar(150)
   careerCode        String          @unique(map: "UQ_CAREERS_CODE") @map("CAREER_CODE") @db.NVarChar(20)
@@ -243,6 +247,11 @@ model StudyPlan {
 }
 
 model StudyPlanSubject {
+  /// Retained only for migration compatibility; API values derive from relations.
+  legacyCareerId Int? @map("CAREER_ID") @ignore
+  legacyPeriod String? @map("PERIOD") @db.NVarChar(20) @ignore
+  legacyEnrolledStudents Int @default(0, map: "DF_SPS_ENROLLED") @map("ENROLLED_STUDENTS") @ignore
+  legacyCareer Career? @relation("LegacySubjectCareer", fields: [legacyCareerId], references: [careerId], onDelete: NoAction, onUpdate: NoAction, map: "FK_SPS_CAREER_DIRECT") @ignore
   studyPlanSubjectId Int                    @id(map: "PK_STUDY_PLAN_SUBJECT") @default(autoincrement()) @map("STUDY_PLAN_SUBJECT_ID")
   studyPlanId        Int                    @map("STUDY_PLAN_ID")
   subjectId          Int                    @map("SUBJECT_ID")
@@ -264,6 +273,8 @@ model StudyPlanSubject {
 }
 
 model SubjectCorrelativity {
+  legacyCareerId Int? @map("CAREER_ID") @ignore
+  legacyCareer Career? @relation("LegacyCorrelativityCareer", fields: [legacyCareerId], references: [careerId], onDelete: NoAction, onUpdate: NoAction, map: "FK_CORR_CAREER") @ignore
   correlativityId   Int              @id(map: "PK_SUBJECT_CORRELATIVITY") @default(autoincrement()) @map("CORRELATIVITY_ID")
   targetSubjectId   Int              @map("TARGET_SUBJECT_ID")
   requiredSubjectId Int              @map("REQUIRED_SUBJECT_ID")
@@ -329,6 +340,10 @@ model User {
 }
 
 model AuditLog {
+  /// Historical labels are preserved but never substituted for the authenticated actor.
+  legacySummary String? @map("SUMMARY") @db.NVarChar(255) @ignore
+  legacyUserName String? @map("USER_NAME") @db.NVarChar(100) @ignore
+  legacyUserRole String? @map("USER_ROLE") @db.NVarChar(50) @ignore
   auditLogId Int      @id(map: "PK_AUDIT_LOG") @default(autoincrement()) @map("AUDIT_LOG_ID")
   userId     Int?     @map("USER_ID")
   action     String   @map("ACTION") @db.NVarChar(50)
