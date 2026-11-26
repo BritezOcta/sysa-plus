@@ -1,36 +1,37 @@
-import { Navigate, Route, Routes } from 'react-router'
-import { AVISOS } from '../../data/mockStudentData'
-import EnrollmentPage from '../../pages/EnrollmentPage'
-import { StudentLayout, type StudentUser } from './StudentLayout'
-import { HomePage } from './pages/HomePage'
-import { PlanMateriasPage } from './pages/PlanMateriasPage'
-import { EstadoAcademicoPage } from './pages/EstadoAcademicoPage'
-import { ExamenesPage } from './pages/ExamenesPage'
-import { InscripcionExamenPage } from './pages/InscripcionExamenPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
+import { Navigate, Route, Routes } from "react-router";
+import { AVISOS } from "../../data/mockStudentData";
+import EnrollmentPage from "../../pages/EnrollmentPage";
+import { StudentLayout, type StudentUser } from "./StudentLayout";
+import { HomePage } from "./pages/HomePage";
+import { PlanMateriasPage } from "./pages/PlanMateriasPage";
+import { EstadoAcademicoPage } from "./pages/EstadoAcademicoPage";
+import { ExamenesPage } from "./pages/ExamenesPage";
+import { InscripcionExamenPage } from "./pages/InscripcionExamenPage";
+import { PlaceholderPage } from "./pages/PlaceholderPage";
+import StudentAttendancePage from "../../pages/studentAttendancePage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
-  'cursado',
-  'correlatividad-cursar',
-  'correlatividad-rendir',
-  'certificados',
-  'bee',
-  'password',
-  'censo',
-  'avisos',
-]
+  "cursado",
+  "correlatividad-cursar",
+  "correlatividad-rendir",
+  "certificados",
+  "bee",
+  "password",
+  "censo",
+  "avisos",
+];
 
 interface Props {
-  user: StudentUser
-  onLogout: () => void
+  user: StudentUser;
+  onLogout: () => void;
 }
 
 /**
  * Se monta en App con:  <Route path="/alumno/*" element={<StudentRoute />} />
  */
 export function StudentArea({ user, onLogout }: Props) {
-  const avisosSinLeer = AVISOS.filter((a) => !a.leido).length // TODO: venir de la API
+  const avisosSinLeer = AVISOS.filter((a) => !a.leido).length; // TODO: venir de la API
 
   return (
     <Routes>
@@ -52,11 +53,13 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
         {/* RF-04: inscripción a cursadas */}
         <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
+        {/* RF-05: consulta de asistencias */}
+        <Route path="asistencias" element={<StudentAttendancePage />} />
         {PLACEHOLDERS.map((id) => (
           <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
         ))}
         <Route path="*" element={<Navigate to="/alumno" replace />} />
       </Route>
     </Routes>
-  )
+  );
 }

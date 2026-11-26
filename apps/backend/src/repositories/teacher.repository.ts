@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { EXAM_CALL_STATUS, EXAM_STATUS } from "../types/academic.js";
 
 export const teacherRepository = {
   async findTeacherProfileByUserId(userId: number) {
@@ -409,6 +410,150 @@ export const teacherRepository = {
           action: "CIERRE_ACTA",
           entity: "ASSESSMENTS",
           entityId: String(params.assessmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return updated;
+    });
+  },
+
+  async updateCourseEnrollmentStatus(params: {
+    courseEnrollmentId: number;
+    enrollmentStatus: string;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.courseEnrollment.update({
+        where: { courseEnrollmentId: params.courseEnrollmentId },
+        data: { enrollmentStatus: params.enrollmentStatus },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "ACTUALIZACION_CONDICION",
+          entity: "COURSE_ENROLLMENT",
+          entityId: String(params.courseEnrollmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return updated;
+    });
+  },
+
+  async findTeacherExamCalls(teacherId: number) {
+    return prisma.examCall.findMany({
+      where: { teacherId },
+      include: {
+        examSession: true,
+        studyPlanSubject: {
+          include: { subject: true },
+        },
+        examEnrollments: {
+          where: { examStatus: { not: EXAM_STATUS.CANCELADA } },
+          select: { examEnrollmentId: true },
+        },
+      },
+      orderBy: { callDate: "desc" },
+    });
+  },
+
+  async findTeacherExamCallById(examCallId: number, teacherId: number) {
+    return prisma.examCall.findFirst({
+      where: { examCallId, teacherId },
+      include: {
+        examSession: true,
+        studyPlanSubject: {
+          include: { subject: true },
+        },
+        examEnrollments: {
+          where: { examStatus: { not: EXAM_STATUS.CANCELADA } },
+          include: {
+            studentCareer: {
+              include: {
+                studentProfile: {
+                  include: {
+                    user: { select: { firstName: true, lastName: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            studentCareer: {
+              studentProfile: { legajo: "asc" },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async saveExamCallGrades(params: {
+    examCallId: number;
+    grades: {
+      examEnrollmentId: number;
+      examGrade: number;
+      examStatus: string;
+    }[];
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      for (const item of params.grades) {
+        await tx.examEnrollment.update({
+          where: { examEnrollmentId: item.examEnrollmentId },
+          data: {
+            examGrade: item.examGrade,
+            examStatus: item.examStatus,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CARGA_NOTAS_FINAL",
+          entity: "EXAM_ENROLLMENT",
+          entityId: String(params.examCallId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+    });
+  },
+
+  async closeExamCall(params: {
+    examCallId: number;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.examCall.update({
+        where: { examCallId: params.examCallId },
+        data: { callStatus: EXAM_CALL_STATUS.CERRADA },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CIERRE_ACTA_FINAL",
+          entity: "EXAM_CALL",
+          entityId: String(params.examCallId),
           details: params.audit.details,
           ipAddress: params.audit.ipAddress,
         },

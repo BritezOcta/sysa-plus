@@ -104,8 +104,41 @@ export interface CommissionGradesResponse {
     enrollmentId: string;
     legajo: string;
     fullName: string;
+    enrollmentStatus: string;
   }[];
   assessments: AssessmentItem[];
+}
+
+export interface TeacherExamCallSummary {
+  id: string;
+  subjectCode: string;
+  subjectName: string;
+  sessionName: string;
+  callDate: string;
+  classroom: string | null;
+  callStatus: string;
+  enrolledCount: number;
+}
+
+export interface ExamCallStudentItem {
+  examEnrollmentId: string;
+  legajo: string;
+  fullName: string;
+  examGrade: number | null;
+  examStatus: string;
+}
+
+export interface ExamCallGradesResponse {
+  examCall: {
+    id: string;
+    subjectCode: string;
+    subjectName: string;
+    sessionName: string;
+    callDate: string;
+    classroom: string | null;
+    callStatus: string;
+  };
+  students: ExamCallStudentItem[];
 }
 
 /** Módulo docente: comisiones asignadas y RF-05 asistencias. */
@@ -197,6 +230,52 @@ export const teacherApi = {
   ): Promise<{ id: string; isClosed: boolean }> {
     return apiRequest<{ id: string; isClosed: boolean }>(
       `/teacher/commissions/${commissionId}/assessments/${assessmentId}/close`,
+      { method: "POST" },
+    );
+  },
+
+  updateEnrollmentStatus(
+    commissionId: string,
+    enrollmentId: string,
+    status: string,
+  ): Promise<{ enrollmentId: string; enrollmentStatus: string }> {
+    return apiRequest<{ enrollmentId: string; enrollmentStatus: string }>(
+      `/teacher/commissions/${commissionId}/enrollments/${enrollmentId}/status`,
+      { method: "PATCH", body: { status } },
+    );
+  },
+
+  async getExamCalls(): Promise<TeacherExamCallSummary[]> {
+    const { examCalls } = await apiRequest<{
+      examCalls: TeacherExamCallSummary[];
+    }>("/teacher/exam-calls");
+    return examCalls;
+  },
+
+  getExamCallGrades(examCallId: string): Promise<ExamCallGradesResponse> {
+    return apiRequest<ExamCallGradesResponse>(
+      `/teacher/exam-calls/${examCallId}/grades`,
+    );
+  },
+
+  saveExamCallGrades(
+    examCallId: string,
+    grades: { examEnrollmentId: string; examGrade: number }[],
+  ): Promise<{ savedCount: number }> {
+    return apiRequest<{ savedCount: number }>(
+      `/teacher/exam-calls/${examCallId}/grades`,
+      {
+        method: "PUT",
+        body: { grades },
+      },
+    );
+  },
+
+  closeExamCall(
+    examCallId: string,
+  ): Promise<{ id: string; callStatus: string }> {
+    return apiRequest<{ id: string; callStatus: string }>(
+      `/teacher/exam-calls/${examCallId}/close`,
       { method: "POST" },
     );
   },

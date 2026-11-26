@@ -41,3 +41,20 @@ teacherRouter.post(
   "/commissions/:commissionId/assessments/:assessmentId/close",
   teacherController.closeAssessment,
 );
+teacherRouter.patch(
+  "/commissions/:commissionId/enrollments/:enrollmentId/status",
+  teacherController.updateEnrollmentStatus,
+);
+teacherRouter.get("/exam-calls", teacherController.getExamCalls);
+teacherRouter.get(
+  "/exam-calls/:examCallId/grades",
+  teacherController.getExamCallGrades,
+);
+teacherRouter.put(
+  "/exam-calls/:examCallId/grades",
+  teacherController.saveExamCallGrades,
+);
+teacherRouter.post(
+  "/exam-calls/:examCallId/close",
+  teacherController.closeExamCall,
+);

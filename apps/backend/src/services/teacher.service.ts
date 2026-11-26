@@ -1,6 +1,13 @@
 import { AppError } from "../lib/AppError.js";
 import { teacherRepository } from "../repositories/teacher.repository.js";
 
+import {
+  ENROLLMENT_STATUS,
+  EXAM_CALL_STATUS,
+  EXAM_STATUS,
+  FINAL_EXAM_PASSING_GRADE,
+} from "../types/academic.js";
+
 const VALID_STATUSES = new Set(["PRESENTE", "AUSENTE", "JUSTIFICADO"]);
 const MIN_REGULAR_PERCENT = 75;
 const RISK_THRESHOLD_PERCENT = 80;
@@ -547,6 +554,7 @@ export const teacherService = {
         enrollmentId: String(enr.courseEnrollmentId),
         legajo: enr.studentCareer.studentProfile.legajo,
         fullName: `${enr.studentCareer.studentProfile.user.firstName} ${enr.studentCareer.studentProfile.user.lastName}`,
+        enrollmentStatus: enr.enrollmentStatus,
       })),
       assessments: assessments.map((a) => ({
         id: String(a.assessmentId),
@@ -837,5 +845,335 @@ export const teacherService = {
     });
 
     return { id: String(assessmentId), isClosed: true };
+  },
+
+  async updateEnrollmentStatus(params: {
+    user: { userId: number };
+    ipAddress: string | null;
+    rawCommissionId: unknown;
+    rawEnrollmentId: unknown;
+    status: unknown;
+  }) {
+    const courseOfferingId = Number(params.rawCommissionId);
+    const courseEnrollmentId = Number(params.rawEnrollmentId);
+    if (
+      !Number.isInteger(courseOfferingId) ||
+      !Number.isInteger(courseEnrollmentId)
+    ) {
+      throw new AppError(
+        400,
+        "INVALID_ID",
+        "Los identificadores enviados no son válidos.",
+      );
+    }
+
+    const allowedStatuses = new Set<string>([
+      ENROLLMENT_STATUS.INSCRIPTO,
+      ENROLLMENT_STATUS.REGULAR,
+      ENROLLMENT_STATUS.APROBADA,
+      ENROLLMENT_STATUS.LIBRE,
+      ENROLLMENT_STATUS.DESAPROBADA,
+    ]);
+
+    const status =
+      typeof params.status === "string" ? params.status.trim() : "";
+    if (!allowedStatuses.has(status)) {
+      throw new AppError(
+        400,
+        "INVALID_STATUS",
+        "La condición académica seleccionada no es válida.",
+      );
+    }
+
+    const profile = await teacherRepository.findTeacherProfileByUserId(
+      params.user.userId,
+    );
+    if (!profile) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Acceso denegado: perfil docente no encontrado.",
+      );
+    }
+
+    const assignment = await teacherRepository.findTeacherAssignment(
+      profile.teacherId,
+      courseOfferingId,
+    );
+    if (!assignment) {
+      throw new AppError(
+        403,
+        "NOT_ASSIGNED",
+        "Acceso denegado: no estás asignado a esta comisión.",
+      );
+    }
+
+    const enrollment = await teacherRepository.findEnrollmentInCommission(
+      courseEnrollmentId,
+      courseOfferingId,
+    );
+    if (!enrollment) {
+      throw new AppError(
+        404,
+        "ENROLLMENT_NOT_FOUND",
+        "El alumno no pertenece a esta comisión.",
+      );
+    }
+
+    const legajo = enrollment.studentCareer.studentProfile.legajo;
+    await teacherRepository.updateCourseEnrollmentStatus({
+      courseEnrollmentId,
+      enrollmentStatus: status,
+      audit: {
+        userId: params.user.userId,
+        details: `Comisión ${assignment.courseOffering.commission} - Legajo ${legajo} -> ${status}`,
+        ipAddress: params.ipAddress,
+      },
+    });
+
+    return {
+      enrollmentId: String(courseEnrollmentId),
+      enrollmentStatus: status,
+    };
+  },
+
+  async getTeacherExamCalls(user: { userId: number }) {
+    const profile = await teacherRepository.findTeacherProfileByUserId(
+      user.userId,
+    );
+    if (!profile) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Acceso denegado: perfil docente no encontrado.",
+      );
+    }
+
+    const calls = await teacherRepository.findTeacherExamCalls(
+      profile.teacherId,
+    );
+
+    return calls.map((c) => ({
+      id: String(c.examCallId),
+      subjectCode: c.studyPlanSubject.subject.subjectCode,
+      subjectName: c.studyPlanSubject.subject.subjectName,
+      sessionName: c.examSession.examName,
+      callDate: c.callDate.toISOString().slice(0, 10),
+      classroom: c.classroom,
+      callStatus: c.callStatus,
+      enrolledCount: c.examEnrollments.length,
+    }));
+  },
+
+  async getExamCallGrades(user: { userId: number }, rawExamCallId: unknown) {
+    const examCallId = Number(rawExamCallId);
+    if (!Number.isInteger(examCallId) || examCallId <= 0) {
+      throw new AppError(
+        400,
+        "INVALID_EXAM_CALL_ID",
+        "El ID de mesa de examen no es válido.",
+      );
+    }
+
+    const profile = await teacherRepository.findTeacherProfileByUserId(
+      user.userId,
+    );
+    if (!profile) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Acceso denegado: perfil docente no encontrado.",
+      );
+    }
+
+    const call = await teacherRepository.findTeacherExamCallById(
+      examCallId,
+      profile.teacherId,
+    );
+    if (!call) {
+      throw new AppError(
+        404,
+        "EXAM_CALL_NOT_FOUND",
+        "Mesa de examen no encontrada o no asignada.",
+      );
+    }
+
+    return {
+      examCall: {
+        id: String(call.examCallId),
+        subjectCode: call.studyPlanSubject.subject.subjectCode,
+        subjectName: call.studyPlanSubject.subject.subjectName,
+        sessionName: call.examSession.examName,
+        callDate: call.callDate.toISOString().slice(0, 10),
+        classroom: call.classroom,
+        callStatus: call.callStatus,
+      },
+      students: call.examEnrollments.map((enr) => ({
+        examEnrollmentId: String(enr.examEnrollmentId),
+        legajo: enr.studentCareer.studentProfile.legajo,
+        fullName: `${enr.studentCareer.studentProfile.user.firstName} ${enr.studentCareer.studentProfile.user.lastName}`,
+        examGrade: enr.examGrade !== null ? Number(enr.examGrade) : null,
+        examStatus: enr.examStatus,
+      })),
+    };
+  },
+
+  async saveExamCallGrades(params: {
+    user: { userId: number };
+    ipAddress: string | null;
+    rawExamCallId: unknown;
+    grades: unknown;
+  }) {
+    const examCallId = Number(params.rawExamCallId);
+    if (!Number.isInteger(examCallId) || examCallId <= 0) {
+      throw new AppError(
+        400,
+        "INVALID_EXAM_CALL_ID",
+        "El ID de mesa de examen no es válido.",
+      );
+    }
+
+    if (!Array.isArray(params.grades) || params.grades.length === 0) {
+      throw new AppError(
+        400,
+        "EMPTY_GRADES",
+        "Debés enviar al menos una calificación.",
+      );
+    }
+
+    const profile = await teacherRepository.findTeacherProfileByUserId(
+      params.user.userId,
+    );
+    if (!profile) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Acceso denegado: perfil docente no encontrado.",
+      );
+    }
+
+    const call = await teacherRepository.findTeacherExamCallById(
+      examCallId,
+      profile.teacherId,
+    );
+    if (!call) {
+      throw new AppError(
+        404,
+        "EXAM_CALL_NOT_FOUND",
+        "Mesa de examen no encontrada o no asignada.",
+      );
+    }
+    if (call.callStatus === EXAM_CALL_STATUS.CERRADA) {
+      throw new AppError(
+        409,
+        "EXAM_CALL_CLOSED",
+        "El acta de esta mesa ya está cerrada.",
+      );
+    }
+
+    const validIds = new Set(
+      call.examEnrollments.map((e) => e.examEnrollmentId),
+    );
+    const parsedGrades: {
+      examEnrollmentId: number;
+      examGrade: number;
+      examStatus: string;
+    }[] = [];
+
+    for (const item of params.grades) {
+      const record = item as Record<string, unknown>;
+      const examEnrollmentId = Number(record["examEnrollmentId"]);
+      const examGrade = Number(record["examGrade"]);
+
+      if (!validIds.has(examEnrollmentId) || !Number.isFinite(examGrade)) {
+        throw new AppError(
+          400,
+          "INVALID_GRADE_ITEM",
+          "Datos de calificación inválidos.",
+        );
+      }
+      if (examGrade < 0 || examGrade > 10) {
+        throw new AppError(
+          400,
+          "SCORE_OUT_OF_RANGE",
+          "Las notas de final deben estar entre 0 y 10.",
+        );
+      }
+
+      const examStatus =
+        examGrade >= FINAL_EXAM_PASSING_GRADE
+          ? EXAM_STATUS.APROBADO
+          : EXAM_STATUS.DESAPROBADO;
+
+      parsedGrades.push({ examEnrollmentId, examGrade, examStatus });
+    }
+
+    await teacherRepository.saveExamCallGrades({
+      examCallId,
+      grades: parsedGrades,
+      audit: {
+        userId: params.user.userId,
+        details: `Mesa ${call.studyPlanSubject.subject.subjectCode} (${call.examSession.examName}) - ${parsedGrades.length} notas`,
+        ipAddress: params.ipAddress,
+      },
+    });
+
+    return { savedCount: parsedGrades.length };
+  },
+
+  async closeExamCall(params: {
+    user: { userId: number };
+    ipAddress: string | null;
+    rawExamCallId: unknown;
+  }) {
+    const examCallId = Number(params.rawExamCallId);
+    if (!Number.isInteger(examCallId) || examCallId <= 0) {
+      throw new AppError(
+        400,
+        "INVALID_EXAM_CALL_ID",
+        "El ID de mesa de examen no es válido.",
+      );
+    }
+
+    const profile = await teacherRepository.findTeacherProfileByUserId(
+      params.user.userId,
+    );
+    if (!profile) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Acceso denegado: perfil docente no encontrado.",
+      );
+    }
+
+    const call = await teacherRepository.findTeacherExamCallById(
+      examCallId,
+      profile.teacherId,
+    );
+    if (!call) {
+      throw new AppError(
+        404,
+        "EXAM_CALL_NOT_FOUND",
+        "Mesa de examen no encontrada o no asignada.",
+      );
+    }
+    if (call.callStatus === EXAM_CALL_STATUS.CERRADA) {
+      throw new AppError(
+        409,
+        "ALREADY_CLOSED",
+        "Esta mesa de examen ya está cerrada.",
+      );
+    }
+
+    await teacherRepository.closeExamCall({
+      examCallId,
+      audit: {
+        userId: params.user.userId,
+        details: `Cierre de mesa: ${call.studyPlanSubject.subject.subjectCode} (${call.examSession.examName})`,
+        ipAddress: params.ipAddress,
+      },
+    });
+
+    return { id: String(examCallId), callStatus: EXAM_CALL_STATUS.CERRADA };
   },
 };

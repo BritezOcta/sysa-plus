@@ -22,6 +22,7 @@ import TeacherHomePage from "./pages/TeacherHomePage";
 import TeacherAttendancePage from "./pages/TeacherAttendancePage";
 import TeacherGradesPage from "./pages/TeacherGradesPage";
 import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
+import AdminStudentsPage from "./pages/adminStudentsPage";
 
 function StudentRoute() {
   const navigate = useNavigate();
@@ -74,6 +75,14 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AcademicManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.ADMIN_STUDENTS}
+            element={
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
+                <AdminStudentsPage />
               </ProtectedRoute>
             }
           />
