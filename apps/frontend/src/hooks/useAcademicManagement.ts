@@ -1,25 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { academicApi } from '../api/academic.api'
+import { ApiError, NetworkError } from '../api/httpClient'
 import {
-  AUDIT_ACTION_TYPES,
-  AUDIT_ENTITY_TYPES,
   CAREER_RULES,
   ENTITY_STATUS,
-  ID_PREFIXES,
   SUBJECT_RULES,
   VIEW_MODES,
 } from '../constants'
 import {
-  INITIAL_CAREERS,
-  INITIAL_CORRELATIVITIES,
-  INITIAL_SUBJECTS,
-} from '../data/mockAcademicData'
-import {
   AcademicFormatHelper,
-  AcademicValidationHelper,
   CorrelativityGraphHelper,
-  IdAndDateHelper,
 } from '../helpers'
 import type {
+  AuditLogEntry,
   Career,
   CareerFormPayload,
   CareerModalState,
@@ -34,22 +27,23 @@ import type {
   SubjectPeriod,
   ViewMode,
 } from '../types'
-import { useAuditLog } from './useAuditLog'
 import { useServerFaultSimulation } from './useServerFaultSimulation'
 import { useToastNotifications } from './useToastNotifications'
 
+/** Códigos del backend que indican que la materia no puede borrarse físicamente. */
+const SUBJECT_DELETION_BLOCKED_CODES = new Set([
+  'SUBJECT_HAS_ENROLLED_STUDENTS',
+  'SUBJECT_HAS_OFFERINGS_OR_EXAMS',
+])
+
 export function useAcademicManagement() {
-  // Datos de negocio mantenidos en memoria para un entorno 100% reproducible
-  const [careers, setCareers] = useState<Career[]>(() => [...INITIAL_CAREERS])
-  const [subjects, setSubjects] = useState<Subject[]>(() => [
-    ...INITIAL_SUBJECTS,
-  ])
-  const [correlativities, setCorrelativities] = useState<Correlativity[]>(
-    () => [...INITIAL_CORRELATIVITIES],
-  )
+  const [careers, setCareers] = useState<Career[]>([])
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [correlativities, setCorrelativities] = useState<Correlativity[]>([])
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
 
   const [selectedCareerId, setSelectedCareerId] = useState<string>(
-    () => INITIAL_CAREERS[0]?.id ?? CAREER_RULES.FALLBACK_CAREER_ID,
+    CAREER_RULES.FALLBACK_CAREER_ID,
   )
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_MODES.CANVAS)
   const [simMode, setSimMode] = useState<boolean>(false)
@@ -76,23 +70,107 @@ export function useAcademicManagement() {
   const [confirmDialog, setConfirmDialog] =
     useState<ConfirmDialogConfig | null>(null)
 
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false)
+  const [unreadAuditCount, setUnreadAuditCount] = useState(0)
+  // Refs para que refreshFromBackend no cambie de identidad (y no dispare recargas)
+  // cada vez que se abre/cierra el panel de auditoría.
+  const auditDrawerOpenRef = useRef(false)
+  const knownAuditIdsRef = useRef<Set<string> | null>(null)
+
   const { toasts, pushToast, dismissToast } = useToastNotifications()
-  const {
-    auditLogs,
-    auditDrawerOpen,
-    unreadAuditCount,
-    recordAudit,
-    openAuditDrawer,
-    closeAuditDrawer,
-    resetAuditLogs,
-  } = useAuditLog()
   const {
     simulateServerFault,
     setSimulateServerFault,
     pendingFailedOperation,
     runWithServerCheck,
+    reportFailedOperation,
     dismissFailedOperation,
   } = useServerFaultSimulation()
+
+  const refreshFromBackend = useCallback(async (preferredCareerId?: string) => {
+    const snap = await academicApi.getSnapshot()
+    setCareers(snap.careers)
+    setSubjects(snap.subjects)
+    setCorrelativities(snap.correlativities)
+    setAuditLogs(snap.auditLogs)
+
+    const known = knownAuditIdsRef.current
+    if (known && !auditDrawerOpenRef.current) {
+      const newEntries = snap.auditLogs.filter((log) => !known.has(log.id)).length
+      if (newEntries > 0) setUnreadAuditCount((c) => c + newEntries)
+    }
+    knownAuditIdsRef.current = new Set(snap.auditLogs.map((log) => log.id))
+
+    setSelectedCareerId((prev) => {
+      if (preferredCareerId && snap.careers.some((c) => c.id === preferredCareerId)) {
+        return preferredCareerId
+      }
+      if (snap.careers.some((c) => c.id === prev)) return prev
+      return snap.careers[0]?.id ?? CAREER_RULES.FALLBACK_CAREER_ID
+    })
+  }, [])
+
+  useEffect(() => {
+    function loadInitialData() {
+      void refreshFromBackend().catch((err: unknown) => {
+        if (err instanceof NetworkError) {
+          reportFailedOperation('Cargar la oferta académica', loadInitialData)
+          return
+        }
+        pushToast(
+          'danger',
+          'Error al cargar datos',
+          err instanceof Error ? err.message : 'No se pudo cargar la oferta académica',
+        )
+      })
+    }
+    loadInitialData()
+  }, [refreshFromBackend, reportFailedOperation, pushToast])
+
+  function handleApiError(err: unknown, fallbackTitle: string) {
+    if (err instanceof ApiError && err.code === 'CIRCULAR_CORRELATIVITY') {
+      const cycleIds = Array.isArray(err.data.cycleIds)
+        ? (err.data.cycleIds as string[])
+        : []
+      if (cycleIds.length > 0) {
+        setCircularConflictNodes(
+          CorrelativityGraphHelper.mapCyclePathToNodes(cycleIds, subjects),
+        )
+        return
+      }
+    }
+    pushToast(
+      'danger',
+      fallbackTitle,
+      err instanceof Error ? err.message : 'Error inesperado',
+    )
+  }
+
+  /**
+   * Ejecuta una operación contra el backend:
+   * - respeta el simulador de caídas del prototipo,
+   * - ante un error de conexión real ofrece "Reintentar" (RF-02 2.5),
+   * - ante un error de negocio muestra el mensaje del servidor.
+   * `onApiError` permite interceptar un error puntual; devuelve true si lo manejó.
+   */
+  function runRemote(
+    description: string,
+    task: () => Promise<void>,
+    errorTitle: string,
+    onApiError?: (err: ApiError) => boolean,
+  ) {
+    const execute = () => {
+      void task().catch((err: unknown) => {
+        if (err instanceof NetworkError) {
+          reportFailedOperation(description, execute)
+          return
+        }
+        if (err instanceof ApiError && onApiError?.(err)) return
+        handleApiError(err, errorTitle)
+      })
+    }
+    runWithServerCheck(description, execute)
+  }
 
   const activeCareer = useMemo(
     () => careers.find((c) => c.id === selectedCareerId) ?? careers[0],
@@ -147,67 +225,21 @@ export function useAcademicManagement() {
   }
 
   function handleSaveCareer(data: CareerFormPayload) {
-    runWithServerCheck(
+    runRemote(
       data.id
         ? `Actualizar carrera ${data.code}`
         : `Dar de alta carrera ${data.code}`,
-      () => {
-        if (data.id) {
-          setCareers((prev) =>
-            prev.map((c) =>
-              c.id === data.id
-                ? {
-                    ...c,
-                    code: data.code,
-                    name: data.name,
-                    studyPlan: data.studyPlan,
-                    durationYears: data.durationYears,
-                    status: data.status,
-                    description: data.description,
-                    updatedAt: IdAndDateHelper.currentIsoTimestamp(),
-                  }
-                : c,
-            ),
-          )
-          recordAudit(
-            AUDIT_ACTION_TYPES.EDICION,
-            AUDIT_ENTITY_TYPES.CARRERA,
-            `Editó carrera ${data.code} (${data.name})`,
-            `Plan: ${data.studyPlan} · Duración: ${data.durationYears} años · Estado: ${AcademicFormatHelper.formatEntityStatus(data.status)}.`,
-          )
-          pushToast(
-            'success',
-            'Carrera actualizada',
-            `Se guardaron los cambios en ${data.code} — ${data.name}.`,
-          )
-        } else {
-          const newId = IdAndDateHelper.createId(ID_PREFIXES.CAREER)
-          const newCareer: Career = {
-            id: newId,
-            code: data.code,
-            name: data.name,
-            studyPlan: data.studyPlan,
-            durationYears: data.durationYears,
-            status: data.status,
-            description: data.description,
-            updatedAt: IdAndDateHelper.currentIsoTimestamp(),
-          }
-          setCareers((prev) => [...prev, newCareer])
-          setSelectedCareerId(newId)
-          recordAudit(
-            AUDIT_ACTION_TYPES.ALTA,
-            AUDIT_ENTITY_TYPES.CARRERA,
-            `Alta de nueva carrera ${data.code}`,
-            `Se creó "${data.name}" (${data.studyPlan}) con duración de ${data.durationYears} años.`,
-          )
-          pushToast(
-            'success',
-            'Carrera dada de alta',
-            `La carrera ${data.code} (${data.name}) ya está disponible en la oferta académica.`,
-          )
-        }
+      async () => {
+        const res = await academicApi.saveCareer(data)
+        await refreshFromBackend(res.id)
         closeCareerModal()
+        pushToast(
+          'success',
+          data.id ? 'Carrera actualizada' : 'Carrera dada de alta',
+          `Se guardaron los cambios en ${data.code} — ${data.name}.`,
+        )
       },
+      'No se pudo guardar la carrera',
     )
   }
 
@@ -217,30 +249,11 @@ export function useAcademicManagement() {
     )
     const statusLabel = AcademicFormatHelper.formatEntityStatus(nextStatus)
 
-    runWithServerCheck(
+    runRemote(
       `${nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivar' : 'Activar'} carrera ${career.code}`,
-      () => {
-        setCareers((prev) =>
-          prev.map((c) =>
-            c.id === career.id
-              ? {
-                  ...c,
-                  status: nextStatus,
-                  updatedAt: IdAndDateHelper.currentIsoTimestamp(),
-                }
-              : c,
-          ),
-        )
-        recordAudit(
-          nextStatus === ENTITY_STATUS.INACTIVE
-            ? AUDIT_ACTION_TYPES.INACTIVACION
-            : AUDIT_ACTION_TYPES.EDICION,
-          AUDIT_ENTITY_TYPES.CARRERA,
-          `${
-            nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivó' : 'Reactivó'
-          } la carrera ${career.code}`,
-          `La carrera "${career.name}" pasó a estado ${statusLabel}.`,
-        )
+      async () => {
+        await academicApi.toggleCareerStatus(career.id)
+        await refreshFromBackend(career.id)
         pushToast(
           nextStatus === ENTITY_STATUS.ACTIVE ? 'success' : 'warning',
           nextStatus === ENTITY_STATUS.ACTIVE
@@ -249,6 +262,7 @@ export function useAcademicManagement() {
           `${career.code} ahora se encuentra ${statusLabel}.`,
         )
       },
+      'No se pudo cambiar el estado de la carrera',
     )
   }
 
@@ -263,21 +277,6 @@ export function useAcademicManagement() {
     }
 
     const associatedSubjects = subjects.filter((s) => s.careerId === career.id)
-    const totalStudents =
-      AcademicValidationHelper.getTotalEnrolledStudentsInCareer(
-        career.id,
-        subjects,
-      )
-
-    if (totalStudents > 0) {
-      pushToast(
-        'danger',
-        'Baja de carrera bloqueada (2.5)',
-        `${career.code} tiene ${totalStudents} alumnos cursando en sus materias. Se sugiere inactivarla.`,
-      )
-      return
-    }
-
     const associatedCorrsCount = correlativities.filter(
       (c) => c.careerId === career.id,
     ).length
@@ -285,33 +284,24 @@ export function useAcademicManagement() {
     setConfirmDialog({
       title: `Dar de baja la carrera ${career.code}`,
       description: `¿Confirmás la eliminación permanente de "${career.name}" (${career.studyPlan})?`,
-      impactDetail: `Se eliminarán ${associatedSubjects.length} materia(s) y ${associatedCorrsCount} correlatividad(es) asociadas sin alumnos inscriptos.`,
+      impactDetail: `Se eliminarán ${associatedSubjects.length} materia(s) y ${associatedCorrsCount} correlatividad(es) asociadas si no hay alumnos inscriptos.`,
       confirmLabel: `Eliminar carrera ${career.code}`,
       tone: 'danger',
       onConfirm: () => {
         setConfirmDialog(null)
-        runWithServerCheck(`Dar de baja carrera ${career.code}`, () => {
-          const remaining = careers.filter((c) => c.id !== career.id)
-          setCareers(remaining)
-          setSubjects((prev) => prev.filter((s) => s.careerId !== career.id))
-          setCorrelativities((prev) =>
-            prev.filter((c) => c.careerId !== career.id),
-          )
-          if (selectedCareerId === career.id && remaining[0]) {
-            setSelectedCareerId(remaining[0].id)
-          }
-          recordAudit(
-            AUDIT_ACTION_TYPES.BAJA,
-            AUDIT_ENTITY_TYPES.CARRERA,
-            `Baja definitiva de carrera ${career.code}`,
-            `Se eliminó la carrera "${career.name}" sin alumnos activos.`,
-          )
-          pushToast(
-            'info',
-            'Carrera eliminada',
-            `Se dio de baja la carrera ${career.code}.`,
-          )
-        })
+        runRemote(
+          `Dar de baja carrera ${career.code}`,
+          async () => {
+            await academicApi.deleteCareer(career.id)
+            await refreshFromBackend()
+            pushToast(
+              'info',
+              'Carrera eliminada',
+              `Se dio de baja la carrera ${career.code}.`,
+            )
+          },
+          'Baja de carrera bloqueada',
+        )
       },
     })
   }
@@ -320,96 +310,21 @@ export function useAcademicManagement() {
     subjectData: SubjectFormPayload,
     updatedRequirements: PendingRequirement[],
   ) {
-    runWithServerCheck(
+    runRemote(
       subjectData.id
         ? `Guardar cambios en materia ${subjectData.code}`
         : `Dar de alta materia ${subjectData.code}`,
-      () => {
-        let targetSubjectId = subjectData.id
-        const periodLabel = AcademicFormatHelper.formatPeriodLabel(
-          subjectData.year,
-          subjectData.period,
-        )
-
-        if (subjectData.id) {
-          setSubjects((prev) =>
-            prev.map((s) =>
-              s.id === subjectData.id
-                ? {
-                    ...s,
-                    careerId: subjectData.careerId,
-                    code: subjectData.code,
-                    name: subjectData.name,
-                    weeklyHours: subjectData.weeklyHours,
-                    totalHours: subjectData.totalHours,
-                    year: subjectData.year,
-                    period: subjectData.period,
-                    status: subjectData.status,
-                    enrolledStudents: subjectData.enrolledStudents,
-                  }
-                : s,
-            ),
-          )
-          recordAudit(
-            AUDIT_ACTION_TYPES.EDICION,
-            AUDIT_ENTITY_TYPES.MATERIA,
-            `Editó materia ${subjectData.code} (${subjectData.name})`,
-            `Ubicación: ${periodLabel} · Carga: ${subjectData.weeklyHours}h/sem · Correlativas: ${updatedRequirements.length}.`,
-          )
-          pushToast(
-            'success',
-            'Materia actualizada',
-            `${subjectData.code} (${subjectData.name}) y sus correlatividades fueron actualizadas.`,
-          )
-        } else {
-          targetSubjectId = IdAndDateHelper.createId(ID_PREFIXES.SUBJECT)
-          const newSubj: Subject = {
-            id: targetSubjectId,
-            careerId: subjectData.careerId,
-            code: subjectData.code,
-            name: subjectData.name,
-            weeklyHours: subjectData.weeklyHours,
-            totalHours: subjectData.totalHours,
-            year: subjectData.year,
-            period: subjectData.period,
-            status: subjectData.status,
-            enrolledStudents: subjectData.enrolledStudents,
-          }
-          setSubjects((prev) => [...prev, newSubj])
-          recordAudit(
-            AUDIT_ACTION_TYPES.ALTA,
-            AUDIT_ENTITY_TYPES.MATERIA,
-            `Alta de materia ${subjectData.code} (${subjectData.name})`,
-            `Asociada a ${
-              careers.find((c) => c.id === subjectData.careerId)?.code ?? ''
-            } en ${periodLabel}.`,
-          )
-          pushToast(
-            'success',
-            'Materia dada de alta',
-            `Se incorporó ${subjectData.code} — ${subjectData.name} al plan de estudios.`,
-          )
-        }
-
-        if (targetSubjectId) {
-          setCorrelativities((prev) => {
-            const others = prev.filter((c) => c.subjectId !== targetSubjectId)
-            const fresh: Correlativity[] = updatedRequirements.map(
-              (req, idx) => ({
-                id: `${IdAndDateHelper.createId(ID_PREFIXES.CORRELATIVITY)}-${idx}`,
-                careerId: subjectData.careerId,
-                subjectId: targetSubjectId!,
-                requiresSubjectId: req.requiresSubjectId,
-                type: req.type,
-                createdAt: IdAndDateHelper.currentIsoTimestamp(),
-              }),
-            )
-            return [...others, ...fresh]
-          })
-        }
-
+      async () => {
+        await academicApi.saveSubject(subjectData, updatedRequirements)
+        await refreshFromBackend(subjectData.careerId)
         closeSubjectModal()
+        pushToast(
+          'success',
+          subjectData.id ? 'Materia actualizada' : 'Materia dada de alta',
+          `${subjectData.code} (${subjectData.name}) fue guardada en el plan de estudios.`,
+        )
       },
+      'No se pudo guardar la materia',
     )
   }
 
@@ -426,55 +341,34 @@ export function useAcademicManagement() {
       targetYear,
       targetPeriod,
     )
-    const originLabel = AcademicFormatHelper.formatPeriodLabel(
-      subj.year,
-      subj.period,
-    )
 
-    runWithServerCheck(`Reubicar ${subj.code} a ${destLabel}`, () => {
-      setSubjects((prev) =>
-        prev.map((s) =>
-          s.id === subjectId
-            ? { ...s, year: targetYear, period: targetPeriod }
-            : s,
-        ),
-      )
-      recordAudit(
-        AUDIT_ACTION_TYPES.REUBICACION,
-        AUDIT_ENTITY_TYPES.MATERIA,
-        `Movió ${subj.code} a ${destLabel}`,
-        `La materia "${subj.name}" fue arrastrada desde ${originLabel} hacia ${destLabel}.`,
-      )
-      pushToast(
-        'info',
-        'Ubicación actualizada (Drag & Drop)',
-        `${subj.code} (${subj.name}) ahora está en ${destLabel}.`,
-      )
-    })
+    runRemote(
+      `Reubicar ${subj.code} a ${destLabel}`,
+      async () => {
+        await academicApi.moveSubjectSlot(subjectId, targetYear, targetPeriod)
+        await refreshFromBackend(subj.careerId)
+        pushToast(
+          'info',
+          'Ubicación actualizada',
+          `${subj.code} (${subj.name}) ahora está en ${destLabel}.`,
+        )
+      },
+      'No se pudo reubicar la materia',
+    )
   }
 
-  function handleToggleSubjectStatus(subj: Subject) {
-    const nextStatus = AcademicFormatHelper.getOppositeEntityStatus(subj.status)
+  function setSubjectStatus(
+    subj: Subject,
+    nextStatus: Subject['status'],
+    description: string,
+    errorTitle: string,
+  ) {
     const statusLabel = AcademicFormatHelper.formatEntityStatus(nextStatus)
-
-    runWithServerCheck(
-      `${nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivar' : 'Reactivar'} materia ${subj.code}`,
-      () => {
-        setSubjects((prev) =>
-          prev.map((s) =>
-            s.id === subj.id ? { ...s, status: nextStatus } : s,
-          ),
-        )
-        recordAudit(
-          nextStatus === ENTITY_STATUS.INACTIVE
-            ? AUDIT_ACTION_TYPES.INACTIVACION
-            : AUDIT_ACTION_TYPES.EDICION,
-          AUDIT_ENTITY_TYPES.MATERIA,
-          `${
-            nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivó' : 'Reactivó'
-          } la materia ${subj.code}`,
-          `"${subj.name}" pasó a estado ${statusLabel}.`,
-        )
+    runRemote(
+      description,
+      async () => {
+        await academicApi.toggleSubjectStatus(subj.id, nextStatus)
+        await refreshFromBackend(subj.careerId)
         pushToast(
           nextStatus === ENTITY_STATUS.ACTIVE ? 'success' : 'warning',
           nextStatus === ENTITY_STATUS.ACTIVE
@@ -483,6 +377,17 @@ export function useAcademicManagement() {
           `${subj.code} (${subj.name}) quedó en estado ${statusLabel}.`,
         )
       },
+      errorTitle,
+    )
+  }
+
+  function handleToggleSubjectStatus(subj: Subject) {
+    const nextStatus = AcademicFormatHelper.getOppositeEntityStatus(subj.status)
+    setSubjectStatus(
+      subj,
+      nextStatus,
+      `${nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivar' : 'Reactivar'} materia ${subj.code}`,
+      'No se pudo cambiar el estado de la materia',
     )
   }
 
@@ -501,56 +406,52 @@ export function useAcademicManagement() {
       description: `¿Confirmás la baja física de "${subj.code} — ${subj.name}" del plan de estudios?`,
       impactDetail:
         linkedCorrsCount > 0
-          ? `La materia no registra alumnos inscriptos. También se desvincularán ${linkedCorrsCount} correlatividad(es) conectadas a esta materia.`
-          : 'La materia no registra alumnos cursando ni correlatividades activas.',
+          ? `También se desvincularán ${linkedCorrsCount} correlatividad(es) conectadas a esta materia.`
+          : 'Sin correlatividades activas vinculadas.',
       confirmLabel: `Eliminar materia ${subj.code}`,
       tone: 'danger',
       onConfirm: () => {
         setConfirmDialog(null)
-        runWithServerCheck(`Eliminar materia ${subj.code}`, () => {
-          setSubjects((prev) => prev.filter((s) => s.id !== subj.id))
-          setCorrelativities((prev) =>
-            prev.filter(
-              (c) =>
-                c.subjectId !== subj.id && c.requiresSubjectId !== subj.id,
-            ),
-          )
-          recordAudit(
-            AUDIT_ACTION_TYPES.BAJA,
-            AUDIT_ENTITY_TYPES.MATERIA,
-            `Baja de materia ${subj.code} (${subj.name})`,
-            `Materia eliminada físicamente (0 alumnos cursando/inscriptos).`,
-          )
-          pushToast(
-            'info',
-            'Materia dada de baja',
-            `Se eliminó ${subj.code} — ${subj.name} del plan de estudios.`,
-          )
-        })
+        runRemote(
+          `Eliminar materia ${subj.code}`,
+          async () => {
+            await academicApi.deleteSubject(subj.id)
+            await refreshFromBackend(subj.careerId)
+            pushToast(
+              'info',
+              'Materia dada de baja',
+              `Se eliminó ${subj.code} — ${subj.name} del plan de estudios.`,
+            )
+          },
+          'No se pudo eliminar la materia',
+          (err) => {
+            if (!SUBJECT_DELETION_BLOCKED_CODES.has(err.code)) return false
+            setBlockedDeletionSubject(subj)
+            return true
+          },
+        )
       },
     })
   }
 
   function handleInactivateBlockedSubject(subj: Subject) {
     setBlockedDeletionSubject(null)
-    runWithServerCheck(`Inactivar preventivamente materia ${subj.code}`, () => {
-      setSubjects((prev) =>
-        prev.map((s) =>
-          s.id === subj.id ? { ...s, status: ENTITY_STATUS.INACTIVE } : s,
-        ),
-      )
-      recordAudit(
-        AUDIT_ACTION_TYPES.INACTIVACION,
-        AUDIT_ENTITY_TYPES.MATERIA,
-        `Inactivó ${subj.code} (baja bloqueada por ${subj.enrolledStudents} alumnos)`,
-        `Se aplicó baja lógica sobre "${subj.name}" preservando los ${subj.enrolledStudents} alumnos inscriptos.`,
-      )
+
+    if (subj.status === ENTITY_STATUS.INACTIVE) {
       pushToast(
-        'warning',
-        'Materia inactivada en lugar de eliminada',
-        `Se inactivó ${subj.code} preservando las inscripciones de sus ${subj.enrolledStudents} alumnos.`,
+        'info',
+        'Materia ya inactiva',
+        `${subj.code} (${subj.name}) ya se encuentra en estado Inactiva.`,
       )
-    })
+      return
+    }
+
+    setSubjectStatus(
+      subj,
+      ENTITY_STATUS.INACTIVE,
+      `Inactivar materia ${subj.code}`,
+      'No se pudo inactivar la materia',
+    )
   }
 
   function handleConnectCorrelativity(
@@ -562,85 +463,23 @@ export function useAcademicManagement() {
     const target = subjects.find((s) => s.id === targetSubjectId)
     if (!prereq || !target) return
 
-    const existing = correlativities.find(
-      (c) =>
-        c.subjectId === targetSubjectId &&
-        c.requiresSubjectId === requiresSubjectId,
-    )
-
-    const typeMeta = AcademicFormatHelper.formatCorrelativityTypeLabel(type)
-
-    if (existing) {
-      if (existing.type === type) {
-        pushToast(
-          'info',
-          'Correlatividad ya existente',
-          `${target.code} ya requiere ${prereq.code} (${typeMeta.full}).`,
-        )
-        return
-      }
-      runWithServerCheck(
-        `Cambiar condición de correlatividad ${prereq.code} ➔ ${target.code}`,
-        () => {
-          setCorrelativities((prev) =>
-            prev.map((c) => (c.id === existing.id ? { ...c, type } : c)),
-          )
-          recordAudit(
-            AUDIT_ACTION_TYPES.CORRELATIVIDAD,
-            AUDIT_ENTITY_TYPES.CORRELATIVIDAD,
-            `Actualizó correlatividad ${prereq.code} ➔ ${target.code}`,
-            `Nueva condición: ${typeMeta.full}.`,
-          )
-          pushToast(
-            'success',
-            'Condición de correlatividad actualizada',
-            `${prereq.code} ➔ ${target.code}: ${typeMeta.full}.`,
-          )
-        },
-      )
-      return
-    }
-
-    const cycleResult = CorrelativityGraphHelper.detectCircularDependency(
-      correlativities,
-      targetSubjectId,
-      requiresSubjectId,
-    )
-
-    if (cycleResult.hasCycle) {
-      setCircularConflictNodes(
-        CorrelativityGraphHelper.mapCyclePathToNodes(
-          cycleResult.cyclePath,
-          subjects,
-        ),
-      )
-      return
-    }
-
-    runWithServerCheck(
-      `Crear correlatividad ${prereq.code} ➔ ${target.code}`,
-      () => {
-        const newCorr: Correlativity = {
-          id: IdAndDateHelper.createId(ID_PREFIXES.CORRELATIVITY),
-          careerId: target.careerId,
-          subjectId: targetSubjectId,
+    runRemote(
+      `Vincular correlatividad ${prereq.code} ➔ ${target.code}`,
+      async () => {
+        await academicApi.connectCorrelativity(
           requiresSubjectId,
+          targetSubjectId,
           type,
-          createdAt: IdAndDateHelper.currentIsoTimestamp(),
-        }
-        setCorrelativities((prev) => [...prev, newCorr])
-        recordAudit(
-          AUDIT_ACTION_TYPES.CORRELATIVIDAD,
-          AUDIT_ENTITY_TYPES.CORRELATIVIDAD,
-          `Vinculó ${prereq.code} ➔ ${target.code} (${typeMeta.short})`,
-          `Se definió que "${target.name}" requiere "${prereq.name}" en condición ${typeMeta.full}.`,
         )
+        await refreshFromBackend(target.careerId)
+        const typeMeta = AcademicFormatHelper.formatCorrelativityTypeLabel(type)
         pushToast(
           'success',
           'Correlatividad vinculada',
-          `${target.code} ahora requiere ${prereq.code} (${typeMeta.full}).`,
+          `${target.code} requiere ${prereq.code} (${typeMeta.full}).`,
         )
       },
+      'No se pudo vincular la correlatividad',
     )
   }
 
@@ -649,30 +488,15 @@ export function useAcademicManagement() {
     if (!corr) return
 
     const nextType = AcademicFormatHelper.getNextCorrelativityType(corr.type)
-    const prereq = subjects.find((s) => s.id === corr.requiresSubjectId)
-    const target = subjects.find((s) => s.id === corr.subjectId)
-
-    runWithServerCheck(
-      `Cambiar tipo de correlatividad ${prereq?.code} ➔ ${target?.code}`,
-      () => {
-        setCorrelativities((prev) =>
-          prev.map((c) =>
-            c.id === correlativityId ? { ...c, type: nextType } : c,
-          ),
-        )
+    runRemote(
+      'Cambiar condición de correlatividad',
+      async () => {
+        await academicApi.updateCorrelativityType(correlativityId, nextType)
+        await refreshFromBackend(corr.careerId)
         const meta = AcademicFormatHelper.formatCorrelativityTypeLabel(nextType)
-        recordAudit(
-          AUDIT_ACTION_TYPES.CORRELATIVIDAD,
-          AUDIT_ENTITY_TYPES.CORRELATIVIDAD,
-          `Cambió condición ${prereq?.code} ➔ ${target?.code} a ${meta.short}`,
-          `Ahora exige ${meta.full}.`,
-        )
-        pushToast(
-          'info',
-          'Requisito modificado',
-          `${prereq?.code} ➔ ${target?.code}: ${meta.full}.`,
-        )
+        pushToast('info', 'Requisito modificado', `Condición: ${meta.full}.`)
       },
+      'No se pudo actualizar la correlatividad',
     )
   }
 
@@ -682,34 +506,22 @@ export function useAcademicManagement() {
 
     const prereq = subjects.find((s) => s.id === corr.requiresSubjectId)
     const target = subjects.find((s) => s.id === corr.subjectId)
-    const meta = AcademicFormatHelper.formatCorrelativityTypeLabel(corr.type)
 
     setConfirmDialog({
       title: `Eliminar correlatividad ${prereq?.code ?? ''} ➔ ${target?.code ?? ''}`,
-      description: `¿Confirmás quitar el requisito de "${prereq?.code ?? ''} — ${prereq?.name ?? ''}" sobre "${target?.code ?? ''} — ${target?.name ?? ''}"?`,
-      impactDetail: `Condición actual: ${meta.full}.`,
+      description: `¿Confirmás quitar el requisito entre "${prereq?.code ?? ''}" y "${target?.code ?? ''}"?`,
       confirmLabel: 'Eliminar correlatividad',
       tone: 'danger',
       onConfirm: () => {
         setConfirmDialog(null)
-        runWithServerCheck(
-          `Eliminar correlatividad ${prereq?.code} ➔ ${target?.code}`,
-          () => {
-            setCorrelativities((prev) =>
-              prev.filter((c) => c.id !== correlativityId),
-            )
-            recordAudit(
-              AUDIT_ACTION_TYPES.BAJA,
-              AUDIT_ENTITY_TYPES.CORRELATIVIDAD,
-              `Eliminó correlatividad ${prereq?.code} ➔ ${target?.code}`,
-              `Se quitó el requisito entre "${prereq?.name}" y "${target?.name}".`,
-            )
-            pushToast(
-              'info',
-              'Correlatividad eliminada',
-              `Se desvinculó ${prereq?.code} de ${target?.code}.`,
-            )
+        runRemote(
+          'Eliminar correlatividad',
+          async () => {
+            await academicApi.removeCorrelativity(correlativityId)
+            await refreshFromBackend(corr.careerId)
+            pushToast('info', 'Correlatividad eliminada', 'Se quitó el requisito.')
           },
+          'No se pudo eliminar la correlatividad',
         )
       },
     })
@@ -717,25 +529,21 @@ export function useAcademicManagement() {
 
   function handleResetMockData() {
     setConfirmDialog({
-      title: 'Restaurar datos de prueba iniciales',
+      title: 'Recargar datos desde el servidor',
       description:
-        '¿Querés restablecer las carreras, materias, correlatividades y el historial de auditoría a los valores iniciales de la UTN FRGP?',
-      impactDetail:
-        'Se descartarán todas las altas, bajas y modificaciones realizadas en la sesión en memoria.',
-      confirmLabel: 'Restaurar datos iniciales',
+        '¿Querés volver a consultar el estado actual de carreras, materias, correlatividades y auditoría desde la base de datos?',
+      confirmLabel: 'Recargar desde BD',
       tone: 'warning',
       onConfirm: () => {
         setConfirmDialog(null)
-        setCareers([...INITIAL_CAREERS])
-        setSubjects([...INITIAL_SUBJECTS])
-        setCorrelativities([...INITIAL_CORRELATIVITIES])
-        resetAuditLogs()
-        setSelectedCareerId(INITIAL_CAREERS[0].id)
         setSimulateServerFault(false)
-        pushToast(
-          'info',
-          'Datos de prueba restaurados',
-          'Se recargó en memoria la oferta académica inicial de la UTN FRGP.',
+        runRemote(
+          'Recargar datos desde el servidor',
+          async () => {
+            await refreshFromBackend()
+            pushToast('info', 'Sincronizado', 'Datos recargados desde la base.')
+          },
+          'No se pudieron recargar los datos',
         )
       },
     })
@@ -771,8 +579,15 @@ export function useAcademicManagement() {
     auditLogs,
     auditDrawerOpen,
     unreadAuditCount,
-    openAuditDrawer,
-    closeAuditDrawer,
+    openAuditDrawer: () => {
+      auditDrawerOpenRef.current = true
+      setAuditDrawerOpen(true)
+      setUnreadAuditCount(0)
+    },
+    closeAuditDrawer: () => {
+      auditDrawerOpenRef.current = false
+      setAuditDrawerOpen(false)
+    },
     simulateServerFault,
     setSimulateServerFault,
     pendingFailedOperation,
