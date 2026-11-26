@@ -253,3 +253,13 @@
 .closeActBtn:hover {
   background: #f1f5f9;
 }
+
+.badge_LIBRE {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+}

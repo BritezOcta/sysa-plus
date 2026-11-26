@@ -84,6 +84,11 @@ export const academicController = {
                 ? 2
                 : 1,
         status: body.status === "inactive" ? "inactive" : "active",
+        regularGrade: body.regularGrade === undefined ? 6 : Number(body.regularGrade),
+        promotionGrade:
+          body.promotionGrade === null || body.promotionGrade === undefined || body.promotionGrade === ""
+            ? null
+            : Number(body.promotionGrade),
         requirements,
       },
       getActor(req),

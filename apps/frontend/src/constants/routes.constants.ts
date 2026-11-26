@@ -12,6 +12,7 @@ export const APP_ROUTES = {
   TEACHER_GRADES: "/profesor/notas",
   TEACHER_STUDENTS: "/profesor/alumnos",
   ADMIN_STUDENTS: "/admin/alumnos",
+  ADMIN_RECORDS: "/admin/actas",
   CHANGE_PASSWORD: "/cuenta/contrasena",
 } as const;
 

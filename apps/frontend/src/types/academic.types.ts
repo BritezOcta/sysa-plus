@@ -29,6 +29,10 @@ export interface Subject {
   period: SubjectPeriod | null
   status: EntityStatus
   enrolledStudents: number
+  /** RF-07: nota mínima de cada parcial para regularizar (0-10). */
+  regularGrade: number
+  /** RF-07: nota mínima de cada parcial para promocionar. null = sin promoción. */
+  promotionGrade: number | null
 }
 
 export interface Correlativity {

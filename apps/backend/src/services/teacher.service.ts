@@ -1,4 +1,5 @@
 import { AppError } from "../lib/AppError.js";
+import { computeCourseCondition, type CourseCondition } from "../lib/courseCondition.js";
 import { teacherRepository } from "../repositories/teacher.repository.js";
 
 import {
@@ -6,10 +7,10 @@ import {
   EXAM_CALL_STATUS,
   EXAM_STATUS,
   FINAL_EXAM_PASSING_GRADE,
+  MIN_ATTENDANCE_PERCENT,
 } from "../types/academic.js";
 
 const VALID_STATUSES = new Set(["PRESENTE", "AUSENTE", "JUSTIFICADO"]);
-const MIN_REGULAR_PERCENT = 75;
 const RISK_THRESHOLD_PERCENT = 80;
 
 function toIsoDate(date: Date): string {
@@ -23,8 +24,73 @@ const STATUSES_NOT_RECALCULATED_BY_ATTENDANCE = new Set<string>([
   ENROLLMENT_STATUS.CANCELADA,
 ]);
 
+const ASSESSMENT_TYPES = new Set(["PARCIAL", "RECUPERATORIO", "TP"]);
+
+const COURSE_CLOSED_MESSAGE =
+  "La cursada ya está cerrada. Para modificarla solicitá la reapertura al Administrador/Director.";
+
+function attendancePercentOf(
+  attendances: { attendanceStatus: string }[],
+  totalSessions: number,
+): number {
+  if (totalSessions === 0) return 100;
+  const attended = attendances.filter(
+    (a) => a.attendanceStatus === "PRESENTE" || a.attendanceStatus === "JUSTIFICADO",
+  ).length;
+  return Math.round((attended / totalSessions) * 100);
+}
+
+type GradesData = Awaited<ReturnType<typeof teacherRepository.findCommissionGradesData>>;
+
+/** RF-07: condición que le corresponde a cada inscripción vigente según los criterios de la materia. */
+function projectCourseConditions(
+  data: GradesData,
+  criteria: { regularGrade: number; promotionGrade: number | null },
+): Map<number, CourseCondition> {
+  const parciales = data.assessments.filter((a) => a.assessmentType === "PARCIAL");
+  const recoveryOf = new Map(
+    data.assessments
+      .filter((a) => a.assessmentType === "RECUPERATORIO" && a.recoversAssessmentId !== null)
+      .map((a) => [a.recoversAssessmentId!, a]),
+  );
+  const scoreOf = (a: GradesData["assessments"][number], enrollmentId: number) => {
+    const g = a.assessmentGrades.find((x) => x.courseEnrollmentId === enrollmentId);
+    return g ? Number(g.gradeScore) : null;
+  };
+
+  const result = new Map<number, CourseCondition>();
+  for (const enr of data.enrollments) {
+    if (enr.enrollmentStatus === ENROLLMENT_STATUS.CANCELADA) continue;
+    result.set(
+      enr.courseEnrollmentId,
+      computeCourseCondition({
+        attendancePercent: attendancePercentOf(enr.attendances, data.totalSessions),
+        regularGrade: criteria.regularGrade,
+        promotionGrade: criteria.promotionGrade,
+        parciales: parciales.map((p) => {
+          const rec = recoveryOf.get(p.assessmentId);
+          return {
+            maxScore: Number(p.maxScore),
+            score: scoreOf(p, enr.courseEnrollmentId),
+            recoveryMaxScore: rec ? Number(rec.maxScore) : null,
+            recoveryScore: rec ? scoreOf(rec, enr.courseEnrollmentId) : null,
+          };
+        }),
+      }),
+    );
+  }
+  return result;
+}
+
+function criteriaOf(sps: { regularGrade: unknown; promotionGrade: unknown }) {
+  return {
+    regularGrade: Number(sps.regularGrade),
+    promotionGrade: sps.promotionGrade === null ? null : Number(sps.promotionGrade),
+  };
+}
+
 function getCondition(percentage: number): "REGULAR" | "EN_RIESGO" | "LIBRE" {
-  if (percentage < MIN_REGULAR_PERCENT) return "LIBRE";
+  if (percentage < MIN_ATTENDANCE_PERCENT) return "LIBRE";
   if (percentage < RISK_THRESHOLD_PERCENT) return "EN_RIESGO";
   return "REGULAR";
 }
@@ -93,7 +159,7 @@ export const teacherService = {
       );
     }
 
-    const { enrollments, totalSessions } =
+    const { enrollments, totalSessions, assessments } =
       await teacherRepository.findCommissionStudents(courseOfferingId);
 
     const students = enrollments.map((enr) => {
@@ -116,6 +182,15 @@ export const teacherService = {
         email: sp.user.email,
         enrollmentStatus: enr.enrollmentStatus,
         attendancePercentage,
+        grades: assessments.map((a) => {
+          const g = a.assessmentGrades.find(
+            (x) => x.courseEnrollmentId === enr.courseEnrollmentId,
+          );
+          return {
+            assessmentId: String(a.assessmentId),
+            score: g ? Number(g.gradeScore) : null,
+          };
+        }),
         observations: enr.studentObservations.map((obs) => ({
           id: String(obs.observationId),
           text: obs.observationText,
@@ -132,6 +207,12 @@ export const teacherService = {
           assignment.courseOffering.studyPlanSubject.subject.subjectName,
         commissionCode: assignment.courseOffering.commission,
       },
+      assessments: assessments.map((a) => ({
+        id: String(a.assessmentId),
+        name: a.assessmentName,
+        type: a.assessmentType,
+        maxScore: Number(a.maxScore),
+      })),
       students,
     };
   },
@@ -390,6 +471,10 @@ export const teacherService = {
       );
     }
 
+    if (assignment.courseOffering.gradesClosedAt) {
+      throw new AppError(409, "COURSE_CLOSED", COURSE_CLOSED_MESSAGE);
+    }
+
     const periodStart = toIsoDate(
       assignment.courseOffering.academicPeriod.periodStartDate,
     );
@@ -551,8 +636,11 @@ export const teacherService = {
       );
     }
 
-    const { assessments, enrollments } =
-      await teacherRepository.findCommissionGradesData(courseOfferingId);
+    const data = await teacherRepository.findCommissionGradesData(courseOfferingId);
+    const { assessments, enrollments, totalSessions } = data;
+    const criteria = criteriaOf(assignment.courseOffering.studyPlanSubject);
+    const projected = projectCourseConditions(data, criteria);
+    const closedAt = assignment.courseOffering.gradesClosedAt;
 
     return {
       commission: {
@@ -560,12 +648,16 @@ export const teacherService = {
         subjectName:
           assignment.courseOffering.studyPlanSubject.subject.subjectName,
         commissionCode: assignment.courseOffering.commission,
+        criteria,
+        closedAt: closedAt ? closedAt.toISOString() : null,
       },
       students: enrollments.map((enr) => ({
         enrollmentId: String(enr.courseEnrollmentId),
         legajo: enr.studentCareer.studentProfile.legajo,
         fullName: `${enr.studentCareer.studentProfile.user.firstName} ${enr.studentCareer.studentProfile.user.lastName}`,
         enrollmentStatus: enr.enrollmentStatus,
+        attendancePercentage: attendancePercentOf(enr.attendances, totalSessions),
+        projectedCondition: projected.get(enr.courseEnrollmentId) ?? null,
       })),
       assessments: assessments.map((a) => ({
         id: String(a.assessmentId),
@@ -576,6 +668,8 @@ export const teacherService = {
           : null,
         maxScore: Number(a.maxScore),
         isClosed: a.isClosed,
+        recoversAssessmentId:
+          a.recoversAssessmentId === null ? null : String(a.recoversAssessmentId),
         grades: a.assessmentGrades.map((g) => ({
           enrollmentId: String(g.courseEnrollmentId),
           score: Number(g.gradeScore),
@@ -592,6 +686,7 @@ export const teacherService = {
     type: unknown;
     date: unknown;
     maxScore: unknown;
+    recoversAssessmentId: unknown;
   }) {
     const courseOfferingId = Number(params.rawCommissionId);
     if (!Number.isInteger(courseOfferingId) || courseOfferingId <= 0) {
@@ -612,6 +707,13 @@ export const teacherService = {
         400,
         "INVALID_NAME",
         "El nombre de la evaluación es obligatorio.",
+      );
+    }
+    if (!ASSESSMENT_TYPES.has(type)) {
+      throw new AppError(
+        400,
+        "INVALID_TYPE",
+        "El tipo de evaluación debe ser Parcial, Recuperatorio o Trabajo Práctico.",
       );
     }
     if (!Number.isFinite(maxScore) || maxScore <= 0 || maxScore > 100) {
@@ -650,12 +752,41 @@ export const teacherService = {
       );
     }
 
+    if (assignment.courseOffering.gradesClosedAt) {
+      throw new AppError(409, "COURSE_CLOSED", COURSE_CLOSED_MESSAGE);
+    }
+
+    let recoversAssessmentId: number | null = null;
+    if (type === "RECUPERATORIO") {
+      recoversAssessmentId = Number(params.recoversAssessmentId);
+      const { assessments } =
+        await teacherRepository.findCommissionGradesData(courseOfferingId);
+      const target = assessments.find(
+        (a) => a.assessmentId === recoversAssessmentId && a.assessmentType === "PARCIAL",
+      );
+      if (!target) {
+        throw new AppError(
+          400,
+          "INVALID_RECOVERED_ASSESSMENT",
+          "Elegí el parcial de esta comisión que recupera el recuperatorio.",
+        );
+      }
+      if (assessments.some((a) => a.recoversAssessmentId === recoversAssessmentId)) {
+        throw new AppError(
+          409,
+          "RECOVERY_ALREADY_EXISTS",
+          `El parcial "${target.assessmentName}" ya tiene un recuperatorio.`,
+        );
+      }
+    }
+
     const created = await teacherRepository.createAssessment({
       courseOfferingId,
       assessmentName: name,
       assessmentType: type,
       assessmentDate,
       maxScore,
+      recoversAssessmentId,
       audit: {
         userId: params.user.userId,
         details: `Comisión ${assignment.courseOffering.commission} - ${name} (${type})`,
@@ -672,6 +803,8 @@ export const teacherService = {
         : null,
       maxScore: Number(created.maxScore),
       isClosed: created.isClosed,
+      recoversAssessmentId:
+        created.recoversAssessmentId === null ? null : String(created.recoversAssessmentId),
       grades: [],
     };
   },
@@ -858,41 +991,18 @@ export const teacherService = {
     return { id: String(assessmentId), isClosed: true };
   },
 
-  async updateEnrollmentStatus(params: {
+  /** RF-07: calcula y guarda la condición final de cada alumno y cierra la cursada. */
+  async closeCourse(params: {
     user: { userId: number };
     ipAddress: string | null;
     rawCommissionId: unknown;
-    rawEnrollmentId: unknown;
-    status: unknown;
   }) {
     const courseOfferingId = Number(params.rawCommissionId);
-    const courseEnrollmentId = Number(params.rawEnrollmentId);
-    if (
-      !Number.isInteger(courseOfferingId) ||
-      !Number.isInteger(courseEnrollmentId)
-    ) {
+    if (!Number.isInteger(courseOfferingId) || courseOfferingId <= 0) {
       throw new AppError(
         400,
-        "INVALID_ID",
-        "Los identificadores enviados no son válidos.",
-      );
-    }
-
-    const allowedStatuses = new Set<string>([
-      ENROLLMENT_STATUS.INSCRIPTO,
-      ENROLLMENT_STATUS.REGULAR,
-      ENROLLMENT_STATUS.APROBADA,
-      ENROLLMENT_STATUS.LIBRE,
-      ENROLLMENT_STATUS.DESAPROBADA,
-    ]);
-
-    const status =
-      typeof params.status === "string" ? params.status.trim() : "";
-    if (!allowedStatuses.has(status)) {
-      throw new AppError(
-        400,
-        "INVALID_STATUS",
-        "La condición académica seleccionada no es válida.",
+        "INVALID_COMMISSION_ID",
+        "El ID de comisión no es válido.",
       );
     }
 
@@ -918,34 +1028,39 @@ export const teacherService = {
         "Acceso denegado: no estás asignado a esta comisión.",
       );
     }
+    if (assignment.courseOffering.gradesClosedAt) {
+      throw new AppError(409, "COURSE_CLOSED", COURSE_CLOSED_MESSAGE);
+    }
 
-    const enrollment = await teacherRepository.findEnrollmentInCommission(
-      courseEnrollmentId,
-      courseOfferingId,
-    );
-    if (!enrollment) {
+    const data = await teacherRepository.findCommissionGradesData(courseOfferingId);
+    if (!data.assessments.some((a) => a.assessmentType === "PARCIAL")) {
       throw new AppError(
-        404,
-        "ENROLLMENT_NOT_FOUND",
-        "El alumno no pertenece a esta comisión.",
+        409,
+        "NO_PARCIALES",
+        "No se puede cerrar la cursada: no hay parciales cargados.",
       );
     }
 
-    const legajo = enrollment.studentCareer.studentProfile.legajo;
-    await teacherRepository.updateCourseEnrollmentStatus({
+    const projected = projectCourseConditions(
+      data,
+      criteriaOf(assignment.courseOffering.studyPlanSubject),
+    );
+    const conditions = [...projected].map(([courseEnrollmentId, enrollmentStatus]) => ({
       courseEnrollmentId,
-      enrollmentStatus: status,
+      enrollmentStatus,
+    }));
+
+    await teacherRepository.closeCourse({
+      courseOfferingId,
+      conditions,
       audit: {
         userId: params.user.userId,
-        details: `Comisión ${assignment.courseOffering.commission} - Legajo ${legajo} -> ${status}`,
+        details: `Cierre de cursada: comisión ${assignment.courseOffering.commission} - ${conditions.length} alumnos`,
         ipAddress: params.ipAddress,
       },
     });
 
-    return {
-      enrollmentId: String(courseEnrollmentId),
-      enrollmentStatus: status,
-    };
+    return { closedCount: conditions.length };
   },
 
   async getTeacherExamCalls(user: { userId: number }) {

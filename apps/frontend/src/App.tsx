@@ -22,6 +22,7 @@ import TeacherAttendancePage from "./pages/TeacherAttendancePage";
 import TeacherGradesPage from "./pages/TeacherGradesPage";
 import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 import AdminStudentsPage from "./pages/adminStudentsPage";
+import AdminRecordsPage from "./pages/AdminRecordsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function StudentRoute() {
@@ -81,6 +82,14 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AdminStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.ADMIN_RECORDS}
+            element={
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
+                <AdminRecordsPage />
               </ProtectedRoute>
             }
           />

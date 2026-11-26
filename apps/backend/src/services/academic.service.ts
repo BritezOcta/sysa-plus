@@ -148,6 +148,8 @@ export const academicService = {
       period: UiPeriod;
       status: "active" | "inactive";
       enrolledStudents: number;
+      regularGrade: number;
+      promotionGrade: number | null;
     }> = [];
 
     const correlativities: Array<{
@@ -190,6 +192,8 @@ export const academicService = {
             period: mapSemesterToPeriod(sps.semester),
             status: sps.isActive ? "active" : "inactive",
             enrolledStudents: enrolledCount,
+            regularGrade: Number(sps.regularGrade),
+            promotionGrade: sps.promotionGrade === null ? null : Number(sps.promotionGrade),
           });
 
           for (const req of sps.requirements) {
@@ -395,6 +399,8 @@ export const academicService = {
       year: number | null;
       period: UiPeriod;
       status: "active" | "inactive";
+      regularGrade: number;
+      promotionGrade: number | null;
       requirements: Array<{ requiresSubjectId: string; type: UiCorrelativityType }>;
     },
     actor: { userId: number; ipAddress: string | null },
@@ -409,6 +415,17 @@ export const academicService = {
     }
     assertNonNegativeInt(input.weeklyHours, "La carga horaria semanal");
     assertNonNegativeInt(input.totalHours, "La carga horaria total");
+    if (!Number.isFinite(input.regularGrade) || input.regularGrade < 1 || input.regularGrade > 10) {
+      throw validationError("La nota para regularizar debe estar entre 1 y 10");
+    }
+    if (
+      input.promotionGrade !== null &&
+      (!Number.isFinite(input.promotionGrade) ||
+        input.promotionGrade < input.regularGrade ||
+        input.promotionGrade > 10)
+    ) {
+      throw validationError("La nota para promocionar debe estar entre la de regularización y 10");
+    }
 
     const career = await academicRepository.findCareerById(careerId);
     if (!career) {
@@ -490,6 +507,8 @@ export const academicService = {
       weeklyHours: input.weeklyHours,
       totalHours: input.totalHours,
       isActive: input.status === "active",
+      regularGrade: input.regularGrade,
+      promotionGrade: input.promotionGrade,
       requirements: input.requirements.map((r) => ({
         requiresSubjectId: Number(r.requiresSubjectId),
         type: r.type,

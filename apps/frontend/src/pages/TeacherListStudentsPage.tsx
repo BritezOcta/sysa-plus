@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import {
   teacherApi,
   type CommissionStudentItem,
+  type CommissionStudentsResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
 import { APP_ROUTES } from "../constants";
@@ -18,6 +19,9 @@ export default function TeacherListStudentsPage() {
     searchParams.get("comision") ?? "",
   );
   const [students, setStudents] = useState<CommissionStudentItem[]>([]);
+  const [assessments, setAssessments] = useState<
+    CommissionStudentsResponse["assessments"]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
@@ -69,8 +73,10 @@ export default function TeacherListStudentsPage() {
       try {
         const data = await teacherApi.getStudents(selectedCommissionId);
         setStudents(data.students);
+        setAssessments(data.assessments);
       } catch (err) {
         setStudents([]);
+        setAssessments([]);
         setError(
           err instanceof Error
             ? err.message
@@ -214,6 +220,11 @@ export default function TeacherListStudentsPage() {
                   <th>Legajo</th>
                   <th>Alumno</th>
                   <th>Asistencia</th>
+                  {assessments.map((a) => (
+                    <th key={a.id} title={`${a.type} · máx. ${a.maxScore}`}>
+                      {a.name}
+                    </th>
+                  ))}
                   <th>Condición</th>
                   <th>Observaciones</th>
                 </tr>
@@ -234,6 +245,9 @@ export default function TeacherListStudentsPage() {
                       <small className={styles.muted}>{s.email}</small>
                     </td>
                     <td>{s.attendancePercentage}%</td>
+                    {s.grades.map((g) => (
+                      <td key={g.assessmentId}>{g.score ?? "—"}</td>
+                    ))}
                     <td>{s.enrollmentStatus}</td>
                     <td>
                       <button

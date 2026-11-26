@@ -70,6 +70,7 @@ export const teacherController = {
       type: body["type"],
       date: body["date"],
       maxScore: body["maxScore"],
+      recoversAssessmentId: body["recoversAssessmentId"],
     });
     res.status(201).json({ status: "OK", assessment });
   },
@@ -96,14 +97,11 @@ export const teacherController = {
     res.status(200).json({ status: "OK", ...result });
   },
 
-  async updateEnrollmentStatus(req: Request, res: Response) {
-    const body: Record<string, unknown> = req.body ?? {};
-    const result = await teacherService.updateEnrollmentStatus({
+  async closeCourse(req: Request, res: Response) {
+    const result = await teacherService.closeCourse({
       user: req.user!,
       ipAddress: req.ip ?? null,
       rawCommissionId: req.params["commissionId"],
-      rawEnrollmentId: req.params["enrollmentId"],
-      status: body["status"],
     });
     res.status(200).json({ status: "OK", ...result });
   },

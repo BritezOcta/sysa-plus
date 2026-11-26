@@ -15,6 +15,8 @@ export interface CommissionStudentItem {
   email: string;
   enrollmentStatus: string;
   attendancePercentage: number;
+  /** RF-08: nota del alumno en cada evaluación de la comisión (mismo orden que `assessments`). */
+  grades: { assessmentId: string; score: number | null }[];
   observations: StudentObservationItem[];
 }
 
@@ -24,6 +26,7 @@ export interface CommissionStudentsResponse {
     subjectName: string;
     commissionCode: string;
   };
+  assessments: { id: string; name: string; type: string; maxScore: number }[];
   students: CommissionStudentItem[];
 }
 
@@ -91,20 +94,31 @@ export interface AssessmentItem {
   date: string | null;
   maxScore: number;
   isClosed: boolean;
+  /** Solo RECUPERATORIO: id del parcial que recupera. */
+  recoversAssessmentId: string | null;
   grades: AssessmentGradeItem[];
 }
+
+export type CourseCondition = "APROBADA" | "REGULAR" | "DESAPROBADA" | "LIBRE";
 
 export interface CommissionGradesResponse {
   commission: {
     id: string;
     subjectName: string;
     commissionCode: string;
+    /** RF-07: criterios de aprobación de la materia (escala 0-10). */
+    criteria: { regularGrade: number; promotionGrade: number | null };
+    /** ISO. null = la cursada sigue abierta. */
+    closedAt: string | null;
   };
   students: {
     enrollmentId: string;
     legajo: string;
     fullName: string;
     enrollmentStatus: string;
+    attendancePercentage: number;
+    /** Condición que se guardaría al cerrar la cursada. null = inscripción cancelada. */
+    projectedCondition: CourseCondition | null;
   }[];
   assessments: AssessmentItem[];
 }
@@ -204,7 +218,13 @@ export const teacherApi = {
 
   async createAssessment(
     commissionId: string,
-    payload: { name: string; type: string; date?: string; maxScore?: number },
+    payload: {
+      name: string;
+      type: string;
+      date?: string;
+      maxScore?: number;
+      recoversAssessmentId?: string;
+    },
   ): Promise<AssessmentItem> {
     const { assessment } = await apiRequest<{ assessment: AssessmentItem }>(
       `/teacher/commissions/${commissionId}/assessments`,
@@ -234,14 +254,11 @@ export const teacherApi = {
     );
   },
 
-  updateEnrollmentStatus(
-    commissionId: string,
-    enrollmentId: string,
-    status: string,
-  ): Promise<{ enrollmentId: string; enrollmentStatus: string }> {
-    return apiRequest<{ enrollmentId: string; enrollmentStatus: string }>(
-      `/teacher/commissions/${commissionId}/enrollments/${enrollmentId}/status`,
-      { method: "PATCH", body: { status } },
+  /** RF-07: calcula y guarda la condición final de cada alumno y cierra la cursada. */
+  closeCourse(commissionId: string): Promise<{ closedCount: number }> {
+    return apiRequest<{ closedCount: number }>(
+      `/teacher/commissions/${commissionId}/close`,
+      { method: "POST" },
     );
   },
 
