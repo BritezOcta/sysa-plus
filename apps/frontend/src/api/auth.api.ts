@@ -18,6 +18,10 @@ export const authApi = {
     await apiRequest('/auth/logout', { method: 'POST' })
   },
 
+  async changePassword(body: { currentPassword: string; newPassword: string }): Promise<void> {
+    await apiRequest('/auth/password', { method: 'PUT', body })
+  },
+
   /** Devuelve el usuario de la sesión actual, o null si no hay sesión válida. */
   async me(): Promise<AuthUser | null> {
     try {

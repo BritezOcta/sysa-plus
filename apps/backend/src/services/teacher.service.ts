@@ -16,6 +16,13 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Estados que la asistencia no debe pisar: los cierra RF-07 (notas) o el alumno al cancelar (RF-04). */
+const STATUSES_NOT_RECALCULATED_BY_ATTENDANCE = new Set<string>([
+  ENROLLMENT_STATUS.APROBADA,
+  ENROLLMENT_STATUS.DESAPROBADA,
+  ENROLLMENT_STATUS.CANCELADA,
+]);
+
 function getCondition(percentage: number): "REGULAR" | "EN_RIESGO" | "LIBRE" {
   if (percentage < MIN_REGULAR_PERCENT) return "LIBRE";
   if (percentage < RISK_THRESHOLD_PERCENT) return "EN_RIESGO";
@@ -470,6 +477,10 @@ export const teacherService = {
         prevAttended +
         (newStatus === "PRESENTE" || newStatus === "JUSTIFICADO" ? 1 : 0);
       const pct = Math.round((totalAttended / totalClassesAfterSave) * 100);
+
+      if (STATUSES_NOT_RECALCULATED_BY_ATTENDANCE.has(enr.enrollmentStatus)) {
+        continue;
+      }
 
       enrollmentUpdates.push({
         courseEnrollmentId: enr.courseEnrollmentId,

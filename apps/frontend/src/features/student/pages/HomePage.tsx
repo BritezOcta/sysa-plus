@@ -1,12 +1,9 @@
 import { Link } from "react-router";
 import { useAuthenticatedUser } from "../../../auth/AuthContext";
 import { Icon } from "../../../components/Icon";
-import {
-  AVISOS,
-  ESTUDIANTE,
-  formatFecha,
-  resumenAcademico,
-} from "../../../data/mockStudentData";
+import { AVISOS, formatFecha } from "../../../data/mockStudentData";
+import { useAcademicStatus } from "../../../hooks/useAcademicStatus";
+import { AcademicStatusFallback } from "../AcademicStatusFallback";
 import { getNavItem } from "../nav";
 import common from "../common.module.css";
 import s from "./HomePage.module.css";
@@ -22,34 +19,46 @@ const QUICK_IDS = [
 
 export function HomePage() {
   const user = useAuthenticatedUser();
-  const r = resumenAcademico();
+  const { state, retry } = useAcademicStatus();
   const sinLeer = AVISOS.filter((a) => !a.leido).length;
   const quick = QUICK_IDS.map(getNavItem).filter((i): i is NonNullable<typeof i> => Boolean(i));
 
   return (
     <div className={common.page}>
-      <section className={s.hero}>
-        <div>
-          <p className={s.heroKicker}>Autogestión alumno</p>
-          <h1 className={s.heroTitle}>Hola, {user.firstName}</h1>
-          <p className={s.heroText}>{ESTUDIANTE.carrera}</p>
-          <div className={s.heroChips}>
-            <span className={s.heroChip}>Plan {ESTUDIANTE.plan}</span>
-            <span className={s.heroChip}>Legajo {user.legajo}</span>
-          </div>
-        </div>
-        <div className={s.heroRight}>
-          <span className={s.heroPct}>{r.avance}%</span>
-          <span className={s.heroPctLabel}>de la carrera aprobada</span>
-        </div>
-      </section>
+      {state.status === "ready" ? (
+        <>
+          <section className={s.hero}>
+            <div>
+              <p className={s.heroKicker}>Autogestión alumno</p>
+              <h1 className={s.heroTitle}>Hola, {user.firstName}</h1>
+              <p className={s.heroText}>{state.data.student.careerName}</p>
+              <div className={s.heroChips}>
+                <span className={s.heroChip}>Plan {state.data.student.studyPlan}</span>
+                <span className={s.heroChip}>Legajo {user.legajo}</span>
+              </div>
+            </div>
+            <div className={s.heroRight}>
+              <span className={s.heroPct}>{state.data.summary.progressPercent}%</span>
+              <span className={s.heroPctLabel}>de la carrera aprobada</span>
+            </div>
+          </section>
 
-      <section className={s.stats} aria-label="Resumen académico">
-        <Stat label="Materias aprobadas" value={`${r.aprobadas} / ${r.total}`} />
-        <Stat label="Promedio" value={r.promedio.toFixed(2)} />
-        <Stat label="Cursando ahora" value={String(r.cursando)} />
-        <Stat label="Avisos sin leer" value={String(sinLeer)} highlight={sinLeer > 0} />
-      </section>
+          <section className={s.stats} aria-label="Resumen académico">
+            <Stat
+              label="Materias aprobadas"
+              value={`${state.data.summary.approved} / ${state.data.summary.totalSubjects}`}
+            />
+            <Stat
+              label="Promedio"
+              value={state.data.summary.average === null ? "—" : state.data.summary.average.toFixed(2)}
+            />
+            <Stat label="Cursando ahora" value={String(state.data.summary.inProgress)} />
+            <Stat label="Avisos sin leer" value={String(sinLeer)} highlight={sinLeer > 0} />
+          </section>
+        </>
+      ) : (
+        <AcademicStatusFallback state={state} onRetry={retry} />
+      )}
 
       <section>
         <h2 className={s.sectionTitle}>Accesos rápidos</h2>

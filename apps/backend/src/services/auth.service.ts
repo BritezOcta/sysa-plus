@@ -19,7 +19,13 @@ export const AUTH_ERROR_CODES = {
   ACCOUNT_LOCKED: "ACCOUNT_LOCKED",
   UNAUTHENTICATED: "UNAUTHENTICATED",
   FORBIDDEN: "FORBIDDEN",
+  INVALID_CURRENT_PASSWORD: "INVALID_CURRENT_PASSWORD",
+  INVALID_NEW_PASSWORD: "INVALID_NEW_PASSWORD",
 } as const;
+
+const PASSWORD_MIN_LENGTH = 8;
+// bcrypt ignora lo que pase de 72 bytes.
+const PASSWORD_MAX_LENGTH = 72;
 
 const invalidCredentials = () =>
   new AppError(401, AUTH_ERROR_CODES.INVALID_CREDENTIALS, "Usuario o contraseña incorrectos");
@@ -186,6 +192,52 @@ export const authService = {
     const record = await userRepository.findForAuthById(userId);
     if (!record || !record.isActive) return null;
     return toAuthUser(record);
+  },
+
+  async changePassword({
+    userId,
+    currentPassword,
+    newPassword,
+    ipAddress,
+  }: {
+    userId: number;
+    currentPassword: unknown;
+    newPassword: unknown;
+    ipAddress: string | null;
+  }): Promise<void> {
+    const current = typeof currentPassword === "string" ? currentPassword : "";
+    const next = typeof newPassword === "string" ? newPassword : "";
+
+    if (!current || !next) {
+      throw new AppError(400, AUTH_ERROR_CODES.MISSING_FIELDS, "Completá la contraseña actual y la nueva");
+    }
+    if (next.length < PASSWORD_MIN_LENGTH || Buffer.byteLength(next, "utf8") > PASSWORD_MAX_LENGTH) {
+      throw new AppError(
+        400,
+        AUTH_ERROR_CODES.INVALID_NEW_PASSWORD,
+        `La nueva contraseña debe tener entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres`,
+      );
+    }
+
+    const record = await userRepository.findForAuthById(userId);
+    if (!record) throw new AppError(401, AUTH_ERROR_CODES.UNAUTHENTICATED, "Tu sesión no es válida o expiró. Iniciá sesión nuevamente");
+
+    if (!(await bcrypt.compare(current, record.passwordHash))) {
+      throw new AppError(400, AUTH_ERROR_CODES.INVALID_CURRENT_PASSWORD, "La contraseña actual es incorrecta");
+    }
+    if (current === next) {
+      throw new AppError(400, AUTH_ERROR_CODES.INVALID_NEW_PASSWORD, "La nueva contraseña debe ser distinta de la actual");
+    }
+
+    await userRepository.updatePasswordHash(userId, await bcrypt.hash(next, 10));
+    await auditService.record({
+      userId,
+      action: AUDIT_ACTIONS.PASSWORD_CHANGED,
+      entity: "USERS",
+      entityId: String(userId),
+      details: "Cambio de contraseña",
+      ipAddress,
+    });
   },
 
   async logout(user: AuthUser | undefined, ipAddress: string | null): Promise<void> {

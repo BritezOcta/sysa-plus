@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth, useAuthenticatedUser } from '../../auth/AuthContext'
 import { APP_ROUTES, ROLE_LABELS } from '../../constants'
 import { getUserFullName, getUserInitials } from '../../helpers/UserDisplayHelper'
@@ -23,6 +23,9 @@ export default function UserProfilePill() {
         <strong>{getUserFullName(user)}</strong>
         <span>{ROLE_LABELS[user.role]}</span>
       </div>
+      <Link to={APP_ROUTES.CHANGE_PASSWORD} className={styles.logoutLink} title="Cambiar la contraseña de tu cuenta">
+        Contraseña
+      </Link>
       <button
         type="button"
         onClick={() => void handleLogout()}

@@ -13,7 +13,6 @@ import {
 import { GuestOnlyRoute, ProtectedRoute } from "./auth/ProtectedRoute";
 import { WelcomeToast } from "./auth/WelcomeToast";
 import { APP_ROUTES } from "./constants";
-import { ESTUDIANTE } from "./data/mockStudentData";
 import { StudentArea } from "./features/student/StudentArea";
 import { getUserInitials } from "./helpers/UserDisplayHelper";
 import AcademicManagementPage from "./pages/AcademicManagementPage";
@@ -23,6 +22,7 @@ import TeacherAttendancePage from "./pages/TeacherAttendancePage";
 import TeacherGradesPage from "./pages/TeacherGradesPage";
 import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 import AdminStudentsPage from "./pages/adminStudentsPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function StudentRoute() {
   const navigate = useNavigate();
@@ -41,8 +41,6 @@ function StudentRoute() {
         apellido: user.lastName,
         legajo: user.legajo ?? "",
         iniciales: getUserInitials(user),
-        // Carrera: sigue mockeada hasta el RF-09 (estado académico).
-        carrera: ESTUDIANTE.carrera,
       }}
       onLogout={() => void handleLogout()}
     />
@@ -133,6 +131,14 @@ function App() {
             element={
               <ProtectedRoute roles={["PROFESOR"]}>
                 <TeacherListStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.CHANGE_PASSWORD}
+            element={
+              <ProtectedRoute roles={["PROFESOR", "ADMINISTRADOR"]}>
+                <ChangePasswordPage />
               </ProtectedRoute>
             }
           />
