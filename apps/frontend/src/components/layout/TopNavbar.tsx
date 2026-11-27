@@ -4,19 +4,23 @@ import { APP_ROUTES, INSTITUTION_BRAND } from '../../constants'
 import styles from '../../pages/AcademicManagementPage.module.css'
 import UserProfilePill from './UserProfilePill'
 
+/**
+ * Barra superior de las páginas del Administrador. El botón de recarga y el de auditoría
+ * son opcionales: solo se muestran si la página los provee (Oferta académica los usa).
+ */
 interface TopNavbarProps {
-  onReloadData: () => void
+  onReloadData?: () => void
   resetButtonLabel?: string
-  auditCount: number
-  unreadAuditCount: number
-  onOpenAuditDrawer: () => void
+  auditCount?: number
+  unreadAuditCount?: number
+  onOpenAuditDrawer?: () => void
 }
 
 export default function TopNavbar({
   onReloadData,
   resetButtonLabel = 'Recargar datos',
-  auditCount,
-  unreadAuditCount,
+  auditCount = 0,
+  unreadAuditCount = 0,
   onOpenAuditDrawer,
 }: TopNavbarProps) {
   return (
@@ -39,10 +43,18 @@ export default function TopNavbar({
       </div>
 
       <div className={styles.navControls}>
-        <button type="button" onClick={onReloadData} className={styles.resetMockBtn}>
-          {resetButtonLabel}
-        </button>
+        {onReloadData && (
+          <button type="button" onClick={onReloadData} className={styles.resetMockBtn}>
+            {resetButtonLabel}
+          </button>
+        )}
 
+        <Link to={APP_ROUTES.ACADEMIC_OFFER} className={styles.auditBtn}>
+          Oferta académica
+        </Link>
+        <Link to={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS} className={styles.auditBtn}>
+          Docentes
+        </Link>
         <Link to={APP_ROUTES.ADMIN_STUDENTS} className={styles.auditBtn}>
           Alumnos
         </Link>
@@ -50,16 +62,18 @@ export default function TopNavbar({
           Actas
         </Link>
 
-        <button
-          type="button"
-          onClick={onOpenAuditDrawer}
-          className={styles.auditBtn}
-        >
-          Auditoría ({auditCount})
-          {unreadAuditCount > 0 && (
-            <span className={styles.unreadDot}>+{unreadAuditCount}</span>
-          )}
-        </button>
+        {onOpenAuditDrawer && (
+          <button
+            type="button"
+            onClick={onOpenAuditDrawer}
+            className={styles.auditBtn}
+          >
+            Auditoría ({auditCount})
+            {unreadAuditCount > 0 && (
+              <span className={styles.unreadDot}>+{unreadAuditCount}</span>
+            )}
+          </button>
+        )}
 
         <UserProfilePill />
       </div>

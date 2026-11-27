@@ -33,7 +33,21 @@ export const OFFERING_STATUS = {
   /** La comisión acepta inscripciones. */
   ABIERTA: "ABIERTA",
   CERRADA: "CERRADA",
+  /** La comisión no se dicta: no admite inscripciones ni asignación de docentes (RF-03). */
+  CANCELADA: "CANCELADA",
+  /** Sin vacantes: no admite nuevas inscripciones. */
+  LLENA: "LLENA",
 } as const;
+
+export type OfferingStatus = (typeof OFFERING_STATUS)[keyof typeof OFFERING_STATUS];
+
+/** TEACHER_ASSIGNMENT.ASSIGNMENT_ROLE (RF-03). */
+export const ASSIGNMENT_ROLE = {
+  TITULAR: "TITULAR",
+  AYUDANTE: "AYUDANTE",
+} as const;
+
+export type AssignmentRole = (typeof ASSIGNMENT_ROLE)[keyof typeof ASSIGNMENT_ROLE];
 
 /** EXAM_ENROLLMENT.EXAM_STATUS */
 export const EXAM_STATUS = {

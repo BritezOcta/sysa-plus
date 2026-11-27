@@ -24,6 +24,7 @@ import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 import AdminStudentsPage from "./pages/adminStudentsPage";
 import AdminRecordsPage from "./pages/AdminRecordsPage";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
+import TeacherAssignmentPage from "./pages/TeacherAssignmentPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function StudentRoute() {
@@ -86,6 +87,14 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AdminStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS}
+            element={
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
+                <TeacherAssignmentPage />
               </ProtectedRoute>
             }
           />

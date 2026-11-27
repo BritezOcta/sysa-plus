@@ -1,0 +1,499 @@
+/* RF-03 · Asignación de docentes. Misma paleta que Oferta académica (slate + azul UTN). */
+
+.pendingToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+  padding: 8px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.statsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statChip {
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.statWarn {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.errorBox {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.emptyState {
+  padding: 28px 20px;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+  text-align: center;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ---- Bloques por año ---- */
+
+.yearBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+}
+
+.yearTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.semesterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .semesterGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.semesterColumn,
+.annualLane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+}
+
+.annualLane {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.annualGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .annualGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.periodTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.periodCount {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+}
+
+.columnEmpty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ---- Tarjeta de materia ---- */
+
+.subjectCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.subjectInactive {
+  opacity: 0.65;
+}
+
+.subjectHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subjectCode {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.subjectName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.noCommission {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12.5px;
+}
+
+.commissionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commissionRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  background: #fbfdff;
+}
+
+.commissionCancelled {
+  background: #f8fafc;
+  opacity: 0.7;
+}
+
+.commissionMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.commissionCode {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0075ad;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusPill {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.statusOpen {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusClosed {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.statusCancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusFull {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.enrolled {
+  margin-left: auto;
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.scheduleChips,
+.teacherChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scheduleChip,
+.scheduleChipMuted {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.scheduleChipMuted {
+  color: #94a3b8;
+}
+
+.missingTeacher {
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: 1px dashed #f59e0b;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.teacherChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 2px;
+  border-radius: 99px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.teacherTitular {
+  border-color: #0075ad;
+  background: #f0f9ff;
+}
+
+.teacherInactive {
+  border-style: dashed;
+  color: #64748b;
+}
+
+.roleBadge {
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.teacherTitular .roleBadge {
+  background: #0075ad;
+  color: #ffffff;
+}
+
+.roleBadge:disabled,
+.removeTeacherBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.removeTeacherBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.removeTeacherBtn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.inactiveTag {
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assignBtn {
+  align-self: flex-start;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid #0075ad;
+  background: #ffffff;
+  color: #0075ad;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.assignBtn:hover:not(:disabled) {
+  background: #0075ad;
+  color: #ffffff;
+}
+
+.assignBtn:disabled {
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ---- Selector de docentes (modal y vista "Por docente") ---- */
+
+.teacherPicker,
+.teacherList {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.teacherList {
+  max-height: 70vh;
+}
+
+.pickerItem {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pickerItem:hover:not(:disabled) {
+  border-color: #bae6fd;
+}
+
+.pickerItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pickerItemSelected {
+  border-color: #0075ad;
+  background: #f0f9ff;
+}
+
+.pickerName {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pickerMeta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pickerEmpty {
+  padding: 14px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.roleFieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.roleFieldset legend {
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.roleOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.teacherLoadLayout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .teacherLoadLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teacherListPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
