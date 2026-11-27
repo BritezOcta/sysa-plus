@@ -55,6 +55,9 @@ export default function TopNavbar({
         <Link to={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS} className={styles.auditBtn}>
           Docentes
         </Link>
+        <Link to={APP_ROUTES.ADMIN_ENROLLMENT} className={styles.auditBtn}>
+          Inscripciones
+        </Link>
         <Link to={APP_ROUTES.ADMIN_STUDENTS} className={styles.auditBtn}>
           Alumnos
         </Link>
@@ -63,6 +66,9 @@ export default function TopNavbar({
         </Link>
         <Link to={APP_ROUTES.ADMIN_REPORTS} className={styles.auditBtn}>
           Reportes
+        </Link>
+        <Link to={APP_ROUTES.ADMIN_USERS} className={styles.auditBtn}>
+          Usuarios
         </Link>
 
         {onOpenAuditDrawer && (

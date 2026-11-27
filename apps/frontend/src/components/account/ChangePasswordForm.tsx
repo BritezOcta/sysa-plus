@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { authApi } from "../../api/auth.api";
 import { ApiError } from "../../api/httpClient";
+import { useAuth } from "../../auth/AuthContext";
 import common from "../../features/student/common.module.css";
 import s from "./ChangePasswordForm.module.css";
 
@@ -17,6 +18,8 @@ export function ChangePasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const { user, markPasswordChanged } = useAuth();
+  const forced = !!user?.mustChangePassword;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -42,6 +45,7 @@ export function ChangePasswordForm() {
       setNewPassword("");
       setConfirmPassword("");
       setFeedback({ kind: "ok", message: "Tu contraseña se actualizó correctamente." });
+      markPasswordChanged();
     } catch (error) {
       setFeedback({
         kind: "error",
@@ -54,6 +58,11 @@ export function ChangePasswordForm() {
 
   return (
     <form className={`${common.card} ${s.form}`} onSubmit={(e) => void handleSubmit(e)} noValidate>
+      {forced && (
+        <p className={`${common.chip} ${common.chipWarn}`} role="alert">
+          Tu contraseña fue restablecida por la Dirección. Ingresá la contraseña temporal como actual y elegí una nueva para continuar.
+        </p>
+      )}
       <label className={s.label}>
         Contraseña actual
         <input

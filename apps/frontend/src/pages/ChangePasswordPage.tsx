@@ -16,9 +16,11 @@ export default function ChangePasswordPage() {
             <h1 className={common.title}>Cambio de contraseña</h1>
             <p className={common.subtitle}>Actualizá la contraseña de tu cuenta</p>
           </div>
-          <Link to={ROLE_HOME_ROUTES[user.role]} className={`${common.btn} ${common.btnGhost}`}>
-            Volver
-          </Link>
+          {!user.mustChangePassword && (
+            <Link to={ROLE_HOME_ROUTES[user.role]} className={`${common.btn} ${common.btnGhost}`}>
+              Volver
+            </Link>
+          )}
         </header>
         <ChangePasswordForm />
       </div>

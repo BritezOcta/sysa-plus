@@ -56,6 +56,7 @@ function toAuthUser(record: AuthUserRecord): AuthUser {
     email: record.email,
     role: record.role,
     legajo: record.studentProfile?.legajo ?? null,
+    mustChangePassword: record.mustChangePassword,
   };
 }
 
