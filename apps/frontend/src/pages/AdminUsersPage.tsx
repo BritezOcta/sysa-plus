@@ -5,6 +5,7 @@ import adminStyles from '../components/admin/AdminPages.module.css'
 import tableStyles from '../components/academic/CurriculumTableView.module.css'
 import modalStyles from '../components/academic/Modals.module.css'
 import { ConfirmActionModal } from '../components/academic/modals'
+import StudentStatusModal from '../components/admin/StudentStatusModal'
 import TopNavbar from '../components/layout/TopNavbar'
 import ModalShell from '../components/ui/ModalShell'
 import ToastViewport from '../components/ui/ToastViewport'
@@ -21,6 +22,9 @@ const ROLE_LABELS: Record<AdminUserRow['role'], string> = {
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'inactive'>('')
+  const [changingStatus, setChangingStatus] = useState<AdminUserRow | null>(null)
+  const [savingStatus, setSavingStatus] = useState(false)
   const [users, setUsers] = useState<AdminUserRow[]>([])
   const [limit, setLimit] = useState(50)
   const [loading, setLoading] = useState(true)
@@ -36,7 +40,7 @@ export default function AdminUsersPage() {
     let cancelled = false
     const timer = window.setTimeout(() => {
       adminUsersApi
-        .search(search.trim(), role)
+        .search(search.trim(), role, statusFilter)
         .then((data) => {
           if (cancelled) return
           setUsers(data.users)
@@ -52,7 +56,27 @@ export default function AdminUsersPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [search, role, reloadKey])
+  }, [search, role, statusFilter, reloadKey])
+
+  async function handleStatusChange(user: AdminUserRow, reason: string) {
+    setSavingStatus(true)
+    try {
+      const res = await adminUsersApi.setStatus(user.id, user.isActive ? 'inactive' : 'active', reason)
+      pushToast(
+        'success',
+        res.isActive ? 'Alumno reactivado' : 'Alumno dado de baja',
+        res.isActive
+          ? `${user.fullName} puede volver a iniciar sesión.`
+          : `${user.fullName} quedó dado de baja. Se cancelaron ${res.cancelledCourses} cursada(s) y ${res.cancelledExams} final(es).`,
+      )
+      setChangingStatus(null)
+      setReloadKey((k) => k + 1)
+    } catch (err) {
+      pushToast('danger', 'No se pudo cambiar el estado', err instanceof NetworkError ? 'No se pudo conectar con el servidor. Consultá el estado antes de reintentar.' : err instanceof Error ? err.message : 'Error inesperado')
+    } finally {
+      setSavingStatus(false)
+    }
+  }
 
   async function handleReset(user: AdminUserRow) {
     setConfirming(null)
@@ -85,7 +109,7 @@ export default function AdminUsersPage() {
             <div>
               <h1>Usuarios</h1>
               <p className={styles.sectionSubtitle}>
-                Buscá alumnos, profesores o administradores y restablecé su contraseña. El usuario recibe una clave temporal y debe cambiarla al iniciar sesión.
+                Buscá alumnos, profesores o administradores y restablecé su contraseña. El usuario recibe una clave temporal y debe cambiarla al iniciar sesión. A los alumnos también podés darlos de baja o reactivarlos.
               </p>
             </div>
           </div>
@@ -117,6 +141,14 @@ export default function AdminUsersPage() {
                 <option value="ALUMNO">Alumnos</option>
                 <option value="PROFESOR">Profesores</option>
                 <option value="ADMINISTRADOR">Administradores</option>
+              </select>
+            </label>
+            <label className={tableStyles.filterField}>
+              <span className={tableStyles.filterLabel}>Estado</span>
+              <select className={tableStyles.filterSelect} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as '' | 'active' | 'inactive')}>
+                <option value="">Todos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Dados de baja</option>
               </select>
             </label>
           </div>
@@ -154,7 +186,12 @@ export default function AdminUsersPage() {
                           {u.mustChangePassword && <span className={`${adminStyles.pill} ${adminStyles.pillWarn}`}>Clave temporal</span>}
                         </div>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {u.role === 'ALUMNO' && (
+                          <button type="button" className={adminStyles.reopenBtn} style={{ marginRight: 6 }} onClick={() => setChangingStatus(u)}>
+                            {u.isActive ? 'Dar de baja' : 'Reactivar'}
+                          </button>
+                        )}
                         <button type="button" className={adminStyles.reopenBtn} disabled={!u.isActive} onClick={() => setConfirming(u)}>
                           Restablecer contraseña
                         </button>
@@ -177,6 +214,15 @@ export default function AdminUsersPage() {
           tone="warning"
           onClose={() => setConfirming(null)}
           onConfirm={() => void handleReset(confirming)}
+        />
+      )}
+
+      {changingStatus && (
+        <StudentStatusModal
+          user={changingStatus}
+          submitting={savingStatus}
+          onClose={() => setChangingStatus(null)}
+          onConfirm={(reason) => void handleStatusChange(changingStatus, reason)}
         />
       )}
 
