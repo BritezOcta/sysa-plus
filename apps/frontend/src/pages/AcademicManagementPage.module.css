@@ -5,65 +5,6 @@
   color: var(--sa-text);
 }
 
-.topNavbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 24px;
-  background: #0b1320;
-  border-bottom: 1px solid #1e293b;
-  color: #ffffff;
-}
-
-.brandBlock {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.utnLogo {
-  width: 38px;
-  height: auto;
-  filter: brightness(0) invert(1);
-}
-
-.brandText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sysTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sysTitleRow strong {
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.frgpBadge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: #0075ad;
-  color: #ffffff;
-}
-
-.brandText > span {
-  font-size: 12px;
-  color: #cbd5e1;
-}
-
 .navControls {
   display: flex;
   align-items: center;
@@ -79,13 +20,13 @@
   padding: 4px 8px;
   border-radius: 8px;
   background: #111c30;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--sa-text);
 }
 
 .demoGroupLabel {
   font-size: 11px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--sa-border);
   padding: 0 4px;
 }
 
@@ -95,53 +36,48 @@
   gap: 6px;
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #1e293b;
-  color: #e2e8f0;
+  border: 1px solid var(--sa-text-muted);
+  background: var(--sa-text);
+  color: var(--sa-border);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
-  transition:
-    background-color 0.15s ease,
+  transition: background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
 }
 
 .faultSimulatorToggle:hover {
-  border-color: #64748b;
+  border-color: var(--sa-text-muted);
   color: #ffffff;
 }
 
 .faultSimulatorToggle input {
-  accent-color: #38bdf8;
+  accent-color: var(--sa-accent);
 }
 
 .faultActive {
-  background: #7f1d1d;
+  background: var(--sa-danger);
   border-color: #f87171;
   color: #ffffff;
 }
 
 .resetMockBtn {
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid #334155;
-  background: #1e293b;
-  color: #e2e8f0;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .resetMockBtn:hover {
-  background: #334155;
-  border-color: #64748b;
-  color: #ffffff;
+  border-color: var(--sa-accent);
+  background: var(--sa-accent-soft);
 }
 
 .auditBtn {
@@ -150,96 +86,36 @@
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #38bdf8;
-  background: #0c4a6e;
-  color: #f0f9ff;
-  font-size: 12.5px;
+  border-radius: 10px;
+  border: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .auditBtn:hover {
-  background: #0369a1;
-  color: #ffffff;
+  border-color: var(--sa-accent);
+  background: var(--sa-accent-soft);
 }
 
 .resetMockBtn:focus-visible,
-.auditBtn:focus-visible,
-.logoutLink:focus-visible {
-  outline: 2px solid #38bdf8;
+.auditBtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--sa-accent) 40%, transparent);
   outline-offset: 2px;
 }
 
 .unreadDot {
   padding: 1px 6px;
   border-radius: 99px;
-  background: #f59e0b;
-  color: #0f172a;
+  background: var(--sa-warn);
+  color: #fff;
   font-size: 10.5px;
   font-weight: 800;
-}
-
-.userProfilePill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 12px 5px 6px;
-  border-radius: 99px;
-  background: #1e293b;
-  border: 1px solid #334155;
-}
-
-.avatarCircle {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #0075ad;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-}
-
-.userDetails {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.userDetails strong {
-  font-size: 12px;
-  color: #f8fafc;
-}
-
-.userDetails span {
-  font-size: 11px;
-  color: #cbd5e1;
-}
-
-.logoutLink {
-  margin-left: 4px;
-  padding: 4px 9px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #334155;
-  color: #f1f5f9;
-  font-size: 11.5px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 0.15s ease;
-}
-
-.logoutLink:hover {
-  background: #475569;
-  color: #ffffff;
 }
 
 .mainContent {
@@ -251,9 +127,7 @@
 }
 
 @media (max-width: 640px) {
-  .topNavbar {
-    padding: 12px 16px;
-  }
+
 }
 
 .careersSection {
@@ -294,27 +168,25 @@
 
 .newCareerBtn {
   padding: 9px 16px;
-  border-radius: 8px;
-  border: 1px solid #0f172a;
-  background: #0f172a;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--sa-accent-strong);
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
 .newCareerBtn:hover {
-  background: #1e293b;
+  background: var(--sa-accent);
 }
 
 .newCareerBtn:focus-visible,
 .careerSelectBtn:focus-visible,
 .careerQuickActions button:focus-visible,
 .viewTabBtn:focus-visible,
-.addSubjectHeroBtn:focus-visible,
-.toastHeader button:focus-visible {
-  outline: 2px solid #0075ad;
+.addSubjectHeroBtn:focus-visible {
+  outline: 2px solid var(--sa-accent);
   outline-offset: 2px;
 }
 
@@ -327,31 +199,30 @@
 .careerCard {
   padding: 14px 16px;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  background: var(--sa-surface);
+  border: 1.5px solid var(--sa-border);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition:
-    border-color 0.15s ease,
+  transition: border-color 0.15s ease,
     box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
 .careerCard:hover {
-  border-color: #94a3b8;
+  border-color: var(--sa-text-muted);
 }
 
 .careerCardSelected {
-  border-color: #0075ad;
-  background: #f8fafc;
+  border-color: var(--sa-accent);
+  background: var(--sa-surface-2);
   box-shadow: 0 0 0 2px rgb(0 117 173 / 18%);
 }
 
 .careerCardInactive {
-  background: #f8fafc;
+  background: var(--sa-surface-2);
   border-style: dashed;
-  border-color: #94a3b8;
+  border-color: var(--sa-text-muted);
 }
 
 .careerSelectBtn {
@@ -381,8 +252,8 @@
 .careerCodeBadge {
   padding: 3px 9px;
   border-radius: 6px;
-  background: #0f172a;
-  color: #7dd3fc;
+  background: var(--sa-accent-soft);
+  color: var(--sa-accent-strong);
   font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -391,9 +262,9 @@
 .statusPillActive {
   padding: 3px 9px;
   border-radius: 99px;
-  background: #dcfce7;
-  border: 1px solid #86efac;
-  color: #14532d;
+  background: var(--sa-ok-soft);
+  border: 1px solid color-mix(in srgb, var(--sa-ok) 40%, transparent);
+  color: var(--sa-ok);
   font-size: 11px;
   font-weight: 700;
 }
@@ -401,9 +272,9 @@
 .statusPillInactive {
   padding: 3px 9px;
   border-radius: 99px;
-  background: #f1f5f9;
-  border: 1px dashed #64748b;
-  color: #334155;
+  background: var(--sa-surface-2);
+  border: 1px dashed var(--sa-text-muted);
+  color: var(--sa-text-muted);
   font-size: 11px;
   font-weight: 700;
 }
@@ -411,21 +282,21 @@
 .careerName {
   font-size: 15.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sa-text);
   line-height: 1.3;
   margin: 0;
 }
 
 .careerPlanMeta {
   font-size: 12.5px;
-  color: #475569;
+  color: var(--sa-text-muted);
   margin: 0;
 }
 
 .careerCardFooter {
   margin-top: auto;
   padding-top: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--sa-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -439,7 +310,7 @@
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #334155;
+  color: var(--sa-text-muted);
 }
 
 .careerQuickActions {
@@ -451,28 +322,27 @@
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1e293b;
+  border: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  color: var(--sa-text);
   font-size: 12px;
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition:
-    background-color 0.15s ease,
+  transition: background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
 }
 
 .careerQuickActions button:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--sa-surface-2);
+  border-color: var(--sa-text-muted);
 }
 
 .careerQuickActions .careerDeleteBtn:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
-  color: #b91c1c;
+  background: var(--sa-danger-soft);
+  border-color: color-mix(in srgb, var(--sa-danger) 40%, transparent);
+  color: var(--sa-danger);
 }
 
 .workspaceSection {
@@ -489,8 +359,8 @@
   gap: 16px;
   padding: 16px 20px;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
   box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
 }
 
@@ -511,7 +381,7 @@
 .activeCodeTag {
   padding: 4px 10px;
   border-radius: 6px;
-  background: #0075ad;
+  background: var(--sa-accent);
   color: #ffffff;
   font-size: 12.5px;
   font-weight: 700;
@@ -521,23 +391,23 @@
 .activeTitleLine h2 {
   font-size: 19px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--sa-text);
   margin: 0;
 }
 
 .planPill {
   padding: 4px 10px;
   border-radius: 99px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  background: var(--sa-surface-2);
+  border: 1px solid var(--sa-border);
+  color: var(--sa-text-muted);
   font-size: 12px;
   font-weight: 700;
 }
 
 .activeCareerDesc {
   font-size: 13px;
-  color: #475569;
+  color: var(--sa-text-muted);
   margin: 0;
   max-width: 68ch;
 }
@@ -554,8 +424,8 @@
   flex-wrap: wrap;
   padding: 3px;
   border-radius: 10px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
+  background: var(--sa-surface-2);
+  border: 1px solid var(--sa-border);
 }
 
 .viewTabBtn {
@@ -563,123 +433,47 @@
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #334155;
+  color: var(--sa-text-muted);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
+  transition: background-color 0.15s ease,
     color 0.15s ease;
 }
 
 .viewTabActive {
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--sa-surface);
+  color: var(--sa-text);
   box-shadow: 0 1px 2px rgb(15 23 42 / 10%);
 }
 
 .addSubjectHeroBtn {
   padding: 9px 16px;
   border-radius: 8px;
-  border: 1px solid #0075ad;
-  background: #0075ad;
+  border: 1px solid var(--sa-accent);
+  background: var(--sa-accent);
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
+  transition: background-color 0.15s ease,
     border-color 0.15s ease;
 }
 
 .addSubjectHeroBtn:hover {
-  background: #0369a1;
-  border-color: #0369a1;
-}
-
-.toastViewport {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 390px;
-  width: calc(100% - 40px);
-  pointer-events: none;
-}
-
-.toastCard {
-  pointer-events: auto;
-  padding: 13px 15px;
-  border-radius: 10px;
-  background: #0f172a;
-  color: #f8fafc;
-  border: 1px solid #334155;
-  box-shadow: 0 8px 24px rgb(15 23 42 / 28%);
-}
-
-.toast_success {
-  border-color: #059669;
-}
-
-.toast_warning {
-  border-color: #d97706;
-}
-
-.toast_danger {
-  border-color: #e11d48;
-}
-
-.toast_info {
-  border-color: #0284c7;
-}
-
-.toastHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.toastHeader strong {
-  font-size: 13.5px;
-}
-
-.toastHeader button {
-  border: none;
-  background: transparent;
-  color: #cbd5e1;
-  cursor: pointer;
-  font-size: 13px;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.toastHeader button:hover {
-  background: #1e293b;
-  color: #ffffff;
-}
-
-.toastCard p {
-  font-size: 12.5px;
-  color: #e2e8f0;
-  line-height: 1.4;
-  margin: 0;
+  background: var(--sa-accent-strong);
+  border-color: var(--sa-accent-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .faultSimulatorToggle,
-  .resetMockBtn,
-  .auditBtn,
-  .logoutLink,
-  .newCareerBtn,
-  .careerCard,
-  .careerQuickActions button,
-  .viewTabBtn,
-  .addSubjectHeroBtn {
+.resetMockBtn,
+.auditBtn,
+.newCareerBtn,
+.careerCard,
+.careerQuickActions button,
+.viewTabBtn,
+.addSubjectHeroBtn {
     transition: none;
   }
 }

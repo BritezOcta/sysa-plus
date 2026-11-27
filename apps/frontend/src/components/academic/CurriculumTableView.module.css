@@ -317,21 +317,21 @@
 }
 
 .pill_regularizada_cursar {
-  background: var(--sa-warn-soft);
-  border-color: color-mix(in srgb, var(--sa-warn) 40%, transparent);
-  color: var(--sa-warn);
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #78350f;
 }
 
 .pill_aprobada_cursar {
-  background: var(--sa-accent-soft);
-  border-color: color-mix(in srgb, var(--sa-accent) 40%, transparent);
-  color: var(--sa-accent-strong);
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0c4a6e;
 }
 
 .pill_aprobada_rendir {
-  background: var(--sa-ok-soft);
-  border-color: color-mix(in srgb, var(--sa-ok) 40%, transparent);
-  color: var(--sa-ok);
+  background: #dcfce7;
+  border-color: #34d399;
+  color: #064e3b;
 }
 
 .unlockPill {

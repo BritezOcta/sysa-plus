@@ -1,4 +1,4 @@
-import styles from '../../pages/AcademicManagementPage.module.css'
+import styles from './Toast.module.css'
 import type { ToastMessage } from '../../types'
 
 interface ToastCardProps {
