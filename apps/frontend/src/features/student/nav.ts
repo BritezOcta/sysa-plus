@@ -1,19 +1,7 @@
 import type { IconName } from "../../components/Icon";
 
-export interface NavItem {
-  /** También es el segmento de ruta: /alumno/<id> */
-  id: string;
-  label: string;
-  to: string;
-  icon: IconName;
-  description: string;
-  badge?: "avisos" | "pendiente";
-}
-
-export interface NavGroup {
-  title: string | null;
-  items: NavItem[];
-}
+export type { NavGroup, NavItem } from "../../components/layout/navTypes";
+import type { NavGroup, NavItem } from "../../components/layout/navTypes";
 
 const item = (
   id: string,
