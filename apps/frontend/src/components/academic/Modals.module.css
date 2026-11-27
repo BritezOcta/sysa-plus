@@ -33,7 +33,7 @@
 .modalCard {
   width: 100%;
   max-width: 580px;
-  max-height: 92vh;
+  max-height: calc(92vh / var(--a11y-text-scale, 1));
   min-width: 0;
   display: flex;
   flex-direction: column;

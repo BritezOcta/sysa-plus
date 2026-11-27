@@ -5,6 +5,7 @@
  */
 export const UI_STORAGE_KEYS = {
   CORRELATIVITY_GUIDE_VISITED: 'sysaplus_correlativity_guide_visited_v1',
+  ACCESSIBILITY: 'sysaplus_accessibility_v1',
 } as const
 
 export const STORAGE_VALUES = {

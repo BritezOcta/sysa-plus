@@ -1,6 +1,13 @@
 import type { ReactElement, SVGProps } from "react";
 
 const PATHS = {
+  accessibility: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="7" r="1.4" />
+      <path d="M7.5 10l4.5 1 4.5-1M12 11v3.5l-2.5 4M12 14.5l2.5 4" />
+    </>
+  ),
   home: (
     <>
       <path d="M3 11l9-8 9 8" />
