@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { useAuthenticatedUser } from "../../../auth/AuthContext";
 import { Icon } from "../../../components/Icon";
-import { formatFecha } from "../../../data/mockStudentData";
 import { useAcademicStatus } from "../../../hooks/useAcademicStatus";
 import { AcademicStatusFallback } from "../AcademicStatusFallback";
 import { getNavItem } from "../nav";
@@ -17,6 +16,18 @@ const QUICK_IDS = [
   "certificados",
   "correlatividad-cursar",
 ];
+
+function formatFecha(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function HomePage() {
   const user = useAuthenticatedUser();
