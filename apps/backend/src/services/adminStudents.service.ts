@@ -1,4 +1,5 @@
 import { AppError } from "../lib/AppError.js";
+import { attendancePercent, attendedWeight } from "../lib/attendance.js";
 import { adminStudentsRepository } from "../repositories/adminStudents.repository.js";
 
 export const adminStudentsService = {
@@ -46,17 +47,10 @@ export const adminStudentsService = {
         period: `${offering.academicPeriod.year} - ${offering.academicPeriod.semester}° Cuat.`,
       },
       students: offering.courseEnrollments.map((enr) => {
-        const totalRecorded = enr.attendances.length;
-        const presentCount = enr.attendances.filter(
-          (a) =>
-            a.attendanceStatus === "PRESENTE" ||
-            a.attendanceStatus === "JUSTIFICADO" ||
-            a.attendanceStatus === "TARDANZA",
-        ).length;
-        const attendancePercentage =
-          totalRecorded > 0
-            ? Math.round((presentCount / totalRecorded) * 100)
-            : 100;
+        const attendancePercentage = attendancePercent(
+          attendedWeight(enr.attendances.map((a) => a.attendanceStatus)),
+          offering._count.classSessions,
+        );
 
         return {
           enrollmentId: String(enr.courseEnrollmentId),

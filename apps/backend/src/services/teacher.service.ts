@@ -1,4 +1,10 @@
 import { AppError } from "../lib/AppError.js";
+import {
+  attendancePercent,
+  attendanceWeight,
+  attendedWeight,
+  VALID_ATTENDANCE_STATUSES,
+} from "../lib/attendance.js";
 import { computeCourseCondition, type CourseCondition } from "../lib/courseCondition.js";
 import { teacherRepository } from "../repositories/teacher.repository.js";
 
@@ -10,7 +16,6 @@ import {
   MIN_ATTENDANCE_PERCENT,
 } from "../types/academic.js";
 
-const VALID_STATUSES = new Set(["PRESENTE", "AUSENTE", "JUSTIFICADO"]);
 const RISK_THRESHOLD_PERCENT = 80;
 
 function toIsoDate(date: Date): string {
@@ -33,11 +38,7 @@ function attendancePercentOf(
   attendances: { attendanceStatus: string }[],
   totalSessions: number,
 ): number {
-  if (totalSessions === 0) return 100;
-  const attended = attendances.filter(
-    (a) => a.attendanceStatus === "PRESENTE" || a.attendanceStatus === "JUSTIFICADO",
-  ).length;
-  return Math.round((attended / totalSessions) * 100);
+  return attendancePercent(attendedWeight(attendances.map((a) => a.attendanceStatus)), totalSessions);
 }
 
 type GradesData = Awaited<ReturnType<typeof teacherRepository.findCommissionGradesData>>;
@@ -164,15 +165,7 @@ export const teacherService = {
 
     const students = enrollments.map((enr) => {
       const sp = enr.studentCareer.studentProfile;
-      const attendedCount = enr.attendances.filter(
-        (a) =>
-          a.attendanceStatus === "PRESENTE" ||
-          a.attendanceStatus === "JUSTIFICADO",
-      ).length;
-      const attendancePercentage =
-        totalSessions === 0
-          ? 100
-          : Math.round((attendedCount / totalSessions) * 100);
+      const attendancePercentage = attendancePercentOf(enr.attendances, totalSessions);
 
       return {
         enrollmentId: String(enr.courseEnrollmentId),
@@ -373,11 +366,8 @@ export const teacherService = {
           !existingSession ||
           att.classSessionId !== existingSession.classSessionId,
       );
-      const previousAttended = previousAttendances.filter(
-        (att) =>
-          att.attendanceStatus === "PRESENTE" ||
-          att.attendanceStatus === "JUSTIFICADO",
-      ).length;
+      // Asistencia ponderada: una tardanza suma 0,5.
+      const previousAttended = attendedWeight(previousAttendances.map((att) => att.attendanceStatus));
 
       const currentStatus = existingSession
         ? (enr.attendances.find(
@@ -514,7 +504,7 @@ export const teacherService = {
 
     const recordMap = new Map<number, string>();
     for (const r of parsedRecords) {
-      if (!VALID_STATUSES.has(r.status)) {
+      if (!VALID_ATTENDANCE_STATUSES.has(r.status)) {
         throw new AppError(
           400,
           "INVALID_STATUS",
@@ -550,18 +540,13 @@ export const teacherService = {
         );
       }
 
-      const prevAttended = enr.attendances.filter(
-        (a) =>
-          (!existingSession ||
-            a.classSessionId !== existingSession.classSessionId) &&
-          (a.attendanceStatus === "PRESENTE" ||
-            a.attendanceStatus === "JUSTIFICADO"),
-      ).length;
+      const prevAttended = attendedWeight(
+        enr.attendances
+          .filter((a) => !existingSession || a.classSessionId !== existingSession.classSessionId)
+          .map((a) => a.attendanceStatus),
+      );
 
-      const totalAttended =
-        prevAttended +
-        (newStatus === "PRESENTE" || newStatus === "JUSTIFICADO" ? 1 : 0);
-      const pct = Math.round((totalAttended / totalClassesAfterSave) * 100);
+      const pct = attendancePercent(prevAttended + attendanceWeight(newStatus), totalClassesAfterSave);
 
       if (STATUSES_NOT_RECALCULATED_BY_ATTENDANCE.has(enr.enrollmentStatus)) {
         continue;
