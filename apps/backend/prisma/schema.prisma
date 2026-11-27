@@ -358,6 +358,8 @@ model User {
   failedLoginAttempts  Int                   @default(0, map: "DF_USERS_FAILED_ATTEMPTS") @map("FAILED_LOGIN_ATTEMPTS") @db.TinyInt
   lockedUntil          DateTime?             @map("LOCKED_UNTIL")
   lastLoginAt          DateTime?             @map("LAST_LOGIN_AT")
+  /// El Administrador restableció la contraseña: el usuario debe cambiarla al iniciar sesión.
+  mustChangePassword   Boolean               @default(false, map: "DF_USERS_MUST_CHANGE_PASSWORD") @map("MUST_CHANGE_PASSWORD")
   administratorProfile AdministratorProfile?
   auditLogs            AuditLog[]
   studentProfile       StudentProfile?

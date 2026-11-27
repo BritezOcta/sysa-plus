@@ -15,6 +15,8 @@ export const APP_ROUTES = {
   ADMIN_RECORDS: "/admin/actas",
   ADMIN_REPORTS: "/admin/reportes",
   ADMIN_TEACHER_ASSIGNMENTS: "/admin/asignacion-docentes",
+  ADMIN_ENROLLMENT: "/admin/inscripciones",
+  ADMIN_USERS: "/admin/usuarios",
   CHANGE_PASSWORD: "/cuenta/contrasena",
   VERIFY_CERTIFICATE: "/verificar",
 } as const;

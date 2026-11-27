@@ -20,6 +20,8 @@ export interface AuthUser {
   role: Role;
   /** Solo para ALUMNO */
   legajo: string | null;
+  /** El Administrador restableció la contraseña: debe cambiarla antes de usar el sistema. */
+  mustChangePassword: boolean;
 }
 
 export interface SessionTokenPayload {

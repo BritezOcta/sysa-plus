@@ -12,6 +12,8 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<AuthUser>
   logout: () => Promise<void>
   acknowledgeWelcome: () => void
+  /** Tras cambiar la contraseña temporal: habilita el resto del sistema. */
+  markPasswordChanged: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         acknowledgeWelcome,
+        markPasswordChanged: () => setUser((prev) => (prev ? { ...prev, mustChangePassword: false } : prev)),
       }}
     >
       {children}

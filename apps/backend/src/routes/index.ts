@@ -12,6 +12,8 @@ import { adminStudentsRouter } from "./adminStudents.routes.js";
 import { adminRecordsRouter } from "./adminRecords.routes.js";
 import { adminReportsRouter } from "./adminReports.routes.js";
 import { teacherAssignmentRouter } from "./teacherAssignment.routes.js";
+import { adminUsersRouter } from "./adminUsers.routes.js";
+import { adminCalendarRouter } from "./adminCalendar.routes.js";
 
 export const apiRouter = Router();
 
@@ -27,4 +29,6 @@ apiRouter.use("/student/attendance", studentAttendanceRouter);
 apiRouter.use("/admin/records", adminRecordsRouter);
 apiRouter.use("/admin/reports", adminReportsRouter);
 apiRouter.use("/admin/teacher-assignments", teacherAssignmentRouter);
+apiRouter.use("/admin/users", adminUsersRouter);
+apiRouter.use("/admin/calendar", adminCalendarRouter);
 apiRouter.use("/admin", adminStudentsRouter);
