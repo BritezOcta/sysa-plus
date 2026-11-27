@@ -6,10 +6,14 @@ export const APP_ROUTES = {
   ENROLLMENT: "/inscripcion-cursada",
   LOGIN: "/login",
   STUDENT_AREA: "/alumno",
+  STUDENT_ATTENDANCE: "/alumno/asistencias",
   TEACHER_AREA: "/profesor",
   TEACHER_ATTENDANCE: "/profesor/asistencias",
   TEACHER_GRADES: "/profesor/notas",
   TEACHER_STUDENTS: "/profesor/alumnos",
+  ADMIN_STUDENTS: "/admin/alumnos",
+  ADMIN_RECORDS: "/admin/actas",
+  CHANGE_PASSWORD: "/cuenta/contrasena",
 } as const;
 
 export const ROLE_HOME_ROUTES: Record<UserRole, string> = {

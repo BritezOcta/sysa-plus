@@ -20,6 +20,8 @@ export interface SubjectFormPayload {
   year: number | null
   period: SubjectPeriod | null
   status: EntityStatus
+  regularGrade: number
+  promotionGrade: number | null
 }
 
 export interface CareerFormValues {

@@ -70,6 +70,7 @@ export const teacherController = {
       type: body["type"],
       date: body["date"],
       maxScore: body["maxScore"],
+      recoversAssessmentId: body["recoversAssessmentId"],
     });
     res.status(201).json({ status: "OK", assessment });
   },
@@ -92,6 +93,48 @@ export const teacherController = {
       ipAddress: req.ip ?? null,
       rawCommissionId: req.params["commissionId"],
       rawAssessmentId: req.params["assessmentId"],
+    });
+    res.status(200).json({ status: "OK", ...result });
+  },
+
+  async closeCourse(req: Request, res: Response) {
+    const result = await teacherService.closeCourse({
+      user: req.user!,
+      ipAddress: req.ip ?? null,
+      rawCommissionId: req.params["commissionId"],
+    });
+    res.status(200).json({ status: "OK", ...result });
+  },
+
+  async getExamCalls(req: Request, res: Response) {
+    const examCalls = await teacherService.getTeacherExamCalls(req.user!);
+    res.status(200).json({ status: "OK", examCalls });
+  },
+
+  async getExamCallGrades(req: Request, res: Response) {
+    const data = await teacherService.getExamCallGrades(
+      req.user!,
+      req.params["examCallId"],
+    );
+    res.status(200).json({ status: "OK", ...data });
+  },
+
+  async saveExamCallGrades(req: Request, res: Response) {
+    const body: Record<string, unknown> = req.body ?? {};
+    const result = await teacherService.saveExamCallGrades({
+      user: req.user!,
+      ipAddress: req.ip ?? null,
+      rawExamCallId: req.params["examCallId"],
+      grades: body["grades"],
+    });
+    res.status(200).json({ status: "OK", ...result });
+  },
+
+  async closeExamCall(req: Request, res: Response) {
+    const result = await teacherService.closeExamCall({
+      user: req.user!,
+      ipAddress: req.ip ?? null,
+      rawExamCallId: req.params["examCallId"],
     });
     res.status(200).json({ status: "OK", ...result });
   },

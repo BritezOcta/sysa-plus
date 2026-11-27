@@ -91,6 +91,21 @@ test("RF-02 API, SQL Server transactions and real enrollment data", async t => {
       assert.equal((await request("/subjects", "POST", { ...subjectBody(otherCareerId, "RECREATE"), name: "Must not overwrite" })).status, 409);
       assert.equal((await prisma.subject.findUniqueOrThrow({ where: { subjectCode: "RECREATE" } })).subjectName, "Replacement");
     });
+    await t.test("grading criteria survive create, update and snapshot without weakening RF-02 validation", async () => {
+      const created = await request("/subjects", "POST", { ...subjectBody(otherCareerId, "GRADES"), regularGrade: 6.5, promotionGrade: 8.5 });
+      assert.equal(created.status, 201);
+      const id = created.data.id;
+      const first = (await request("/snapshot")).data.subjects.find((s: { id: string }) => s.id === id);
+      assert.equal(first.regularGrade, 6.5);
+      assert.equal(first.promotionGrade, 8.5);
+      assert.equal((await request(`/subjects/${id}`, "PUT", { ...subjectBody(otherCareerId, "GRADES"), regularGrade: 7, promotionGrade: null })).status, 200);
+      const before = await prisma.auditLog.count();
+      assert.equal((await request(`/subjects/${id}`, "PUT", { ...subjectBody(otherCareerId, "GRADES"), regularGrade: 7, promotionGrade: 6 })).status, 400);
+      assert.equal(await prisma.auditLog.count(), before);
+      const saved = await prisma.studyPlanSubject.findUniqueOrThrow({ where: { studyPlanSubjectId: Number(id) } });
+      assert.equal(Number(saved.regularGrade), 7);
+      assert.equal(saved.promotionGrade, null);
+    });
     await t.test("cycles and cross-plan requirements are rejected without partial writes", async () => {
       const auditCount = await prisma.auditLog.count();
       const cycle = await request(`/subjects/${subjectA}`, "PUT", { ...subjectBody(careerId, "A"), name: "Must roll back", requirements: [{requiresSubjectId: subjectB, type:"aprobada_cursar"}] });

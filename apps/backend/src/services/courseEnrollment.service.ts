@@ -37,16 +37,16 @@ export const ENROLLMENT_ERROR_CODES = {
 // ---------------------------------------------------------------------------
 
 /** Fecha de hoy como medianoche UTC, comparable con las columnas DATE. */
-function todayAsDate(): Date {
+export function todayAsDate(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
-function toIsoDate(date: Date): string {
+export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function formatDisplayDate(date: Date): string {
+export function formatDisplayDate(date: Date): string {
   const [year, month, day] = toIsoDate(date).split("-");
   return `${day}/${month}/${year}`;
 }
@@ -116,7 +116,7 @@ interface StudentContext {
   studyPlanResolution: string;
 }
 
-async function loadStudentContext(userId: number): Promise<StudentContext> {
+export async function loadStudentContext(userId: number): Promise<StudentContext> {
   const profile = await repo.findStudentContext(userId);
 
   // TODO(multi-carrera): si el alumno tiene más de una carrera activa se toma la primera.

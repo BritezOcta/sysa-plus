@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/lib/courseCondition.test.ts tests/academic.validation.test.ts",
     "db:pull": "prisma db pull",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -16,7 +17,6 @@
     "db:bootstrap": "tsx prisma/bootstrap.ts",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
-    "test": "tsx --test tests/academic.validation.test.ts",
     "test:integration": "tsx --test tests/academic.integration.test.ts"
   },
   "keywords": [],

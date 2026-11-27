@@ -36,6 +36,17 @@ export const authController = {
     res.status(200).json({ status: "OK" });
   },
 
+  async changePassword(req: Request, res: Response) {
+    const body: Record<string, unknown> = req.body ?? {};
+    await authService.changePassword({
+      userId: req.user!.userId,
+      currentPassword: body["currentPassword"],
+      newPassword: body["newPassword"],
+      ipAddress: clientIp(req),
+    });
+    res.status(200).json({ status: "OK" });
+  },
+
   me(req: Request, res: Response) {
     res.status(200).json({ status: "OK", user: req.user });
   },

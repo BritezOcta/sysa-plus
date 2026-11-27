@@ -29,3 +29,12 @@ test("annual, semester and unassigned slots are validated without inventing defa
   assert.deepEqual(subjectSlot({year: 3, period: "anual"}), {year: 3, period: "anual"});
   for (const slot of [{ year: 0, period: 1 }, { year: 1, period: "3" }, {year: null, period: 1}, {year: 1, period: null}]) invalid(() => subjectSlot(slot));
 });
+
+test("grading criteria preserve decimal values and reject invalid types or thresholds", () => {
+  const input = subjectInput({ ...subject, regularGrade: 6.5, promotionGrade: 8.5 });
+  assert.equal(input.regularGrade, 6.5);
+  assert.equal(input.promotionGrade, 8.5);
+  assert.equal(subjectInput(subject).regularGrade, 6);
+  assert.equal(subjectInput(subject).promotionGrade, null);
+  for (const patch of [{ regularGrade: true }, { regularGrade: "6" }, { regularGrade: null }, { regularGrade: 0 }, { regularGrade: 11 }, { promotionGrade: 5 }, { promotionGrade: 11 }, { promotionGrade: "8" }]) invalid(() => subjectInput({ ...subject, ...patch }));
+});

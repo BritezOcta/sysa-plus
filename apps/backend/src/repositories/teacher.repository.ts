@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { EXAM_CALL_STATUS, EXAM_STATUS } from "../types/academic.js";
 
 export const teacherRepository = {
   async findTeacherProfileByUserId(userId: number) {
@@ -8,7 +9,7 @@ export const teacherRepository = {
   },
 
   async findCommissionStudents(courseOfferingId: number) {
-    const [enrollments, totalSessions] = await Promise.all([
+    const [enrollments, totalSessions, assessments] = await Promise.all([
       prisma.courseEnrollment.findMany({
         where: { courseOfferingId },
         include: {
@@ -42,9 +43,14 @@ export const teacherRepository = {
         },
       }),
       prisma.classSession.count({ where: { courseOfferingId } }),
+      prisma.assessment.findMany({
+        where: { courseOfferingId },
+        include: { assessmentGrades: true },
+        orderBy: [{ assessmentDate: "asc" }, { assessmentId: "asc" }],
+      }),
     ]);
 
-    return { enrollments, totalSessions };
+    return { enrollments, totalSessions, assessments };
   },
 
   async findEnrollmentInCommission(
@@ -262,7 +268,7 @@ export const teacherRepository = {
   },
 
   async findCommissionGradesData(courseOfferingId: number) {
-    const [assessments, enrollments] = await Promise.all([
+    const [assessments, enrollments, totalSessions] = await Promise.all([
       prisma.assessment.findMany({
         where: { courseOfferingId },
         include: {
@@ -282,6 +288,7 @@ export const teacherRepository = {
               },
             },
           },
+          attendances: { select: { attendanceStatus: true } },
         },
         orderBy: {
           studentCareer: {
@@ -289,9 +296,10 @@ export const teacherRepository = {
           },
         },
       }),
+      prisma.classSession.count({ where: { courseOfferingId } }),
     ]);
 
-    return { assessments, enrollments };
+    return { assessments, enrollments, totalSessions };
   },
 
   async findAssessmentInCommission(
@@ -309,6 +317,7 @@ export const teacherRepository = {
     assessmentType: string;
     assessmentDate: Date | null;
     maxScore: number;
+    recoversAssessmentId: number | null;
     audit: {
       userId: number;
       details: string;
@@ -323,6 +332,7 @@ export const teacherRepository = {
           assessmentType: params.assessmentType,
           assessmentDate: params.assessmentDate,
           maxScore: params.maxScore,
+          recoversAssessmentId: params.recoversAssessmentId,
           isClosed: false,
         },
       });
@@ -409,6 +419,163 @@ export const teacherRepository = {
           action: "CIERRE_ACTA",
           entity: "ASSESSMENTS",
           entityId: String(params.assessmentId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return updated;
+    });
+  },
+
+  /** RF-07: guarda la condición final de cada alumno, cierra las actas abiertas y la cursada. */
+  async closeCourse(params: {
+    courseOfferingId: number;
+    conditions: { courseEnrollmentId: number; enrollmentStatus: string }[];
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      for (const c of params.conditions) {
+        await tx.courseEnrollment.update({
+          where: { courseEnrollmentId: c.courseEnrollmentId },
+          data: { enrollmentStatus: c.enrollmentStatus },
+        });
+      }
+
+      await tx.assessment.updateMany({
+        where: { courseOfferingId: params.courseOfferingId, isClosed: false },
+        data: { isClosed: true },
+      });
+
+      const offering = await tx.courseOffering.update({
+        where: { courseOfferingId: params.courseOfferingId },
+        data: { gradesClosedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CIERRE_CURSADA",
+          entity: "COURSE_OFFERING",
+          entityId: String(params.courseOfferingId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+
+      return offering;
+    });
+  },
+
+  async findTeacherExamCalls(teacherId: number) {
+    return prisma.examCall.findMany({
+      where: { teacherId },
+      include: {
+        examSession: true,
+        studyPlanSubject: {
+          include: { subject: true },
+        },
+        examEnrollments: {
+          where: { examStatus: { not: EXAM_STATUS.CANCELADA } },
+          select: { examEnrollmentId: true },
+        },
+      },
+      orderBy: { callDate: "desc" },
+    });
+  },
+
+  async findTeacherExamCallById(examCallId: number, teacherId: number) {
+    return prisma.examCall.findFirst({
+      where: { examCallId, teacherId },
+      include: {
+        examSession: true,
+        studyPlanSubject: {
+          include: { subject: true },
+        },
+        examEnrollments: {
+          where: { examStatus: { not: EXAM_STATUS.CANCELADA } },
+          include: {
+            studentCareer: {
+              include: {
+                studentProfile: {
+                  include: {
+                    user: { select: { firstName: true, lastName: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            studentCareer: {
+              studentProfile: { legajo: "asc" },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async saveExamCallGrades(params: {
+    examCallId: number;
+    grades: {
+      examEnrollmentId: number;
+      examGrade: number;
+      examStatus: string;
+    }[];
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      for (const item of params.grades) {
+        await tx.examEnrollment.update({
+          where: { examEnrollmentId: item.examEnrollmentId },
+          data: {
+            examGrade: item.examGrade,
+            examStatus: item.examStatus,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CARGA_NOTAS_FINAL",
+          entity: "EXAM_ENROLLMENT",
+          entityId: String(params.examCallId),
+          details: params.audit.details,
+          ipAddress: params.audit.ipAddress,
+        },
+      });
+    });
+  },
+
+  async closeExamCall(params: {
+    examCallId: number;
+    audit: {
+      userId: number;
+      details: string;
+      ipAddress: string | null;
+    };
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.examCall.update({
+        where: { examCallId: params.examCallId },
+        data: { callStatus: EXAM_CALL_STATUS.CERRADA },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.audit.userId,
+          action: "CIERRE_ACTA_FINAL",
+          entity: "EXAM_CALL",
+          entityId: String(params.examCallId),
           details: params.audit.details,
           ipAddress: params.audit.ipAddress,
         },

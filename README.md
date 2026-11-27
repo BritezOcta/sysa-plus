@@ -40,6 +40,7 @@ Las migraciones siguientes:
 - Corrigen las diferencias entre el SQL histórico y el modelo de Prisma para instalaciones nuevas.
 - Conservan las ediciones del plan y del período guardadas por la implementación anterior; el período anual se representa como `SEMESTER=0`.
 - Incorporan ventanas de inscripción, horarios, cierre de evaluaciones y observaciones docentes de `develop`.
+- Incorporan mesas de finales, sus ventanas de inscripción, criterios de regularización/promoción, recuperatorios y cierre de cursadas de los cambios nuevos de `develop`.
 
 Las columnas redundantes de la implementación anterior permanecen como campos `legacy*` con `@ignore`: se conservan para recuperación, pero no se usan para responder la API. La carrera se deriva del plan; los alumnos se cuentan desde las inscripciones; la auditoría utiliza el usuario autenticado. Los eventos antiguos de seed sin usuario asociado no se presentan como acciones reales.
 

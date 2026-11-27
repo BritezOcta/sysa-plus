@@ -69,12 +69,16 @@ export function careerInput(value: unknown, routeId?: unknown) {
 export function subjectInput(value: unknown, routeId?: unknown) {
   const body = objectBody(value);
   if (!Array.isArray(body.requirements)) invalid("Las correlatividades deben ser una lista");
+  const regularGrade = body.regularGrade === undefined ? 6 : body.regularGrade;
+  const promotionGrade = body.promotionGrade === undefined || body.promotionGrade === "" ? null : body.promotionGrade;
+  if (typeof regularGrade !== "number" || !Number.isFinite(regularGrade) || regularGrade < 1 || regularGrade > 10) invalid("La nota para regularizar debe estar entre 1 y 10");
+  if (promotionGrade !== null && (typeof promotionGrade !== "number" || !Number.isFinite(promotionGrade) || promotionGrade < regularGrade || promotionGrade > 10)) invalid("La nota para promocionar debe estar entre la de regularización y 10");
   return {
     ...entityId(body, routeId), careerId: String(positiveId(body.careerId)),
     code: text(body, "code", 20), name: text(body, "name", 150),
     weeklyHours: integer(body.weeklyHours, "La carga semanal", 1, 2147483647),
     totalHours: integer(body.totalHours, "La carga total", 1, 2147483647),
-    ...subjectSlot(body), status: entityStatus(body.status),
+    ...subjectSlot(body), status: entityStatus(body.status), regularGrade, promotionGrade,
     requirements: body.requirements.map(value => {
       const requirement = objectBody(value);
       return { requiresSubjectId: String(positiveId(requirement.requiresSubjectId)), type: correlativityType(requirement.type) };

@@ -35,6 +35,34 @@ export const OFFERING_STATUS = {
   CERRADA: "CERRADA",
 } as const;
 
+/** EXAM_ENROLLMENT.EXAM_STATUS */
+export const EXAM_STATUS = {
+  /** Inscripción vigente a la mesa (RF-06). */
+  INSCRIPTO: "INSCRIPTO",
+  /** El alumno canceló la inscripción (RF-06). */
+  CANCELADA: "CANCELADA",
+  // Resultado del final: lo escribe RF-07 junto con EXAM_GRADE.
+  APROBADO: "APROBADO",
+  DESAPROBADO: "DESAPROBADO",
+} as const;
+
+/** EXAM_CALL.CALL_STATUS */
+export const EXAM_CALL_STATUS = {
+  /** La mesa acepta inscripciones. */
+  ABIERTA: "ABIERTA",
+  CERRADA: "CERRADA",
+} as const;
+
+/**
+ * Años que dura la regularidad de una cursada, contados desde el fin del cuatrimestre
+ * en que se regularizó. Pasado ese plazo el alumno ya no puede rendir como regular (RF-06).
+ * TODO(admin): el reglamento puede fijarlo por materia o en cantidad de turnos; hoy es global.
+ */
+export const REGULARITY_VALID_YEARS = 2;
+
+/** Porcentaje mínimo de asistencia para no quedar LIBRE (RF-05 / RF-07). */
+export const MIN_ATTENDANCE_PERCENT = 75;
+
 /**
  * Nota mínima de un final para considerar la materia aprobada.
  * TODO(RF-07): el PDF habla de "criterios de aprobación configurados por materia";

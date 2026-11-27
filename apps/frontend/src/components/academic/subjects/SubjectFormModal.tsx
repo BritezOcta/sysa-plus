@@ -65,6 +65,14 @@ export default function SubjectFormModal({
     subjectToEdit?.status ?? ENTITY_STATUS.ACTIVE
   const initialEnrolled =
     subjectToEdit?.enrolledStudents ?? SUBJECT_RULES.DEFAULT_ENROLLED_STUDENTS
+  const initialRegularGrade = String(
+    subjectToEdit?.regularGrade ?? SUBJECT_RULES.DEFAULT_REGULAR_GRADE,
+  )
+  const initialPromotionGrade = subjectToEdit
+    ? subjectToEdit.promotionGrade === null
+      ? ''
+      : String(subjectToEdit.promotionGrade)
+    : String(SUBJECT_RULES.DEFAULT_PROMOTION_GRADE)
 
   const [careerId, setCareerId] = useState(initialCareerId)
   const selectedCareer =
@@ -78,6 +86,8 @@ export default function SubjectFormModal({
   const [year, setYear] = useState<number>(initialYear)
   const [period, setPeriod] = useState<SubjectPeriod>(initialPeriod)
   const [status, setStatus] = useState<EntityStatus>(initialStatus)
+  const [regularGrade, setRegularGrade] = useState(initialRegularGrade)
+  const [promotionGrade, setPromotionGrade] = useState(initialPromotionGrade)
   const [touched, setTouched] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [cycleErrorMessage, setCycleErrorMessage] = useState<string | null>(
@@ -112,6 +122,8 @@ export default function SubjectFormModal({
     year !== initialYear ||
     period !== initialPeriod ||
     status !== initialStatus ||
+    regularGrade !== initialRegularGrade ||
+    promotionGrade !== initialPromotionGrade ||
     !CorrelativityGraphHelper.areRequirementsEqual(requirements, initialReqs)
 
   const validation = AcademicValidationHelper.validateSubjectForm(
@@ -210,9 +222,28 @@ export default function SubjectFormModal({
     )
   }
 
+  // RF-07: criterios de aprobación (escala 0-10).
+  const regularGradeValue = Number(regularGrade)
+  const promotionGradeValue =
+    promotionGrade.trim() === '' ? null : Number(promotionGrade)
+  const criteriaError =
+    regularGrade.trim() === '' ||
+    !Number.isFinite(regularGradeValue) ||
+    regularGradeValue < 1 ||
+    regularGradeValue > 10
+      ? 'La nota para regularizar debe estar entre 1 y 10.'
+      : promotionGradeValue !== null &&
+          (!Number.isFinite(promotionGradeValue) ||
+            promotionGradeValue < regularGradeValue ||
+            promotionGradeValue > 10)
+        ? 'La nota para promocionar debe estar entre la de regularización y 10.'
+        : null
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setTouched(true)
+
+    if (criteriaError) return
 
     if (validation.duplicateSubjectName || validation.codeMissing) {
       codeInputRef.current?.focus()
@@ -246,6 +277,8 @@ export default function SubjectFormModal({
         year: isUnassigned ? null : Number(year),
         period: isUnassigned ? null : period,
         status,
+        regularGrade: regularGradeValue,
+        promotionGrade: promotionGradeValue,
       },
       requirements,
     )
@@ -313,6 +346,9 @@ export default function SubjectFormModal({
             period={period}
             enrolledStudents={initialEnrolled}
             status={status}
+            regularGrade={regularGrade}
+            promotionGrade={promotionGrade}
+            criteriaError={touched ? criteriaError : null}
             careers={careers}
             selectedCareer={selectedCareer}
             validation={validation}
@@ -330,6 +366,8 @@ export default function SubjectFormModal({
             onYearChange={setYear}
             onPeriodChange={setPeriod}
             onStatusChange={setStatus}
+            onRegularGradeChange={setRegularGrade}
+            onPromotionGradeChange={setPromotionGrade}
           />
 
           <SubjectCorrelativityBuilder

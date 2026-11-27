@@ -9,7 +9,6 @@ export interface StudentUser {
   nombre: string;
   apellido: string;
   legajo: string;
-  carrera: string;
   iniciales: string;
 }
 
