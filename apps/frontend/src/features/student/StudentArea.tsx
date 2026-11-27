@@ -9,14 +9,14 @@ import { ExamenesPage } from "./pages/ExamenesPage";
 import { InscripcionExamenPage } from "./pages/InscripcionExamenPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { CambioPasswordPage } from "./pages/CambioPasswordPage";
+import { CertificadosPage } from "./pages/CertificadosPage";
 import StudentAttendancePage from "../../pages/studentAttendancePage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
   "cursado",
   "correlatividad-cursar",
-  "correlatividad-rendir",
-  "certificados",
+  "correlatividad-rendir",
   "bee",
   "censo",
   "avisos",
@@ -55,6 +55,8 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
         {/* RF-05: consulta de asistencias */}
         <Route path="asistencias" element={<StudentAttendancePage />} />
+        {/* RF-11: generación y descarga de certificados */}
+        <Route path="certificados" element={<CertificadosPage />} />
         <Route path="password" element={<CambioPasswordPage />} />
         {PLACEHOLDERS.map((id) => (
           <Route key={id} path={id} element={<PlaceholderPage id={id} />} />

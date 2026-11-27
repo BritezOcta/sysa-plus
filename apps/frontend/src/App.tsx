@@ -23,6 +23,7 @@ import TeacherGradesPage from "./pages/TeacherGradesPage";
 import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 import AdminStudentsPage from "./pages/adminStudentsPage";
 import AdminRecordsPage from "./pages/AdminRecordsPage";
+import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function StudentRoute() {
@@ -69,6 +70,9 @@ function App() {
               </GuestOnlyRoute>
             }
           />
+          {/* RF-11: verificación pública de certificados (sin sesión, la abre el QR). */}
+          <Route path={APP_ROUTES.VERIFY_CERTIFICATE} element={<VerifyCertificatePage />} />
+          <Route path={`${APP_ROUTES.VERIFY_CERTIFICATE}/:code`} element={<VerifyCertificatePage />} />
           <Route
             path={APP_ROUTES.ACADEMIC_OFFER}
             element={

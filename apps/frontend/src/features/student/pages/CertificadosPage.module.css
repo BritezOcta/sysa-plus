@@ -1,0 +1,96 @@
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.typeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--sa-border);
+  border-radius: 12px;
+  background: var(--sa-surface-2);
+  color: var(--sa-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.typeCard:hover:not(:disabled) {
+  border-color: var(--sa-accent);
+}
+
+.typeCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.typeSelected {
+  border-color: var(--sa-accent-strong);
+  background: var(--sa-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--sa-accent-strong);
+}
+
+.typeLabel {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.typeDesc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--sa-text-muted);
+}
+
+.periodField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sa-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.feedbackOk {
+  display: block;
+  background: var(--sa-ok-soft);
+  border: 1px solid color-mix(in srgb, var(--sa-ok) 40%, transparent);
+  color: var(--sa-text);
+}
+
+.feedbackOk a {
+  color: var(--sa-accent-strong);
+  font-weight: 600;
+}
+
+.feedbackError {
+  background: var(--sa-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--sa-danger) 40%, transparent);
+  color: var(--sa-danger);
+  font-weight: 600;
+}
