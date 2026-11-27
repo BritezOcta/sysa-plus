@@ -1,0 +1,137 @@
+/*
+ * Controles comunes de las páginas del profesor, con la paleta del alumno (--sa-*).
+ * Las páginas los usan con `composes` en su propio módulo: varias clases se usaban
+ * en el JSX sin estar definidas y los controles se veían con el estilo del navegador.
+ */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
+  box-shadow: var(--sa-shadow);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select,
+.input {
+  min-height: 42px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--sa-border);
+  border-radius: 8px;
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font-size: 0.95rem;
+}
+
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--sa-accent);
+  box-shadow: 0 0 0 3px var(--sa-accent-soft);
+}
+
+.select:disabled,
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--sa-border);
+  border-radius: 8px;
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+  border-color: var(--sa-accent);
+  color: var(--sa-accent);
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--sa-text-muted);
+}
+
+.successBanner {
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--sa-ok) 40%, transparent);
+  border-radius: 8px;
+  background: var(--sa-ok-soft);
+  color: var(--sa-ok);
+  font-weight: 600;
+}
+
+/* Botones de estado de asistencia (Presente / Tarde / Ausente / …) */
+.statusBtn,
+.statusBtnActive {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--sa-border);
+  border-radius: 999px;
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.statusBtn:hover {
+  border-color: var(--sa-accent);
+  color: var(--sa-accent);
+}
+
+.statusBtnActive {
+  border-color: var(--sa-accent);
+  background: var(--sa-accent);
+  color: #fff;
+}
+
+.obsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.overwriteCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--sa-warn) 40%, transparent);
+  border-radius: 8px;
+  background: var(--sa-warn-soft);
+  color: var(--sa-warn);
+  font-size: 0.9rem;
+}

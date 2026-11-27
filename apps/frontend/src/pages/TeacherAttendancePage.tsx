@@ -8,8 +8,12 @@ import {
 } from "../api/teacher.api";
 import { ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
 import type { AttendanceStatus } from "../types/teacherAttendance.types";
-import styles from "./TeacherAttendancePage.module.css";
+import pageStyles from "./TeacherAttendancePage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
 import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 
 function getTodayIso(): string {

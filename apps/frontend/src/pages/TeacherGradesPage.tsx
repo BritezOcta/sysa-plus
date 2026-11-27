@@ -9,8 +9,12 @@ import {
   type TeacherCommissionSummary,
   type TeacherExamCallSummary,
 } from "../api/teacher.api";
-import styles from "./TeacherGradesPage.module.css";
+import pageStyles from "./TeacherGradesPage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
 import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 type StudentRow = CommissionGradesResponse["students"][number];
 

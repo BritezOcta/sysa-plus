@@ -6,8 +6,12 @@ import {
   type CommissionStudentsResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import styles from "./TeacherListStudentsPage.module.css";
+import pageStyles from "./TeacherListStudentsPage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
 import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 export default function TeacherListStudentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
