@@ -12,6 +12,8 @@ export const SURVEY_QUESTIONS: readonly string[] = [
 
 const MAX_COMMENT_LENGTH = 1000;
 
+export type SurveyAnswers = [number, number, number, number, number];
+
 export type SurveyState = "AVAILABLE" | "ANSWERED" | "NOT_AVAILABLE";
 
 export interface StudentAssessmentDto {
@@ -43,14 +45,19 @@ export function isCourseInProgress(periodEndDate: Date, today: Date): boolean {
   return periodEndDate >= today;
 }
 
+/** La encuesta se responde mientras se cursa: desde el inicio hasta el último día del período. */
+export function isSurveyOpen(periodStartDate: Date, periodEndDate: Date, today: Date): boolean {
+  return periodStartDate <= today && today <= periodEndDate;
+}
+
 export function conditionLabel(enrollmentStatus: string, inProgress: boolean): string {
   if (inProgress) return "CURSANDO";
   return enrollmentStatus === ENROLLMENT_STATUS.INSCRIPTO ? "SIN CERRAR" : enrollmentStatus;
 }
 
-export function surveyState(inProgress: boolean, answered: boolean): SurveyState {
+export function surveyState(open: boolean, answered: boolean): SurveyState {
   if (answered) return "ANSWERED";
-  return inProgress ? "AVAILABLE" : "NOT_AVAILABLE";
+  return open ? "AVAILABLE" : "NOT_AVAILABLE";
 }
 
 export function periodLabel(year: number, semester: number): string {
@@ -61,7 +68,7 @@ function invalid(message: string): AppError {
   return new AppError(400, "INVALID_SURVEY", message);
 }
 
-export function parseSurveyPayload(body: unknown): { answers: number[]; comment: string | null } {
+export function parseSurveyPayload(body: unknown): { answers: SurveyAnswers; comment: string | null } {
   const { answers, comment } = (body ?? {}) as { answers?: unknown; comment?: unknown };
   if (!Array.isArray(answers) || answers.length !== SURVEY_QUESTIONS.length) {
     throw invalid(`Respondé las ${SURVEY_QUESTIONS.length} preguntas de la encuesta.`);
@@ -76,5 +83,13 @@ export function parseSurveyPayload(body: unknown): { answers: number[]; comment:
   if (trimmed.length > MAX_COMMENT_LENGTH) {
     throw invalid(`El comentario no puede superar los ${MAX_COMMENT_LENGTH} caracteres.`);
   }
-  return { answers: answers as number[], comment: trimmed || null };
+  return { answers: answers as SurveyAnswers, comment: trimmed || null };
+}
+
+/** La unique de SURVEY_SUBMISSION corta un segundo envío concurrente: se informa como encuesta ya respondida. */
+export function mapSurveyError(err: unknown): unknown {
+  if (err && typeof err === "object" && (err as { code?: unknown }).code === "P2002") {
+    return new AppError(409, "SURVEY_ALREADY_ANSWERED", "Ya respondiste la encuesta de esta cursada.");
+  }
+  return err;
 }
