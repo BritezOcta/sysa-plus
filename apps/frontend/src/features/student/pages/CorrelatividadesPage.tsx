@@ -143,12 +143,13 @@ function Requirements({ items }: { items: StatusRequirement[] }) {
     <ul className={s.reqs}>
       {items.map((r) => (
         <li key={`${r.studyPlanSubjectId}-${r.requiredCondition}`} className={s.req}>
-          <span className={`${s.mark} ${r.met ? s.met : s.unmet}`} aria-label={r.met ? "cumplida" : "pendiente"}>
+          <span className={`${s.mark} ${r.met ? s.met : s.unmet}`} aria-hidden="true">
             {r.met ? "✓" : "✗"}
           </span>
           <span>
             {r.subjectName}{" "}
             <span className={common.muted}>({r.requiredCondition === "APROBADA" ? "Aprobada" : "Regular"})</span>
+            <span className={s.srOnly}>{r.met ? ": cumplida" : ": pendiente"}</span>
           </span>
         </li>
       ))}
