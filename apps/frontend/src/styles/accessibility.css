@@ -1,0 +1,171 @@
+/* ============================================================
+   SysA+ · Preferencias de accesibilidad (globales)
+
+   AccessibilityProvider escribe en <html>:
+     --a11y-text-scale         0.9 | 1 | 1.15 | 1.3
+     data-a11y-text-scale      90 | 100 | 115 | 130
+     data-a11y-font            default | legible | dyslexic
+     data-a11y-line-height     normal | medium | large
+     data-a11y-letter-spacing  normal | medium | large
+     data-a11y-contrast        normal | high
+     data-a11y-highlight-links true | false
+     data-a11y-reduce-motion   true | false
+
+   Con los valores predeterminados ninguna regla de este archivo aplica.
+   ============================================================ */
+
+@import "@fontsource/atkinson-hyperlegible/400.css";
+@import "@fontsource/atkinson-hyperlegible/700.css";
+@import "@fontsource/opendyslexic/400.css";
+@import "@fontsource/opendyslexic/700.css";
+
+/* ---------- Tamaño de texto ----------
+   Los CSS Modules usan tamaños en px, así que escalar el font-size raíz no alcanzaría
+   a la mayoría del texto. Se usa zoom sobre la app (como el zoom del navegador).
+   Ojo: dentro del zoom, "100vh" también se escala; los layouts que dependen del
+   alto de la ventana lo compensan con calc(100vh / var(--a11y-text-scale, 1)). */
+html:not([data-a11y-text-scale="100"]) #root {
+  zoom: var(--a11y-text-scale, 1);
+}
+
+/* ---------- Tipografía ----------
+   Las fuentes se auto-hospedan (@fontsource): el navegador solo las descarga si se activan. */
+html[data-a11y-font="legible"] {
+  --a11y-font-family: "Atkinson Hyperlegible", Verdana, Tahoma, sans-serif;
+}
+
+html[data-a11y-font="dyslexic"] {
+  --a11y-font-family: "OpenDyslexic", "Atkinson Hyperlegible", Verdana, sans-serif;
+}
+
+html:is([data-a11y-font="legible"], [data-a11y-font="dyslexic"])
+  :is(body, .sysa-app, button, input, select, textarea) {
+  font-family: var(--a11y-font-family) !important;
+}
+
+/* ---------- Espaciado de texto (valores de WCAG 1.4.12 en el nivel amplio) ---------- */
+html[data-a11y-line-height="medium"] body * {
+  line-height: 1.6 !important;
+}
+
+html[data-a11y-line-height="large"] body * {
+  line-height: 1.9 !important;
+}
+
+html[data-a11y-letter-spacing="medium"] body * {
+  letter-spacing: 0.05em !important;
+  word-spacing: 0.08em !important;
+}
+
+html[data-a11y-letter-spacing="large"] body * {
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.16em !important;
+}
+
+/* ---------- Alto contraste ----------
+   Redefine los tokens del tema (theme.css y variables.css), así que funciona en claro y
+   oscuro sin tocar los componentes. La especificidad supera a .sysa-student[data-theme]. */
+html[data-a11y-contrast="high"] {
+  --color-primary: #005a8c;
+  --color-secondary: #000000;
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-input: #ffffff;
+  --color-text: #000000;
+  --color-text-muted: #1f2328;
+}
+
+html[data-a11y-contrast="high"] .sysa-app,
+html[data-a11y-contrast="high"] .sysa-student[data-theme="light"] {
+  --sa-bg: #ffffff;
+  --sa-surface: #ffffff;
+  --sa-surface-2: #f0f0f0;
+  --sa-border: #1a1a1a;
+  --sa-text: #000000;
+  --sa-text-muted: #1f2328;
+
+  --sa-nav-bg: #000000;
+  --sa-nav-surface: #161616;
+  --sa-nav-border: #ffffff;
+  --sa-nav-text: #ffffff;
+  --sa-nav-muted: #e6e6e6;
+
+  --sa-accent: #0050a0;
+  --sa-accent-strong: #003a75;
+  --sa-accent-soft: rgba(0, 80, 160, 0.16);
+
+  --sa-ok: #0a5c1f;
+  --sa-warn: #7a3e00;
+  --sa-danger: #a30000;
+}
+
+html[data-a11y-contrast="high"] .sysa-student[data-theme="dark"] {
+  --sa-bg: #000000;
+  --sa-surface: #000000;
+  --sa-surface-2: #121212;
+  --sa-border: #f0f0f0;
+  --sa-text: #ffffff;
+  --sa-text-muted: #e6e6e6;
+
+  --sa-nav-bg: #000000;
+  --sa-nav-surface: #121212;
+  --sa-nav-border: #f0f0f0;
+  --sa-nav-text: #ffffff;
+  --sa-nav-muted: #e6e6e6;
+
+  --sa-accent: #7cc8ff;
+  --sa-accent-strong: #a8dbff;
+  --sa-accent-soft: rgba(124, 200, 255, 0.2);
+  --a11y-on-accent: #000000;
+
+  --sa-ok: #7dffa0;
+  --sa-warn: #ffd166;
+  --sa-danger: #ff8a8a;
+}
+
+html[data-a11y-contrast="high"] .sysa-app :is(input, select, textarea) {
+  border-color: var(--sa-border) !important;
+}
+
+html[data-a11y-contrast="high"] .sysa-app ::placeholder {
+  color: var(--sa-text-muted) !important;
+  opacity: 1;
+}
+
+/* ---------- Resaltado de enlaces y botones ----------
+   currentColor siempre contrasta con el fondo propio del elemento, en cualquier tema. */
+html[data-a11y-highlight-links="true"] a[href] {
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px !important;
+  outline: 2px dashed currentColor;
+  outline-offset: 2px;
+}
+
+html[data-a11y-highlight-links="true"] :is(button, [role="button"], summary, select) {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+/* Foco muy visible (amarillo + negro) en cualquier fondo */
+html:is([data-a11y-highlight-links="true"], [data-a11y-contrast="high"]) :focus-visible {
+  outline: 3px solid #ffbf00 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 6px #000000 !important;
+}
+
+/* ---------- Reducir animaciones ---------- */
+html[data-a11y-reduce-motion="true"] {
+  scroll-behavior: auto !important;
+}
+
+html[data-a11y-reduce-motion="true"] *,
+html[data-a11y-reduce-motion="true"] *::before,
+html[data-a11y-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}

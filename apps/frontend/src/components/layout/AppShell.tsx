@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Icon } from "../Icon";
+import { AccessibilityMenu } from "../../accessibility/AccessibilityMenu";
 import { useTheme } from "../../features/student/useTheme";
 import type { NavGroup, NavItem } from "./navTypes";
 import styles from "./AppShell.module.css";
@@ -54,6 +55,7 @@ function Shell({
 }: AppShellProps & { theme: "light" | "dark"; onToggleTheme?: () => void }) {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [a11yOpen, setA11yOpen] = useState(false);
 
   const allItems = navGroups.flatMap((g) => g.items);
   const normalized = pathname.replace(/\/$/, "") || homeItem.to;
@@ -152,6 +154,17 @@ function Shell({
             <strong>{current.label}</strong>
           </div>
           <div className={styles.spacer} />
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={() => setA11yOpen(true)}
+            aria-label="Opciones de accesibilidad"
+            aria-haspopup="dialog"
+            aria-expanded={a11yOpen}
+            title="Accesibilidad"
+          >
+            <Icon name="accessibility" size={19} />
+          </button>
           {onToggleTheme && (
             <button
               type="button"
@@ -177,6 +190,8 @@ function Shell({
           <Outlet />
         </main>
       </div>
+
+      {a11yOpen && <AccessibilityMenu onClose={() => setA11yOpen(false)} />}
     </div>
   );
 }
