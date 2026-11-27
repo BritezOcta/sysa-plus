@@ -13,6 +13,7 @@ import {
 import { GuestOnlyRoute, ProtectedRoute } from "./auth/ProtectedRoute";
 import { WelcomeToast } from "./auth/WelcomeToast";
 import { APP_ROUTES } from "./constants";
+import { AccountShell, AdminShell, TeacherShell } from "./components/layout/RoleShells";
 import { StudentArea } from "./features/student/StudentArea";
 import { getUserInitials } from "./helpers/UserDisplayHelper";
 import AcademicManagementPage from "./pages/AcademicManagementPage";
@@ -83,62 +84,22 @@ function App() {
             path={`${APP_ROUTES.VERIFY_CERTIFICATE}/:code`}
             element={<VerifyCertificatePage />}
           />
+          {/* Administrador/Director: todas sus pantallas dentro del marco común. */}
           <Route
-            path={APP_ROUTES.ACADEMIC_OFFER}
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AcademicManagementPage />
+                <AdminShell />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_STUDENTS}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AdminStudentsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_REPORTS}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AdminReportsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <TeacherAssignmentPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_ENROLLMENT}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AdminEnrollmentPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_USERS}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AdminUsersPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.ADMIN_RECORDS}
-            element={
-              <ProtectedRoute roles={["ADMINISTRADOR"]}>
-                <AdminRecordsPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path={APP_ROUTES.ACADEMIC_OFFER} element={<AcademicManagementPage />} />
+            <Route path={APP_ROUTES.ADMIN_STUDENTS} element={<AdminStudentsPage />} />
+            <Route path={APP_ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
+            <Route path={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS} element={<TeacherAssignmentPage />} />
+            <Route path={APP_ROUTES.ADMIN_ENROLLMENT} element={<AdminEnrollmentPage />} />
+            <Route path={APP_ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
+            <Route path={APP_ROUTES.ADMIN_RECORDS} element={<AdminRecordsPage />} />
+          </Route>
           {/* Ruta vieja: la inscripción a cursada (RF-04) vive dentro del menú del alumno. */}
           <Route
             path={APP_ROUTES.ENROLLMENT}
@@ -157,46 +118,29 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Profesor: todas sus pantallas dentro del marco común. */}
           <Route
-            path={APP_ROUTES.TEACHER_AREA}
             element={
               <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherHomePage />
+                <TeacherShell />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path={APP_ROUTES.TEACHER_AREA} element={<TeacherHomePage />} />
+            <Route path={APP_ROUTES.TEACHER_ATTENDANCE} element={<TeacherAttendancePage />} />
+            <Route path={APP_ROUTES.TEACHER_GRADES} element={<TeacherGradesPage />} />
+            <Route path={APP_ROUTES.TEACHER_STUDENTS} element={<TeacherListStudentsPage />} />
+          </Route>
+          {/* Cambio de contraseña de Profesor y Administrador (sin marco si es obligatorio). */}
           <Route
-            path={APP_ROUTES.TEACHER_ATTENDANCE}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherAttendancePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.TEACHER_GRADES}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherGradesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.TEACHER_STUDENTS}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherListStudentsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.CHANGE_PASSWORD}
             element={
               <ProtectedRoute roles={["PROFESOR", "ADMINISTRADOR"]}>
-                <ChangePasswordPage />
+                <AccountShell />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path={APP_ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
+          </Route>
           <Route path="*" element={<Navigate to={APP_ROUTES.HOME} replace />} />
         </Routes>
         <WelcomeToast />

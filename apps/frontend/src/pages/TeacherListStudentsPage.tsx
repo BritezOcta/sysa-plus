@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type CommissionStudentItem,
   type CommissionStudentsResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES } from "../constants";
 import styles from "./TeacherListStudentsPage.module.css";
 
 export default function TeacherListStudentsPage() {
@@ -153,9 +152,6 @@ export default function TeacherListStudentsPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
           <h1 className={styles.title}>Alumnos Inscriptos y Observaciones</h1>
         </div>
       </header>

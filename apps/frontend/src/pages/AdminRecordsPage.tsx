@@ -5,7 +5,6 @@ import adminStyles from '../components/admin/AdminPages.module.css'
 import tableStyles from '../components/academic/CurriculumTableView.module.css'
 import modalStyles from '../components/academic/Modals.module.css'
 import { NetworkErrorModal } from '../components/academic/modals'
-import TopNavbar from '../components/layout/TopNavbar'
 import ModalShell from '../components/ui/ModalShell'
 import ToastViewport from '../components/ui/ToastViewport'
 import { useFailedOperation } from '../hooks/useFailedOperation'
@@ -141,7 +140,6 @@ export default function AdminRecordsPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar />
 
       <main className={styles.mainContent}>
         <section className={styles.careersSection}>

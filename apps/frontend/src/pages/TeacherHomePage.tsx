@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import styles from "./TeacherHomePage.module.css";
 
 export default function TeacherHomePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
     [],
   );
@@ -48,18 +48,6 @@ export default function TeacherHomePage() {
           </div>
         </div>
 
-        <div className={styles.headerActions}>
-          <Link to={APP_ROUTES.CHANGE_PASSWORD} className={styles.logoutButton}>
-            Cambiar contraseña
-          </Link>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className={styles.logoutButton}
-          >
-            Cerrar sesión
-          </button>
-        </div>
       </header>
 
       <main className={styles.container}>

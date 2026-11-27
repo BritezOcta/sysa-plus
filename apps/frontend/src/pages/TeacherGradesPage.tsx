@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type AssessmentItem,
@@ -9,7 +9,6 @@ import {
   type TeacherCommissionSummary,
   type TeacherExamCallSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES } from "../constants";
 import styles from "./TeacherGradesPage.module.css";
 
 type StudentRow = CommissionGradesResponse["students"][number];
@@ -418,9 +417,6 @@ export default function TeacherGradesPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
           <h1 className={styles.title}>Carga de Notas y Cierre de Actas</h1>
         </div>
       </header>

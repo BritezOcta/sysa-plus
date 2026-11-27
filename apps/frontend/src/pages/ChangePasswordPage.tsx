@@ -8,22 +8,30 @@ import common from "../features/student/common.module.css";
 export default function ChangePasswordPage() {
   const user = useAuthenticatedUser();
 
-  return (
-    <div className="sysa-student" data-theme="light" style={{ minHeight: "100vh", padding: 24 }}>
-      <div className={common.page}>
-        <header className={common.pageHeader}>
-          <div>
-            <h1 className={common.title}>Cambio de contraseña</h1>
-            <p className={common.subtitle}>Actualizá la contraseña de tu cuenta</p>
-          </div>
-          {!user.mustChangePassword && (
-            <Link to={ROLE_HOME_ROUTES[user.role]} className={`${common.btn} ${common.btnGhost}`}>
-              Volver
-            </Link>
-          )}
-        </header>
-        <ChangePasswordForm />
-      </div>
+  const content = (
+    <div className={common.page}>
+      <header className={common.pageHeader}>
+        <div>
+          <h1 className={common.title}>Cambio de contraseña</h1>
+          <p className={common.subtitle}>Actualizá la contraseña de tu cuenta</p>
+        </div>
+        {!user.mustChangePassword && (
+          <Link to={ROLE_HOME_ROUTES[user.role]} className={`${common.btn} ${common.btnGhost}`}>
+            Volver
+          </Link>
+        )}
+      </header>
+      <ChangePasswordForm />
     </div>
   );
+
+  // Con la contraseña restablecida se muestra sin el marco común (ver AccountShell), así que trae su propio tema.
+  if (user.mustChangePassword) {
+    return (
+      <div className="sysa-student" data-theme="light" style={{ minHeight: "100vh", padding: 24 }}>
+        {content}
+      </div>
+    );
+  }
+  return content;
 }

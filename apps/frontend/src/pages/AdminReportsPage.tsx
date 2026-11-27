@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import {
   adminReportsApi,
   type AcademicReportResponse,
   type ReportFilterOptions,
   type ReportType,
 } from "../api/adminReports.api";
-import { APP_ROUTES } from "../constants";
 import {
   exportReportToExcel,
   exportReportToPdf,
@@ -119,7 +117,6 @@ export default function AdminReportsPage() {
   return (
     <div style={{ maxWidth: 1150, margin: "0 auto", padding: "1.5rem" }}>
       <header style={{ marginBottom: "1.5rem" }}>
-        <Link to={APP_ROUTES.ACADEMIC_OFFER}>← Volver a Gestión Académica</Link>
         <h1>Reportes Académicos (RF-12)</h1>
       </header>
 

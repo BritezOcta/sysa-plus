@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type AttendanceStudentRow,
   type CommissionAttendanceResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES, ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
+import { ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
 import type { AttendanceStatus } from "../types/teacherAttendance.types";
 import styles from "./TeacherAttendancePage.module.css";
 
@@ -201,9 +201,6 @@ export default function TeacherAttendancePage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
           <h1 className={styles.title}>Registro y Consulta de Asistencias</h1>
         </div>
       </header>
