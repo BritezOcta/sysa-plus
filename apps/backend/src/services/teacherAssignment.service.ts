@@ -1,5 +1,9 @@
 import { AppError } from "../lib/AppError.js";
-import { formatScheduleText, schedulesOverlap, toScheduleDtos } from "../lib/schedule.js";
+import {
+  formatScheduleText,
+  schedulesOverlap,
+  toScheduleDtos,
+} from "../lib/schedule.js";
 import { teacherAssignmentRepository as repo } from "../repositories/teacherAssignment.repository.js";
 import { auditService } from "./audit.service.js";
 import { ROLES } from "../types/auth.js";
@@ -8,6 +12,7 @@ import {
   OFFERING_STATUS,
   type AssignmentRole,
 } from "../types/academic.js";
+import { notificationsService } from "./notifications.service.js";
 
 export const TEACHER_ASSIGNMENT_AUDIT = {
   ASSIGNED: "TEACHER_ASSIGNED",
@@ -43,16 +48,26 @@ function isAssignable(user: TeacherUser): boolean {
 function parseId(raw: unknown, label: string): number {
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(400, "VALIDATION_ERROR", `El identificador de ${label} no es válido`);
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      `El identificador de ${label} no es válido`,
+    );
   }
   return id;
 }
 
 function parseRole(raw: unknown): AssignmentRole {
-  if (raw === ASSIGNMENT_ROLE.TITULAR || raw === ASSIGNMENT_ROLE.AYUDANTE) return raw;
-  throw new AppError(400, "VALIDATION_ERROR", "El rol debe ser TITULAR o AYUDANTE", {
-    allowedRoles: Object.values(ASSIGNMENT_ROLE),
-  });
+  if (raw === ASSIGNMENT_ROLE.TITULAR || raw === ASSIGNMENT_ROLE.AYUDANTE)
+    return raw;
+  throw new AppError(
+    400,
+    "VALIDATION_ERROR",
+    "El rol debe ser TITULAR o AYUDANTE",
+    {
+      allowedRoles: Object.values(ASSIGNMENT_ROLE),
+    },
+  );
 }
 
 function periodLabel(period: { year: number; semester: number }): string {
@@ -75,7 +90,9 @@ function assertSingleTitular(
   ignoreAssignmentId?: number,
 ) {
   const hasTitular = assignments.some(
-    (a) => a.assignmentRole === ASSIGNMENT_ROLE.TITULAR && a.teacherAssignmentId !== ignoreAssignmentId,
+    (a) =>
+      a.assignmentRole === ASSIGNMENT_ROLE.TITULAR &&
+      a.teacherAssignmentId !== ignoreAssignmentId,
   );
   if (hasTitular) {
     throw new AppError(
@@ -96,7 +113,9 @@ export const teacherAssignmentService = {
     ]);
 
     const today = new Date();
-    const current = periods.find((p) => p.periodStartDate <= today && today <= p.periodEndDate);
+    const current = periods.find(
+      (p) => p.periodStartDate <= today && today <= p.periodEndDate,
+    );
 
     return {
       careers: careers.map((c) => ({
@@ -113,7 +132,9 @@ export const teacherAssignmentService = {
         label: periodLabel(p),
         isCurrent: p.academicPeriodId === current?.academicPeriodId,
       })),
-      defaultPeriodId: String(current?.academicPeriodId ?? periods[0]?.academicPeriodId ?? ""),
+      defaultPeriodId: String(
+        current?.academicPeriodId ?? periods[0]?.academicPeriodId ?? "",
+      ),
       teachers: teachers.map((t) => ({
         id: String(t.teacherId),
         fullName: fullName(t.user),
@@ -129,20 +150,49 @@ export const teacherAssignmentService = {
     const careerId = parseId(rawCareerId, "carrera");
     const periodId = parseId(rawPeriodId, "período");
 
-    const [career, period] = await Promise.all([repo.findCareer(careerId), repo.findPeriod(periodId)]);
-    if (!career) throw new AppError(404, "CAREER_NOT_FOUND", "La carrera indicada no existe");
-    if (!period) throw new AppError(404, "PERIOD_NOT_FOUND", "El período académico indicado no existe");
+    const [career, period] = await Promise.all([
+      repo.findCareer(careerId),
+      repo.findPeriod(periodId),
+    ]);
+    if (!career)
+      throw new AppError(
+        404,
+        "CAREER_NOT_FOUND",
+        "La carrera indicada no existe",
+      );
+    if (!period)
+      throw new AppError(
+        404,
+        "PERIOD_NOT_FOUND",
+        "El período académico indicado no existe",
+      );
 
     // Las comisiones anuales se registran en el 1er cuatrimestre y siguen dictándose en el 2do:
     // al mirar el 2do cuatrimestre también se muestran las anuales de ese año.
     const firstSemester =
-      period.semester === 2 ? await repo.findPeriodByYearSemester(period.year, 1) : null;
-    const periodIds = [periodId, ...(firstSemester ? [firstSemester.academicPeriodId] : [])];
-    const planSubjects = await repo.findPlanSubjectsWithOfferings(careerId, periodIds);
+      period.semester === 2
+        ? await repo.findPeriodByYearSemester(period.year, 1)
+        : null;
+    const periodIds = [
+      periodId,
+      ...(firstSemester ? [firstSemester.academicPeriodId] : []),
+    ];
+    const planSubjects = await repo.findPlanSubjectsWithOfferings(
+      careerId,
+      periodIds,
+    );
 
     return {
-      career: { id: String(career.careerId), code: career.careerCode, name: career.careerName, durationYears: career.durationYears },
-      period: { id: String(period.academicPeriodId), label: periodLabel(period) },
+      career: {
+        id: String(career.careerId),
+        code: career.careerCode,
+        name: career.careerName,
+        durationYears: career.durationYears,
+      },
+      period: {
+        id: String(period.academicPeriodId),
+        label: periodLabel(period),
+      },
       subjects: planSubjects.map((sps) => ({
         id: String(sps.studyPlanSubjectId),
         code: sps.subject.subjectCode,
@@ -151,23 +201,25 @@ export const teacherAssignmentService = {
         period: semesterToPeriod(sps.semester),
         isActive: sps.isActive,
         commissions: sps.courseOfferings
-          .filter((co) => co.academicPeriodId === periodId || sps.semester === 0)
+          .filter(
+            (co) => co.academicPeriodId === periodId || sps.semester === 0,
+          )
           .map((co) => ({
-          id: String(co.courseOfferingId),
-          code: co.commission,
-          capacity: co.capacity,
-          status: co.offeringStatus,
-          enrolledCount: co._count.courseEnrollments,
-          schedule: toScheduleDtos(co.schedules),
-          scheduleText: formatScheduleText(co.schedules),
-          teachers: co.teacherAssignments.map((ta) => ({
-            assignmentId: String(ta.teacherAssignmentId),
-            teacherId: String(ta.teacherId),
-            fullName: fullName(ta.teacherProfile.user),
-            role: ta.assignmentRole,
-            isActive: isAssignable(ta.teacherProfile.user),
+            id: String(co.courseOfferingId),
+            code: co.commission,
+            capacity: co.capacity,
+            status: co.offeringStatus,
+            enrolledCount: co._count.courseEnrollments,
+            schedule: toScheduleDtos(co.schedules),
+            scheduleText: formatScheduleText(co.schedules),
+            teachers: co.teacherAssignments.map((ta) => ({
+              assignmentId: String(ta.teacherAssignmentId),
+              teacherId: String(ta.teacherId),
+              fullName: fullName(ta.teacherProfile.user),
+              role: ta.assignmentRole,
+              isActive: isAssignable(ta.teacherProfile.user),
+            })),
           })),
-        })),
       })),
     };
   },
@@ -176,11 +228,20 @@ export const teacherAssignmentService = {
   async getTeacherLoad(rawTeacherId: unknown) {
     const teacherId = parseId(rawTeacherId, "docente");
     const teacher = await repo.findTeacher(teacherId);
-    if (!teacher) throw new AppError(404, "TEACHER_NOT_FOUND", "El docente indicado no existe");
+    if (!teacher)
+      throw new AppError(
+        404,
+        "TEACHER_NOT_FOUND",
+        "El docente indicado no existe",
+      );
 
     const assignments = await repo.findAssignmentsByTeacher(teacherId);
     return {
-      teacher: { id: String(teacher.teacherId), fullName: fullName(teacher.user), isActive: isAssignable(teacher.user) },
+      teacher: {
+        id: String(teacher.teacherId),
+        fullName: fullName(teacher.user),
+        isActive: isAssignable(teacher.user),
+      },
       assignments: assignments.map((ta) => {
         const co = ta.courseOffering;
         return {
@@ -200,7 +261,10 @@ export const teacherAssignmentService = {
   },
 
   /** RF-03 3.3: asigna un docente a una comisión. */
-  async assign(input: { courseOfferingId: unknown; teacherId: unknown; role: unknown }, actor: Actor) {
+  async assign(
+    input: { courseOfferingId: unknown; teacherId: unknown; role: unknown },
+    actor: Actor,
+  ) {
     const courseOfferingId = parseId(input.courseOfferingId, "comisión");
     const teacherId = parseId(input.teacherId, "docente");
     const role = parseRole(input.role);
@@ -222,7 +286,12 @@ export const teacherAssignmentService = {
     }
 
     const teacher = await repo.findTeacher(teacherId);
-    if (!teacher) throw new AppError(404, "TEACHER_NOT_FOUND", "El docente indicado no existe");
+    if (!teacher)
+      throw new AppError(
+        404,
+        "TEACHER_NOT_FOUND",
+        "El docente indicado no existe",
+      );
     if (!isAssignable(teacher.user)) {
       throw new AppError(
         409,
@@ -245,19 +314,37 @@ export const teacherAssignmentService = {
 
     let created;
     try {
-      created = await repo.createAssignment({ teacherId, courseOfferingId, assignmentRole: role });
+      created = await repo.createAssignment({
+        teacherId,
+        courseOfferingId,
+        assignmentRole: role,
+      });
     } catch (err) {
       // Dos administradores asignando a la vez: la restricción única de la base responde P2002.
-      if (typeof err === "object" && err !== null && (err as { code?: string }).code === "P2002") {
-        throw new AppError(409, "DUPLICATE_ASSIGNMENT", `${fullName(teacher.user)} ya se encuentra asignado a esa comisión.`);
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        (err as { code?: string }).code === "P2002"
+      ) {
+        throw new AppError(
+          409,
+          "DUPLICATE_ASSIGNMENT",
+          `${fullName(teacher.user)} ya se encuentra asignado a esa comisión.`,
+        );
       }
       throw err;
     }
 
     // Aviso (no bloquea): el docente ya dicta otra comisión en el mismo horario del período.
-    const others = await repo.findTeacherOfferingsInPeriod(teacherId, offering.academicPeriodId, courseOfferingId);
+    const others = await repo.findTeacherOfferingsInPeriod(
+      teacherId,
+      offering.academicPeriodId,
+      courseOfferingId,
+    );
     const warnings = others
-      .filter((o) => schedulesOverlap(offering.schedules, o.courseOffering.schedules))
+      .filter((o) =>
+        schedulesOverlap(offering.schedules, o.courseOffering.schedules),
+      )
       .map(
         (o) =>
           `Superposición horaria: ${fullName(teacher.user)} también dicta ${o.courseOffering.studyPlanSubject.subject.subjectName} (comisión ${o.courseOffering.commission}) en ${formatScheduleText(o.courseOffering.schedules)}.`,
@@ -272,6 +359,14 @@ export const teacherAssignmentService = {
       ipAddress: actor.ipAddress,
     });
 
+    await notificationsService.notify({
+      userId: teacher.userId,
+      title: "Nueva comisión asignada",
+      body: `Fuiste asignado como ${roleLabel(role)} en ${subjectName}, comisión ${offering.commission} (${periodLabel(offering.academicPeriod)}).`,
+      type: "importante",
+      link: "/profesor",
+    });
+
     return { assignmentId: String(created.teacherAssignmentId), warnings };
   },
 
@@ -281,14 +376,27 @@ export const teacherAssignmentService = {
     const role = parseRole(rawRole);
 
     const assignment = await repo.findAssignment(assignmentId);
-    if (!assignment) throw new AppError(404, "ASSIGNMENT_NOT_FOUND", "La asignación indicada no existe");
+    if (!assignment)
+      throw new AppError(
+        404,
+        "ASSIGNMENT_NOT_FOUND",
+        "La asignación indicada no existe",
+      );
     if (assignment.assignmentRole === role) {
-      throw new AppError(409, "NO_CHANGES", `El docente ya figura como ${roleLabel(role)} en esa comisión.`);
+      throw new AppError(
+        409,
+        "NO_CHANGES",
+        `El docente ya figura como ${roleLabel(role)} en esa comisión.`,
+      );
     }
 
     const offering = await repo.findOffering(assignment.courseOfferingId);
     if (role === ASSIGNMENT_ROLE.TITULAR && offering) {
-      assertSingleTitular(offering.teacherAssignments, offering.commission, assignmentId);
+      assertSingleTitular(
+        offering.teacherAssignments,
+        offering.commission,
+        assignmentId,
+      );
     }
 
     await repo.updateAssignmentRole(assignmentId, role);
@@ -302,6 +410,14 @@ export const teacherAssignmentService = {
       ipAddress: actor.ipAddress,
     });
 
+    await notificationsService.notify({
+      userId: assignment.teacherProfile.userId,
+      title: "Cambio de rol en comisión",
+      body: `Tu rol en ${co.studyPlanSubject.subject.subjectName} (comisión ${co.commission}) pasó a ser ${roleLabel(role)}.`,
+      type: "info",
+      link: "/profesor",
+    });
+
     return { role };
   },
 
@@ -309,7 +425,12 @@ export const teacherAssignmentService = {
   async unassign(rawAssignmentId: unknown, actor: Actor) {
     const assignmentId = parseId(rawAssignmentId, "asignación");
     const assignment = await repo.findAssignment(assignmentId);
-    if (!assignment) throw new AppError(404, "ASSIGNMENT_NOT_FOUND", "La asignación indicada no existe");
+    if (!assignment)
+      throw new AppError(
+        404,
+        "ASSIGNMENT_NOT_FOUND",
+        "La asignación indicada no existe",
+      );
 
     await repo.deleteAssignment(assignmentId);
     const co = assignment.courseOffering;
@@ -320,6 +441,14 @@ export const teacherAssignmentService = {
       entityId: String(assignmentId),
       details: `Desasignó a ${fullName(assignment.teacherProfile.user)} (${roleLabel(assignment.assignmentRole)}) de ${co.studyPlanSubject.subject.subjectCode} - ${co.studyPlanSubject.subject.subjectName}, comisión ${co.commission} (${periodLabel(co.academicPeriod)})`,
       ipAddress: actor.ipAddress,
+    });
+
+    await notificationsService.notify({
+      userId: assignment.teacherProfile.userId,
+      title: "Desasignación de comisión",
+      body: `Fuiste desasignado de ${co.studyPlanSubject.subject.subjectName}, comisión ${co.commission} (${periodLabel(co.academicPeriod)}).`,
+      type: "importante",
+      link: "/profesor",
     });
   },
 };

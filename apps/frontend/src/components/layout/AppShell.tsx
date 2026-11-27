@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Icon } from "../Icon";
 import { useTheme } from "../../features/student/useTheme";
@@ -25,6 +25,8 @@ export interface AppShellProps {
   /** Se llama al tocar "Salir": limpiá la sesión y redirigí al login. */
   onLogout: () => void;
   badgeFor?: (item: NavItem) => { text: string; warn: boolean } | null;
+  /** Contenido extra de la barra superior, antes del usuario (p. ej. la campana de notificaciones). */
+  topbarExtra?: ReactNode;
 }
 
 /** Marco común de la aplicación: menú lateral, barra superior y contenido (<Outlet />). */
@@ -46,6 +48,7 @@ function Shell({
   user,
   onLogout,
   badgeFor,
+  topbarExtra,
   theme,
   onToggleTheme,
 }: AppShellProps & { theme: "light" | "dark"; onToggleTheme?: () => void }) {
@@ -160,6 +163,7 @@ function Shell({
               <Icon name={theme === "light" ? "moon" : "sun"} size={19} />
             </button>
           )}
+          {topbarExtra}
           <div className={styles.user}>
             <div className={styles.avatar}>{user.initials}</div>
             <div className={styles.userText}>

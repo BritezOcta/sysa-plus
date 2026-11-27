@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from "react-router";
 import { useAuth, useAuthenticatedUser } from "../../auth/AuthContext";
 import { APP_ROUTES, ROLE_LABELS } from "../../constants";
 import { getUserFullName, getUserInitials } from "../../helpers/UserDisplayHelper";
+import NotificationBell from "../ui/NotificationBell";
 import { AppShell } from "./AppShell";
 import type { NavGroup, NavItem } from "./navTypes";
 import { ADMIN_HOME, ADMIN_NAV_GROUPS, TEACHER_HOME, TEACHER_NAV_GROUPS } from "./roleNav";
@@ -25,6 +26,7 @@ function StaffShell({ navGroups, homeItem, crumbRoot }: { navGroups: NavGroup[];
       allowDarkMode={false}
       user={{ name: getUserFullName(user), meta: ROLE_LABELS[user.role], initials: getUserInitials(user) }}
       onLogout={() => void handleLogout()}
+      topbarExtra={<NotificationBell />}
     />
   );
 }
