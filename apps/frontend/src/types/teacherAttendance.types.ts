@@ -1,4 +1,4 @@
-export type AttendanceStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO";
+export type AttendanceStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "TARDANZA";
 
 export type AttendanceCondition = "REGULAR" | "EN_RIESGO" | "LIBRE";
 
