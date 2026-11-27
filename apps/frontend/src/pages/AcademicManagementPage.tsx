@@ -17,6 +17,8 @@ import ToastViewport from "../components/ui/ToastViewport";
 import { VIEW_MODES, APP_ROUTES } from "../constants";
 import { useAcademicManagement } from "../hooks";
 import styles from "./AcademicManagementPage.module.css";
+import { useState } from "react";
+import BroadcastNoticeModal from "../components/academic/modals/BrodNoticeModal";
 
 export default function AcademicManagementPage() {
   const {
@@ -68,6 +70,8 @@ export default function AcademicManagementPage() {
     handleReloadData,
   } = useAcademicManagement();
 
+  const [noticeModalOpen, setNoticeModalOpen] = useState(false);
+
   return (
     <div className={styles.pageLayout}>
       <TopNavbar
@@ -111,6 +115,21 @@ export default function AcademicManagementPage() {
           >
             Reportes Académicos
           </Link>
+          <button
+            type="button"
+            onClick={() => setNoticeModalOpen(true)}
+            style={{
+              padding: "0.5rem 0.9rem",
+              borderRadius: 6,
+              border: "1px solid #2563eb",
+              background: "#2563eb",
+              color: "#fff",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            + Nuevo aviso
+          </button>
         </nav>
         <CareersSection
           careers={careers}
@@ -230,6 +249,14 @@ export default function AcademicManagementPage() {
 
       {auditDrawerOpen && (
         <AuditDrawer logs={auditLogs} onClose={closeAuditDrawer} />
+      )}
+      {noticeModalOpen && (
+        <BroadcastNoticeModal
+          onClose={() => setNoticeModalOpen(false)}
+          onSuccess={(sentCount) => {
+            alert(`Aviso enviado a ${sentCount} alumno(s).`);
+          }}
+        />
       )}
 
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />

@@ -50,4 +50,35 @@ export const notificationsService = {
   async markAllAsRead(userId: number) {
     await notificationsRepository.markAllAsRead(userId);
   },
+
+  async broadcastToStudents(params: {
+    title: string;
+    body: string;
+    type?: "importante" | "info";
+  }) {
+    const title = params.title.trim();
+    const body = params.body.trim();
+    if (!title || !body) {
+      throw new AppError(
+        400,
+        "INVALID_NOTIFICATION",
+        "Título y mensaje son obligatorios.",
+      );
+    }
+
+    const userIds = await notificationsRepository.findActiveStudentUserIds();
+    const type = params.type === "importante" ? "importante" : "info";
+
+    const result = await notificationsRepository.createMany(
+      userIds.map((userId) => ({
+        userId,
+        title,
+        body,
+        type,
+        link: "/alumno/avisos",
+      })),
+    );
+
+    return { sentCount: result.count };
+  },
 };

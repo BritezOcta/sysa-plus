@@ -27,4 +27,15 @@ export const notificationsApi = {
   markAllAsRead(): Promise<void> {
     return apiRequest<void>("/notifications/read-all", { method: "PATCH" });
   },
+
+  broadcastToStudents(payload: {
+    title: string;
+    body: string;
+    type: "importante" | "info";
+  }): Promise<{ sentCount: number }> {
+    return apiRequest<{ sentCount: number }>("/notifications/broadcast", {
+      method: "POST",
+      body: payload,
+    });
+  },
 };

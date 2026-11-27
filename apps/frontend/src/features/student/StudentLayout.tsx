@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Icon } from "../../components/Icon";
+import { useStudentNotifications } from "./StudentNotificationsContext";
 import { ALL_ITEMS, HOME_ITEM, NAV_GROUPS, type NavItem } from "./nav";
 import { useTheme } from "./useTheme";
 import styles from "./StudentLayout.module.css";
@@ -16,19 +17,18 @@ interface Props {
   user: StudentUser;
   /** Se llama al tocar "Salir": limpiá el token/sesión y redirigí al login. */
   onLogout: () => void;
-  avisosSinLeer?: number;
   hayRelevamientoPendiente?: boolean;
 }
 
 export function StudentLayout({
   user,
   onLogout,
-  avisosSinLeer = 0,
   hayRelevamientoPendiente = false,
 }: Props) {
   const { theme, toggle } = useTheme();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const { unreadCount: avisosSinLeer } = useStudentNotifications();
 
   const normalized = pathname.replace(/\/$/, "") || "/alumno";
   const current = ALL_ITEMS.find((i) => i.to === normalized) ?? HOME_ITEM;

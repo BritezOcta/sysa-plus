@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import { notificationsApi } from "../../api/notifications.api";
 import { Navigate, Route, Routes } from "react-router";
 import EnrollmentPage from "../../pages/EnrollmentPage";
 import { StudentLayout, type StudentUser } from "./StudentLayout";
+import { StudentNotificationsProvider } from "./StudentNotificationsContext";
 import { HomePage } from "./pages/HomePage";
 import { PlanMateriasPage } from "./pages/PlanMateriasPage";
 import { EstadoAcademicoPage } from "./pages/EstadoAcademicoPage";
@@ -33,48 +32,40 @@ interface Props {
  * Se monta en App con:  <Route path="/alumno/*" element={<StudentRoute />} />
  */
 export function StudentArea({ user, onLogout }: Props) {
-  const [avisosSinLeer, setAvisosSinLeer] = useState(0);
-
-  useEffect(() => {
-    notificationsApi
-      .getMyNotifications()
-      .then((data) => setAvisosSinLeer(data.unreadCount))
-      .catch(() => {});
-  }, []);
-
   return (
-    <Routes>
-      <Route
-        element={
-          <StudentLayout
-            user={user}
-            onLogout={onLogout}
-            avisosSinLeer={avisosSinLeer}
-            hayRelevamientoPendiente
-          />
-        }
-      >
-        <Route index element={<HomePage />} />
-        <Route path="plan" element={<PlanMateriasPage />} />
-        <Route path="estado" element={<EstadoAcademicoPage />} />
-        <Route path="examenes" element={<ExamenesPage />} />
-        {/* Cursado, notas de parciales y encuestas docentes */}
-        <Route path="cursado" element={<CursadoPage />} />
-        {/* RF-06: inscripción a exámenes finales */}
-        <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
-        {/* RF-04: inscripción a cursadas */}
-        <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
-        {/* RF-05: consulta de asistencias */}
-        <Route path="asistencias" element={<AsistenciasPage />} />
-        {/* RF-11: generación y descarga de certificados */}
-        <Route path="certificados" element={<CertificadosPage />} />
-        <Route path="password" element={<CambioPasswordPage />} />
-        <Route path="avisos" element={<AvisosPage />} />
-        {PLACEHOLDERS.map((id) => (
-          <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
-        ))}
-        <Route path="*" element={<Navigate to="/alumno" replace />} />
-      </Route>
-    </Routes>
+    <StudentNotificationsProvider>
+      <Routes>
+        <Route
+          element={
+            <StudentLayout
+              user={user}
+              onLogout={onLogout}
+              hayRelevamientoPendiente
+            />
+          }
+        >
+          <Route index element={<HomePage />} />
+          <Route path="plan" element={<PlanMateriasPage />} />
+          <Route path="estado" element={<EstadoAcademicoPage />} />
+          <Route path="examenes" element={<ExamenesPage />} />
+          {/* Cursado, notas de parciales y encuestas docentes */}
+          <Route path="cursado" element={<CursadoPage />} />
+          {/* RF-06: inscripción a exámenes finales */}
+          <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
+          {/* RF-04: inscripción a cursadas */}
+          <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
+          {/* RF-05: consulta de asistencias */}
+          <Route path="asistencias" element={<AsistenciasPage />} />
+          {/* RF-11: generación y descarga de certificados */}
+          <Route path="certificados" element={<CertificadosPage />} />
+          <Route path="password" element={<CambioPasswordPage />} />
+          <Route path="avisos" element={<AvisosPage />} />
+          {PLACEHOLDERS.map((id) => (
+            <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
+          ))}
+          <Route path="*" element={<Navigate to="/alumno" replace />} />
+        </Route>
+      </Routes>
+    </StudentNotificationsProvider>
   );
 }

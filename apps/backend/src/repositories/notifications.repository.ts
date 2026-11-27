@@ -50,4 +50,25 @@ export const notificationsRepository = {
       data: { isRead: true },
     });
   },
+
+  async createMany(
+    items: {
+      userId: number;
+      title: string;
+      body: string;
+      type: string;
+      link: string | null;
+    }[],
+  ) {
+    if (items.length === 0) return { count: 0 };
+    return prisma.notification.createMany({ data: items });
+  },
+
+  async findActiveStudentUserIds(): Promise<number[]> {
+    const students = await prisma.studentProfile.findMany({
+      where: { user: { isActive: true } },
+      select: { userId: true },
+    });
+    return students.map((s) => s.userId);
+  },
 };

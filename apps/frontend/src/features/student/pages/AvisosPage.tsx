@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  notificationsApi,
-  type NotificationItem,
-} from "../../../api/notifications.api";
+import { type NotificationItem } from "../../../api/notifications.api";
+import { useStudentNotifications } from "../StudentNotificationsContext";
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -19,49 +16,18 @@ function formatDate(iso: string): string {
 
 export function AvisosPage() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    notificationsApi
-      .getMyNotifications()
-      .then((data) => {
-        if (!active) return;
-        setItems(data.notifications);
-        setUnreadCount(data.unreadCount);
-      })
-      .catch(() => {
-        if (!active) return;
-        setError("No se pudieron cargar los avisos.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const {
+    notifications: items,
+    unreadCount,
+    loading,
+    error,
+    markAsRead,
+    markAllAsRead,
+  } = useStudentNotifications();
 
   async function handleClickItem(item: NotificationItem) {
-    if (!item.leido) {
-      await notificationsApi.markAsRead(item.id);
-      setItems((prev) =>
-        prev.map((n) => (n.id === item.id ? { ...n, leido: true } : n)),
-      );
-      setUnreadCount((c) => Math.max(0, c - 1));
-    }
+    if (!item.leido) await markAsRead(item.id);
     if (item.link) navigate(item.link);
-  }
-
-  async function handleMarkAll() {
-    await notificationsApi.markAllAsRead();
-    setItems((prev) => prev.map((n) => ({ ...n, leido: true })));
-    setUnreadCount(0);
   }
 
   return (
@@ -87,7 +53,7 @@ export function AvisosPage() {
         {unreadCount > 0 && (
           <button
             type="button"
-            onClick={() => void handleMarkAll()}
+            onClick={() => void markAllAsRead()}
             style={{
               padding: "0.5rem 0.9rem",
               borderRadius: 6,
