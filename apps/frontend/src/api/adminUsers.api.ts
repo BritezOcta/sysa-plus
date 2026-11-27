@@ -15,9 +15,18 @@ export interface AdminUserRow {
 
 /** Administrador/Director: usuarios y restablecimiento de contraseña. */
 export const adminUsersApi = {
-  search(search: string, role: string): Promise<{ users: AdminUserRow[]; limit: number }> {
-    const query = new URLSearchParams({ ...(search ? { search } : {}), ...(role ? { role } : {}) })
+  search(search: string, role: string, status: '' | 'active' | 'inactive'): Promise<{ users: AdminUserRow[]; limit: number }> {
+    const query = new URLSearchParams({ ...(search ? { search } : {}), ...(role ? { role } : {}), ...(status ? { status } : {}) })
     return apiRequest(`/admin/users?${query.toString()}`)
+  },
+
+  /** RF-10: dar de baja o reactivar a un alumno. */
+  setStatus(
+    userId: string,
+    status: 'active' | 'inactive',
+    reason: string,
+  ): Promise<{ id: string; isActive: boolean; cancelledCourses: number; cancelledExams: number }> {
+    return apiRequest(`/admin/users/${userId}/status`, { method: 'PATCH', body: { status, reason } })
   },
 
   resetPassword(userId: string): Promise<{ temporaryPassword: string; fullName: string; dni: string }> {
