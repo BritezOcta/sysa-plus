@@ -19,6 +19,8 @@ const formatScore = (n: number) => n.toLocaleString("es-AR", { maximumFractionDi
 
 function ConditionChip({ condition }: { condition: string }) {
   if (CHIP_CONDITIONS.has(condition)) return <StatusChip estado={condition as SubjectStatus} />;
+  // INSCRIPTO = cursada de un período que todavía no empezó.
+  if (condition === "INSCRIPTO") return <span className={`${common.chip} ${common.chipInfo}`}>Inscripto</span>;
   return <span className={`${common.chip} ${common.chipMuted}`}>{condition === "SIN CERRAR" ? "Sin cerrar" : condition}</span>;
 }
 

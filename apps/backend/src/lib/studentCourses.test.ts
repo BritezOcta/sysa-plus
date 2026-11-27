@@ -37,9 +37,13 @@ test("comentario de 1000 caracteres es válido", () => {
 });
 
 test("etiqueta de condición", () => {
-  assert.equal(conditionLabel("INSCRIPTO", true), "CURSANDO");
-  assert.equal(conditionLabel("INSCRIPTO", false), "SIN CERRAR");
-  assert.equal(conditionLabel("REGULAR", false), "REGULAR");
+  assert.equal(conditionLabel("INSCRIPTO", true, true), "CURSANDO");
+  assert.equal(conditionLabel("INSCRIPTO", false, true), "SIN CERRAR");
+  assert.equal(conditionLabel("REGULAR", false, true), "REGULAR");
+});
+
+test("una cursada de un período que todavía no empezó figura como INSCRIPTO, no CURSANDO", () => {
+  assert.equal(conditionLabel("INSCRIPTO", true, false), "INSCRIPTO");
 });
 
 test("estado de la encuesta", () => {

@@ -16,7 +16,7 @@ import StudentAttendancePage from "../../pages/studentAttendancePage";
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
   "correlatividad-cursar",
-  "correlatividad-rendir",
+  "correlatividad-rendir",
   "bee",
   "censo",
   "avisos",

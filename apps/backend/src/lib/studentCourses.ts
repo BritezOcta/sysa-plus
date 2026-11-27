@@ -50,8 +50,9 @@ export function isSurveyOpen(periodStartDate: Date, periodEndDate: Date, today: 
   return periodStartDate <= today && today <= periodEndDate;
 }
 
-export function conditionLabel(enrollmentStatus: string, inProgress: boolean): string {
-  if (inProgress) return "CURSANDO";
+/** started = el período ya empezó; una inscripción a un cuatrimestre futuro todavía no se está cursando. */
+export function conditionLabel(enrollmentStatus: string, inProgress: boolean, started: boolean): string {
+  if (inProgress) return started ? "CURSANDO" : ENROLLMENT_STATUS.INSCRIPTO;
   return enrollmentStatus === ENROLLMENT_STATUS.INSCRIPTO ? "SIN CERRAR" : enrollmentStatus;
 }
 

@@ -42,7 +42,7 @@ export const studentCoursesService = {
         commission: offering.commission,
         period: periodLabel(offering.academicPeriod.year, offering.academicPeriod.semester),
         inProgress,
-        condition: conditionLabel(enr.enrollmentStatus, inProgress),
+        condition: conditionLabel(enr.enrollmentStatus, inProgress, offering.academicPeriod.periodStartDate <= today),
         gradesClosed: offering.gradesClosedAt !== null,
         assessments: offering.assessments.map((a) => ({
           id: String(a.assessmentId),
