@@ -10,13 +10,13 @@ import { InscripcionExamenPage } from "./pages/InscripcionExamenPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { CambioPasswordPage } from "./pages/CambioPasswordPage";
 import { CertificadosPage } from "./pages/CertificadosPage";
+import { CursadoPage } from "./pages/CursadoPage";
 import StudentAttendancePage from "../../pages/studentAttendancePage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
-  "cursado",
   "correlatividad-cursar",
-  "correlatividad-rendir",
+  "correlatividad-rendir",
   "bee",
   "censo",
   "avisos",
@@ -49,6 +49,8 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route path="plan" element={<PlanMateriasPage />} />
         <Route path="estado" element={<EstadoAcademicoPage />} />
         <Route path="examenes" element={<ExamenesPage />} />
+        {/* Cursado, notas de parciales y encuestas docentes */}
+        <Route path="cursado" element={<CursadoPage />} />
         {/* RF-06: inscripción a exámenes finales */}
         <Route path="inscripcion-examen" element={<InscripcionExamenPage />} />
         {/* RF-04: inscripción a cursadas */}
