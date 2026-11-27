@@ -29,6 +29,9 @@ export const env = {
   REMEMBER_ME_DAYS: positiveInt("REMEMBER_ME_DAYS", 7),
   LOGIN_MAX_ATTEMPTS: positiveInt("LOGIN_MAX_ATTEMPTS", 5),
   LOGIN_LOCK_MINUTES: positiveInt("LOGIN_LOCK_MINUTES", 15),
+
+  // RF-11 · Certificados: URL pública del frontend a la que apunta el QR de validación.
+  PUBLIC_APP_URL: (process.env.PUBLIC_APP_URL ?? "http://localhost:5173").replace(/\/+$/, ""),
 } as const;
 
 export const isProduction = env.NODE_ENV === "production";

@@ -18,6 +18,7 @@ model AcademicPeriod {
   enrollmentStartDate DateTime?        @map("ENROLLMENT_START_DATE") @db.Date
   enrollmentEndDate   DateTime?        @map("ENROLLMENT_END_DATE") @db.Date
   courseOfferings     CourseOffering[]
+  certificates        Certificate[]
 
   @@unique([year, semester], map: "UQ_ACADEMIC_PERIOD")
   @@map("ACADEMIC_PERIOD")
@@ -215,6 +216,7 @@ model StudentCareer {
   academicStatus    String             @map("ACADEMIC_STATUS") @db.NVarChar(30)
   courseEnrollments CourseEnrollment[]
   examEnrollments   ExamEnrollment[]
+  certificates      Certificate[]
   career            Career             @relation(fields: [careerId], references: [careerId], onUpdate: NoAction, map: "FK_SC_CAREER")
   studentProfile    StudentProfile     @relation(fields: [studentId], references: [studentId], onUpdate: NoAction, map: "FK_SC_STUDENT")
   studentStudyPlans StudentStudyPlan[]
@@ -377,4 +379,24 @@ model StudentObservation {
 
   @@index([courseEnrollmentId], map: "IX_SO_ENROLLMENT")
   @@map("STUDENT_OBSERVATION")
+}
+
+/// RF-11: certificados emitidos por los alumnos. CONTENT_JSON guarda los datos certificados
+/// al momento de la emisión, así el PDF y la verificación pública no cambian si después
+/// cambia el registro académico.
+model Certificate {
+  certificateId    Int             @id(map: "PK_CERTIFICATE") @default(autoincrement()) @map("CERTIFICATE_ID")
+  validationCode   String          @unique(map: "UQ_CERTIFICATE_CODE") @map("VALIDATION_CODE") @db.NVarChar(20)
+  /// ALUMNO_REGULAR | ANALITICO_PARCIAL | ANALITICO_COMPLETO (ver CERTIFICATE_TYPE en src/types/certificate.ts)
+  certificateType  String          @map("CERTIFICATE_TYPE") @db.NVarChar(30)
+  studentCareerId  Int             @map("STUDENT_CAREER_ID")
+  /// Solo para ALUMNO_REGULAR: período que se certifica.
+  academicPeriodId Int?            @map("ACADEMIC_PERIOD_ID")
+  contentJson      String          @map("CONTENT_JSON") @db.NVarChar(Max)
+  issuedAt         DateTime        @default(dbgenerated("sysutcdatetime()"), map: "DF_CERTIFICATE_ISSUED_AT") @map("ISSUED_AT")
+  studentCareer    StudentCareer   @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_CERT_STUDENT_CAREER")
+  academicPeriod   AcademicPeriod? @relation(fields: [academicPeriodId], references: [academicPeriodId], onDelete: NoAction, onUpdate: NoAction, map: "FK_CERT_PERIOD")
+
+  @@index([studentCareerId], map: "IX_CERT_STUDENT_CAREER")
+  @@map("CERTIFICATE")
 }

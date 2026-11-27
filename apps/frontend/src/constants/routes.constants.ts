@@ -14,6 +14,7 @@ export const APP_ROUTES = {
   ADMIN_STUDENTS: "/admin/alumnos",
   ADMIN_RECORDS: "/admin/actas",
   CHANGE_PASSWORD: "/cuenta/contrasena",
+  VERIFY_CERTIFICATE: "/verificar",
 } as const;
 
 export const ROLE_HOME_ROUTES: Record<UserRole, string> = {
