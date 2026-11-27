@@ -6,6 +6,7 @@ import { parseStudentStatusInput } from "../lib/studentStatus.js";
 import { ROLES } from "../types/auth.js";
 import { ENROLLMENT_STATUS, EXAM_STATUS } from "../types/academic.js";
 import { AUDIT_ACTIONS, auditService } from "./audit.service.js";
+import { todayAsDate } from "./courseEnrollment.service.js";
 
 /** Sin 0/O ni 1/l/I para que la clave temporal se pueda dictar o copiar sin confusiones. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -162,8 +163,12 @@ export const adminUsersService = {
       let cancelledCourses = 0;
       let cancelledExams = 0;
       if (!isActive) {
+        const today = todayAsDate();
+        // CALL_DATE guarda la hora "de pared" de la mesa en campos UTC: se compara con la hora local en esa misma convención.
         const now = new Date();
-        const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        const wallClockNow = new Date(
+          Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds()),
+        );
         const ownedBy = { studentProfile: { userId } };
         cancelledCourses = (
           await tx.courseEnrollment.updateMany({
@@ -177,7 +182,7 @@ export const adminUsersService = {
         ).count;
         cancelledExams = (
           await tx.examEnrollment.updateMany({
-            where: { studentCareer: ownedBy, examStatus: EXAM_STATUS.INSCRIPTO, examCall: { callDate: { gt: now } } },
+            where: { studentCareer: ownedBy, examStatus: EXAM_STATUS.INSCRIPTO, examCall: { callDate: { gt: wallClockNow } } },
             data: { examStatus: EXAM_STATUS.CANCELADA },
           })
         ).count;

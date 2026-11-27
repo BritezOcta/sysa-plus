@@ -19,6 +19,11 @@ const day = (offset: number) => {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + offset));
 };
+/** Hora "de pared" local guardada en campos UTC, como guarda CALL_DATE el calendario de mesas. */
+const wallClock = (offsetHours: number) => {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + offsetHours, now.getMinutes()));
+};
 const PASSWORD = "Alumno123!";
 
 test("RF-10: baja y reactivación de alumnos", async (t) => {
@@ -65,9 +70,9 @@ test("RF-10: baja y reactivación de alumnos", async (t) => {
   const session = await prisma.examSession.create({
     data: { examName: "Turno RF10", examYear: 2090, sessionStartDate: day(-5), sessionEndDate: day(5), sessionStatus: "ABIERTO" },
   });
-  const exam = async (offsetDays: number) => {
+  const exam = async (offsetDays: number, callDate: Date = day(offsetDays)) => {
     const call = await prisma.examCall.create({
-      data: { studyPlanSubjectId: sps.studyPlanSubjectId, examSessionId: session.examSessionId, callDate: day(offsetDays), callStatus: "ABIERTA" },
+      data: { studyPlanSubjectId: sps.studyPlanSubjectId, examSessionId: session.examSessionId, callDate, callStatus: "ABIERTA" },
     });
     return prisma.examEnrollment.create({
       data: { examCallId: call.examCallId, studentCareerId: sc.studentCareerId, studentStudyPlanId: ssp.studentStudyPlanId, examStatus: "INSCRIPTO" },
@@ -75,6 +80,8 @@ test("RF-10: baja y reactivación de alumnos", async (t) => {
   };
   const pastExam = await exam(-1);
   const futureExam = await exam(1);
+  const earlierToday = await exam(0, wallClock(-2));
+  const laterToday = await exam(0, wallClock(2));
 
   const server = createApp().listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -111,12 +118,14 @@ test("RF-10: baja y reactivación de alumnos", async (t) => {
       assert.equal(res.status, 200, JSON.stringify(res.data));
       assert.equal(res.data.isActive, false);
       assert.equal(res.data.cancelledCourses, 1);
-      assert.equal(res.data.cancelledExams, 1);
+      assert.equal(res.data.cancelledExams, 2);
       assert.equal(await courseStatus(inProgress.courseEnrollmentId), "INSCRIPTO");
       assert.equal(await courseStatus(future.courseEnrollmentId), "CANCELADA");
       assert.equal(await courseStatus(historical.courseEnrollmentId), "REGULAR");
       assert.equal(await examStatus(pastExam.examEnrollmentId), "INSCRIPTO");
       assert.equal(await examStatus(futureExam.examEnrollmentId), "CANCELADA");
+      assert.equal(await examStatus(earlierToday.examEnrollmentId), "INSCRIPTO", "final de hoy que ya pasó");
+      assert.equal(await examStatus(laterToday.examEnrollmentId), "CANCELADA", "final de hoy más tarde");
       const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: "STUDENT_DEACTIVATED" } });
       assert.equal(audit.userId, admin.userId);
       assert.equal(audit.entityId, String(student.userId));
