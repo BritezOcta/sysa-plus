@@ -27,7 +27,7 @@ import type {
   SubjectPeriod,
   ViewMode,
 } from '../types'
-import { useServerFaultSimulation } from './useServerFaultSimulation'
+import { useFailedOperation } from './useFailedOperation'
 import { useToastNotifications } from './useToastNotifications'
 
 /** Códigos del backend que indican que la materia no puede borrarse físicamente. */
@@ -79,13 +79,10 @@ export function useAcademicManagement() {
 
   const { toasts, pushToast, dismissToast } = useToastNotifications()
   const {
-    simulateServerFault,
-    setSimulateServerFault,
     pendingFailedOperation,
-    runWithServerCheck,
     reportFailedOperation,
     dismissFailedOperation,
-  } = useServerFaultSimulation()
+  } = useFailedOperation()
 
   const refreshFromBackend = useCallback(async (preferredCareerId?: string) => {
     const snap = await academicApi.getSnapshot()
@@ -148,8 +145,7 @@ export function useAcademicManagement() {
 
   /**
    * Ejecuta una operación contra el backend:
-   * - respeta el simulador de caídas del prototipo,
-   * - ante un error de conexión real ofrece "Reintentar" (RF-02 2.5),
+   * - ante una respuesta perdida consulta el estado sin repetir una mutación,
    * - ante un error de negocio muestra el mensaje del servidor.
    * `onApiError` permite interceptar un error puntual; devuelve true si lo manejó.
    */
@@ -162,14 +158,20 @@ export function useAcademicManagement() {
     const execute = () => {
       void task().catch((err: unknown) => {
         if (err instanceof NetworkError) {
-          reportFailedOperation(description, execute)
+          const reload = () => {
+            void refreshFromBackend().catch((reloadError: unknown) => {
+              if (reloadError instanceof NetworkError) reportFailedOperation(description, reload)
+              else handleApiError(reloadError, 'No se pudo consultar el estado actual')
+            })
+          }
+          reportFailedOperation(description, reload)
           return
         }
         if (err instanceof ApiError && onApiError?.(err)) return
         handleApiError(err, errorTitle)
       })
     }
-    runWithServerCheck(description, execute)
+    execute()
   }
 
   const activeCareer = useMemo(
@@ -252,7 +254,7 @@ export function useAcademicManagement() {
     runRemote(
       `${nextStatus === ENTITY_STATUS.INACTIVE ? 'Inactivar' : 'Activar'} carrera ${career.code}`,
       async () => {
-        await academicApi.toggleCareerStatus(career.id)
+        await academicApi.toggleCareerStatus(career.id, AcademicFormatHelper.getOppositeEntityStatus(career.status))
         await refreshFromBackend(career.id)
         pushToast(
           nextStatus === ENTITY_STATUS.ACTIVE ? 'success' : 'warning',
@@ -527,7 +529,7 @@ export function useAcademicManagement() {
     })
   }
 
-  function handleResetMockData() {
+  function handleReloadData() {
     setConfirmDialog({
       title: 'Recargar datos desde el servidor',
       description:
@@ -536,7 +538,6 @@ export function useAcademicManagement() {
       tone: 'warning',
       onConfirm: () => {
         setConfirmDialog(null)
-        setSimulateServerFault(false)
         runRemote(
           'Recargar datos desde el servidor',
           async () => {
@@ -588,8 +589,6 @@ export function useAcademicManagement() {
       auditDrawerOpenRef.current = false
       setAuditDrawerOpen(false)
     },
-    simulateServerFault,
-    setSimulateServerFault,
     pendingFailedOperation,
     dismissFailedOperation,
     toasts,
@@ -605,6 +604,6 @@ export function useAcademicManagement() {
     handleConnectCorrelativity,
     handleCycleCorrelativityType,
     handleRemoveCorrelativity,
-    handleResetMockData,
+    handleReloadData,
   }
 }

@@ -20,7 +20,6 @@ export interface SubjectFormPayload {
   year: number | null
   period: SubjectPeriod | null
   status: EntityStatus
-  enrolledStudents: number
   regularGrade: number
   promotionGrade: number | null
 }
@@ -59,7 +58,6 @@ export interface SubjectFormValues {
   year: number
   period: SubjectPeriod
   status: EntityStatus
-  enrolledStudents: number
 }
 
 export interface SubjectValidationResult {

@@ -8,15 +8,16 @@
     "build": "tsc",
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "tsx --test src/lib/courseCondition.test.ts tests/academic.validation.test.ts",
     "db:pull": "prisma db pull",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:bootstrap": "tsx prisma/bootstrap.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "test:integration": "tsx --test tests/academic.integration.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -40,5 +41,8 @@
     "prisma": "^7.10.1",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

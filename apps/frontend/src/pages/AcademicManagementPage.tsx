@@ -49,8 +49,6 @@ export default function AcademicManagementPage() {
     unreadAuditCount,
     openAuditDrawer,
     closeAuditDrawer,
-    simulateServerFault,
-    setSimulateServerFault,
     pendingFailedOperation,
     dismissFailedOperation,
     toasts,
@@ -66,15 +64,13 @@ export default function AcademicManagementPage() {
     handleConnectCorrelativity,
     handleCycleCorrelativityType,
     handleRemoveCorrelativity,
-    handleResetMockData,
+    handleReloadData,
   } = useAcademicManagement()
 
   return (
     <div className={styles.pageLayout}>
       <TopNavbar
-        simulateServerFault={simulateServerFault}
-        onToggleServerFault={setSimulateServerFault}
-        onResetMockData={handleResetMockData}
+        onReloadData={handleReloadData}
         auditCount={auditLogs.length}
         unreadAuditCount={unreadAuditCount}
         onOpenAuditDrawer={openAuditDrawer}

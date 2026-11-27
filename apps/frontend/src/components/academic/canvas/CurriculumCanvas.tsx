@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   CORRELATIVITY_TYPES,
-  INITIAL_SIMULATION_STATE,
   UI_STORAGE_KEYS,
 } from '../../../constants'
 import {
@@ -90,7 +89,7 @@ export default function CurriculumCanvas({
     null,
   )
   const [simState, setSimState] = useState<Record<string, StudentSimStatus>>(
-    () => ({ ...INITIAL_SIMULATION_STATE }),
+    {},
   )
 
   const {
