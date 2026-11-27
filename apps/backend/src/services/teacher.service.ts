@@ -5,8 +5,12 @@ import {
   attendedWeight,
   VALID_ATTENDANCE_STATUSES,
 } from "../lib/attendance.js";
-import { computeCourseCondition, type CourseCondition } from "../lib/courseCondition.js";
+import {
+  computeCourseCondition,
+  type CourseCondition,
+} from "../lib/courseCondition.js";
 import { teacherRepository } from "../repositories/teacher.repository.js";
+import { notificationsService } from "./notifications.service.js";
 
 import {
   ENROLLMENT_STATUS,
@@ -38,24 +42,40 @@ function attendancePercentOf(
   attendances: { attendanceStatus: string }[],
   totalSessions: number,
 ): number {
-  return attendancePercent(attendedWeight(attendances.map((a) => a.attendanceStatus)), totalSessions);
+  return attendancePercent(
+    attendedWeight(attendances.map((a) => a.attendanceStatus)),
+    totalSessions,
+  );
 }
 
-type GradesData = Awaited<ReturnType<typeof teacherRepository.findCommissionGradesData>>;
+type GradesData = Awaited<
+  ReturnType<typeof teacherRepository.findCommissionGradesData>
+>;
 
 /** RF-07: condición que le corresponde a cada inscripción vigente según los criterios de la materia. */
 function projectCourseConditions(
   data: GradesData,
   criteria: { regularGrade: number; promotionGrade: number | null },
 ): Map<number, CourseCondition> {
-  const parciales = data.assessments.filter((a) => a.assessmentType === "PARCIAL");
+  const parciales = data.assessments.filter(
+    (a) => a.assessmentType === "PARCIAL",
+  );
   const recoveryOf = new Map(
     data.assessments
-      .filter((a) => a.assessmentType === "RECUPERATORIO" && a.recoversAssessmentId !== null)
+      .filter(
+        (a) =>
+          a.assessmentType === "RECUPERATORIO" &&
+          a.recoversAssessmentId !== null,
+      )
       .map((a) => [a.recoversAssessmentId!, a]),
   );
-  const scoreOf = (a: GradesData["assessments"][number], enrollmentId: number) => {
-    const g = a.assessmentGrades.find((x) => x.courseEnrollmentId === enrollmentId);
+  const scoreOf = (
+    a: GradesData["assessments"][number],
+    enrollmentId: number,
+  ) => {
+    const g = a.assessmentGrades.find(
+      (x) => x.courseEnrollmentId === enrollmentId,
+    );
     return g ? Number(g.gradeScore) : null;
   };
 
@@ -65,7 +85,10 @@ function projectCourseConditions(
     result.set(
       enr.courseEnrollmentId,
       computeCourseCondition({
-        attendancePercent: attendancePercentOf(enr.attendances, data.totalSessions),
+        attendancePercent: attendancePercentOf(
+          enr.attendances,
+          data.totalSessions,
+        ),
         regularGrade: criteria.regularGrade,
         promotionGrade: criteria.promotionGrade,
         parciales: parciales.map((p) => {
@@ -86,7 +109,8 @@ function projectCourseConditions(
 function criteriaOf(sps: { regularGrade: unknown; promotionGrade: unknown }) {
   return {
     regularGrade: Number(sps.regularGrade),
-    promotionGrade: sps.promotionGrade === null ? null : Number(sps.promotionGrade),
+    promotionGrade:
+      sps.promotionGrade === null ? null : Number(sps.promotionGrade),
   };
 }
 
@@ -165,7 +189,10 @@ export const teacherService = {
 
     const students = enrollments.map((enr) => {
       const sp = enr.studentCareer.studentProfile;
-      const attendancePercentage = attendancePercentOf(enr.attendances, totalSessions);
+      const attendancePercentage = attendancePercentOf(
+        enr.attendances,
+        totalSessions,
+      );
 
       return {
         enrollmentId: String(enr.courseEnrollmentId),
@@ -293,6 +320,14 @@ export const teacherService = {
       },
     });
 
+    await notificationsService.notify({
+      userId: sp.userId,
+      title: `Nueva observación en ${assignment.courseOffering.studyPlanSubject.subject.subjectName}`,
+      body: `El docente registró una observación en tu cursada (Comisión ${assignment.courseOffering.commission}).`,
+      type: "info",
+      link: "/alumno/avisos",
+    });
+
     return {
       id: String(created.observationId),
       text: created.observationText,
@@ -367,7 +402,9 @@ export const teacherService = {
           att.classSessionId !== existingSession.classSessionId,
       );
       // Asistencia ponderada: una tardanza suma 0,5.
-      const previousAttended = attendedWeight(previousAttendances.map((att) => att.attendanceStatus));
+      const previousAttended = attendedWeight(
+        previousAttendances.map((att) => att.attendanceStatus),
+      );
 
       const currentStatus = existingSession
         ? (enr.attendances.find(
@@ -542,11 +579,18 @@ export const teacherService = {
 
       const prevAttended = attendedWeight(
         enr.attendances
-          .filter((a) => !existingSession || a.classSessionId !== existingSession.classSessionId)
+          .filter(
+            (a) =>
+              !existingSession ||
+              a.classSessionId !== existingSession.classSessionId,
+          )
           .map((a) => a.attendanceStatus),
       );
 
-      const pct = attendancePercent(prevAttended + attendanceWeight(newStatus), totalClassesAfterSave);
+      const pct = attendancePercent(
+        prevAttended + attendanceWeight(newStatus),
+        totalClassesAfterSave,
+      );
 
       if (STATUSES_NOT_RECALCULATED_BY_ATTENDANCE.has(enr.enrollmentStatus)) {
         continue;
@@ -621,7 +665,8 @@ export const teacherService = {
       );
     }
 
-    const data = await teacherRepository.findCommissionGradesData(courseOfferingId);
+    const data =
+      await teacherRepository.findCommissionGradesData(courseOfferingId);
     const { assessments, enrollments, totalSessions } = data;
     const criteria = criteriaOf(assignment.courseOffering.studyPlanSubject);
     const projected = projectCourseConditions(data, criteria);
@@ -641,7 +686,10 @@ export const teacherService = {
         legajo: enr.studentCareer.studentProfile.legajo,
         fullName: `${enr.studentCareer.studentProfile.user.firstName} ${enr.studentCareer.studentProfile.user.lastName}`,
         enrollmentStatus: enr.enrollmentStatus,
-        attendancePercentage: attendancePercentOf(enr.attendances, totalSessions),
+        attendancePercentage: attendancePercentOf(
+          enr.attendances,
+          totalSessions,
+        ),
         projectedCondition: projected.get(enr.courseEnrollmentId) ?? null,
       })),
       assessments: assessments.map((a) => ({
@@ -654,7 +702,9 @@ export const teacherService = {
         maxScore: Number(a.maxScore),
         isClosed: a.isClosed,
         recoversAssessmentId:
-          a.recoversAssessmentId === null ? null : String(a.recoversAssessmentId),
+          a.recoversAssessmentId === null
+            ? null
+            : String(a.recoversAssessmentId),
         grades: a.assessmentGrades.map((g) => ({
           enrollmentId: String(g.courseEnrollmentId),
           score: Number(g.gradeScore),
@@ -747,7 +797,9 @@ export const teacherService = {
       const { assessments } =
         await teacherRepository.findCommissionGradesData(courseOfferingId);
       const target = assessments.find(
-        (a) => a.assessmentId === recoversAssessmentId && a.assessmentType === "PARCIAL",
+        (a) =>
+          a.assessmentId === recoversAssessmentId &&
+          a.assessmentType === "PARCIAL",
       );
       if (!target) {
         throw new AppError(
@@ -756,7 +808,9 @@ export const teacherService = {
           "Elegí el parcial de esta comisión que recupera el recuperatorio.",
         );
       }
-      if (assessments.some((a) => a.recoversAssessmentId === recoversAssessmentId)) {
+      if (
+        assessments.some((a) => a.recoversAssessmentId === recoversAssessmentId)
+      ) {
         throw new AppError(
           409,
           "RECOVERY_ALREADY_EXISTS",
@@ -789,7 +843,9 @@ export const teacherService = {
       maxScore: Number(created.maxScore),
       isClosed: created.isClosed,
       recoversAssessmentId:
-        created.recoversAssessmentId === null ? null : String(created.recoversAssessmentId),
+        created.recoversAssessmentId === null
+          ? null
+          : String(created.recoversAssessmentId),
       grades: [],
     };
   },
@@ -899,6 +955,31 @@ export const teacherService = {
         ipAddress: params.ipAddress,
       },
     });
+
+    const { enrollments } =
+      await teacherRepository.findCommissionGradesData(courseOfferingId);
+    const userIdByEnrollment = new Map(
+      enrollments.map((e) => [
+        e.courseEnrollmentId,
+        e.studentCareer.studentProfile.userId,
+      ]),
+    );
+    const subjectName =
+      assignment.courseOffering.studyPlanSubject.subject.subjectName;
+
+    await Promise.all(
+      parsedGrades.map((g) => {
+        const studentUserId = userIdByEnrollment.get(g.courseEnrollmentId);
+        if (!studentUserId) return Promise.resolve();
+        return notificationsService.notify({
+          userId: studentUserId,
+          title: `Nueva calificación en ${subjectName}`,
+          body: `Se publicó tu nota (${g.score}/${maxScore}) en ${assessment.assessmentName}.`,
+          type: "importante",
+          link: "/alumno/cursado",
+        });
+      }),
+    );
 
     return { savedCount: parsedGrades.length };
   },
@@ -1017,7 +1098,8 @@ export const teacherService = {
       throw new AppError(409, "COURSE_CLOSED", COURSE_CLOSED_MESSAGE);
     }
 
-    const data = await teacherRepository.findCommissionGradesData(courseOfferingId);
+    const data =
+      await teacherRepository.findCommissionGradesData(courseOfferingId);
     if (!data.assessments.some((a) => a.assessmentType === "PARCIAL")) {
       throw new AppError(
         409,
@@ -1030,10 +1112,12 @@ export const teacherService = {
       data,
       criteriaOf(assignment.courseOffering.studyPlanSubject),
     );
-    const conditions = [...projected].map(([courseEnrollmentId, enrollmentStatus]) => ({
-      courseEnrollmentId,
-      enrollmentStatus,
-    }));
+    const conditions = [...projected].map(
+      ([courseEnrollmentId, enrollmentStatus]) => ({
+        courseEnrollmentId,
+        enrollmentStatus,
+      }),
+    );
 
     await teacherRepository.closeCourse({
       courseOfferingId,
@@ -1044,6 +1128,29 @@ export const teacherService = {
         ipAddress: params.ipAddress,
       },
     });
+
+    const userIdByEnrollment = new Map(
+      data.enrollments.map((e) => [
+        e.courseEnrollmentId,
+        e.studentCareer.studentProfile.userId,
+      ]),
+    );
+    const subjectName =
+      assignment.courseOffering.studyPlanSubject.subject.subjectName;
+
+    await Promise.all(
+      conditions.map((c) => {
+        const studentUserId = userIdByEnrollment.get(c.courseEnrollmentId);
+        if (!studentUserId) return Promise.resolve();
+        return notificationsService.notify({
+          userId: studentUserId,
+          title: `Cierre de cursada: ${subjectName}`,
+          body: `Tu condición final en la comisión ${assignment.courseOffering.commission} es: ${c.enrollmentStatus}.`,
+          type: "importante",
+          link: "/alumno/estado",
+        });
+      }),
+    );
 
     return { closedCount: conditions.length };
   },
@@ -1228,6 +1335,28 @@ export const teacherService = {
         ipAddress: params.ipAddress,
       },
     });
+
+    const userIdByExamEnrollment = new Map(
+      call.examEnrollments.map((e) => [
+        e.examEnrollmentId,
+        e.studentCareer.studentProfile.userId,
+      ]),
+    );
+    const subjectName = call.studyPlanSubject.subject.subjectName;
+
+    await Promise.all(
+      parsedGrades.map((g) => {
+        const studentUserId = userIdByExamEnrollment.get(g.examEnrollmentId);
+        if (!studentUserId) return Promise.resolve();
+        return notificationsService.notify({
+          userId: studentUserId,
+          title: `Nota de examen final: ${subjectName}`,
+          body: `Se registró tu nota final (${g.examGrade}) — Estado: ${g.examStatus} (${call.examSession.examName}).`,
+          type: "importante",
+          link: "/alumno/estado",
+        });
+      }),
+    );
 
     return { savedCount: parsedGrades.length };
   },

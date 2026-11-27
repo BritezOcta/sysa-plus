@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
+import { notificationsApi } from "../../api/notifications.api";
 import { Navigate, Route, Routes } from "react-router";
-import { AVISOS } from "../../data/mockStudentData";
 import EnrollmentPage from "../../pages/EnrollmentPage";
 import { StudentLayout, type StudentUser } from "./StudentLayout";
 import { HomePage } from "./pages/HomePage";
@@ -12,14 +13,11 @@ import { CambioPasswordPage } from "./pages/CambioPasswordPage";
 import { CertificadosPage } from "./pages/CertificadosPage";
 import { CursadoPage } from "./pages/CursadoPage";
 import { AsistenciasPage } from "./pages/AsistenciasPage";
+import { AvisosPage } from "./pages/AvisosPage";
 import { CorrelatividadesPage } from "./pages/CorrelatividadesPage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
-const PLACEHOLDERS = [
-  "bee",
-  "censo",
-  "avisos",
-];
+const PLACEHOLDERS = ["bee", "censo"];
 
 interface Props {
   user: StudentUser;
@@ -30,7 +28,14 @@ interface Props {
  * Se monta en App con:  <Route path="/alumno/*" element={<StudentRoute />} />
  */
 export function StudentArea({ user, onLogout }: Props) {
-  const avisosSinLeer = AVISOS.filter((a) => !a.leido).length; // TODO: venir de la API
+  const [avisosSinLeer, setAvisosSinLeer] = useState(0);
+
+  useEffect(() => {
+    notificationsApi
+      .getMyNotifications()
+      .then((data) => setAvisosSinLeer(data.unreadCount))
+      .catch(() => {});
+  }, []);
 
   return (
     <Routes>
@@ -57,11 +62,18 @@ export function StudentArea({ user, onLogout }: Props) {
         {/* RF-05: consulta de asistencias */}
         <Route path="asistencias" element={<AsistenciasPage />} />
         {/* Cuadro completo de correlatividades del plan */}
-        <Route path="correlatividad-cursar" element={<CorrelatividadesPage mode="cursar" />} />
-        <Route path="correlatividad-rendir" element={<CorrelatividadesPage mode="rendir" />} />
+        <Route
+          path="correlatividad-cursar"
+          element={<CorrelatividadesPage mode="cursar" />}
+        />
+        <Route
+          path="correlatividad-rendir"
+          element={<CorrelatividadesPage mode="rendir" />}
+        />
         {/* RF-11: generación y descarga de certificados */}
         <Route path="certificados" element={<CertificadosPage />} />
         <Route path="password" element={<CambioPasswordPage />} />
+        <Route path="avisos" element={<AvisosPage />} />
         {PLACEHOLDERS.map((id) => (
           <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
         ))}

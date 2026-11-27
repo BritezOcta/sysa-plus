@@ -366,6 +366,7 @@ model User {
   auditLogs            AuditLog[]
   studentProfile       StudentProfile?
   teacherProfile       TeacherProfile?
+  notifications        Notification[]
 
   @@index([role], map: "IX_USERS_ROLE")
   @@map("USERS")
@@ -449,4 +450,20 @@ model SurveyResponse {
 
   @@index([courseOfferingId], map: "IX_SR_OFFERING")
   @@map("SURVEY_RESPONSE")
+}
+
+model Notification {
+  notificationId Int      @id(map: "PK_NOTIFICATIONS") @default(autoincrement()) @map("NOTIFICATION_ID")
+  userId         Int      @map("USER_ID")
+  title          String   @map("TITLE") @db.NVarChar(200)
+  body           String   @map("BODY") @db.NVarChar(1000)
+  type           String   @default("info", map: "DF_NOTIFICATIONS_TYPE") @map("TYPE") @db.NVarChar(20)
+  isRead         Boolean  @default(false, map: "DF_NOTIFICATIONS_IS_READ") @map("IS_READ")
+  link           String?  @map("LINK") @db.NVarChar(255)
+  createdAt      DateTime @default(now(), map: "DF_NOTIFICATIONS_CREATED_AT") @map("CREATED_AT")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "FK_NOTIFICATIONS_USERS")
+
+  @@index([userId, isRead], map: "IX_NOTIFICATIONS_USER_READ")
+  @@map("NOTIFICATIONS")
 }

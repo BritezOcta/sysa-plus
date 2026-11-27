@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { teacherApi, type TeacherCommissionSummary } from "../api/teacher.api";
 import { APP_ROUTES } from "../constants";
-import { useAuth } from "../auth/AuthContext";
 import styles from "./TeacherHomePage.module.css";
 
 export default function TeacherHomePage() {
-  const { user, logout } = useAuth();
   const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
     [],
   );
@@ -36,32 +34,6 @@ export default function TeacherHomePage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.topbar}>
-        <div className={styles.brand}>
-          <div>
-            <h1 className={styles.title}>Panel Docente</h1>
-            <p className={styles.subtitle}>
-              Bienvenido/a,{" "}
-              {user ? `${user.firstName} ${user.lastName}` : "Docente"}{" "}
-              <span className={styles.role}>· Profesor</span>
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.headerActions}>
-          <Link to={APP_ROUTES.CHANGE_PASSWORD} className={styles.logoutButton}>
-            Cambiar contraseña
-          </Link>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className={styles.logoutButton}
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </header>
-
       <main className={styles.container}>
         <section>
           <h2 className={styles.sectionTitle}>Accesos rápidos</h2>
