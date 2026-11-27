@@ -1,5 +1,4 @@
-/* Avisos flotantes (toasts). Los usan todos los roles, incluido el alumno:
-   se separaron de AcademicManagementPage.module.css sin cambiar ningún valor. */
+/* Avisos flotantes compartidos por todos los roles, con el tema de AppShell. */
 
 .toastViewport {
   position: fixed;
@@ -18,26 +17,26 @@
   pointer-events: auto;
   padding: 13px 15px;
   border-radius: 10px;
-  background: #0f172a;
-  color: #f8fafc;
-  border: 1px solid #334155;
-  box-shadow: 0 8px 24px rgb(15 23 42 / 28%);
+  background: var(--sa-surface, #ffffff);
+  color: var(--sa-text, #1e293b);
+  border: 1px solid var(--sa-border, #e2e8f0);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 12%);
 }
 
 .toast_success {
-  border-color: #059669;
+  border-color: color-mix(in srgb, var(--sa-ok, #16a34a) 35%, var(--sa-border, #e2e8f0));
 }
 
 .toast_warning {
-  border-color: #d97706;
+  border-color: color-mix(in srgb, var(--sa-warn, #d97706) 35%, var(--sa-border, #e2e8f0));
 }
 
 .toast_danger {
-  border-color: #e11d48;
+  border-color: color-mix(in srgb, var(--sa-danger, #dc2626) 35%, var(--sa-border, #e2e8f0));
 }
 
 .toast_info {
-  border-color: #0284c7;
+  border-color: color-mix(in srgb, var(--sa-accent, #0284c7) 35%, var(--sa-border, #e2e8f0));
 }
 
 .toastHeader {
@@ -55,7 +54,7 @@
 .toastHeader button {
   border: none;
   background: transparent;
-  color: #cbd5e1;
+  color: var(--sa-text-muted, #64748b);
   cursor: pointer;
   font-size: 13px;
   padding: 2px 6px;
@@ -63,18 +62,18 @@
 }
 
 .toastHeader button:hover {
-  background: #1e293b;
-  color: #ffffff;
+  background: var(--sa-surface-2, #f1f5f9);
+  color: var(--sa-text, #1e293b);
 }
 
 .toastCard p {
   font-size: 12.5px;
-  color: #e2e8f0;
+  color: var(--sa-text-muted, #475569);
   line-height: 1.4;
   margin: 0;
 }
 
 .toastHeader button:focus-visible {
-  outline: 2px solid #0075ad;
+  outline: 2px solid var(--sa-accent, #0284c7);
   outline-offset: 2px;
 }

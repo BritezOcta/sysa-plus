@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   border-radius: 12px;
-  background: #0b1320;
-  border: 1px solid #1e293b;
-  box-shadow: 0 4px 16px rgb(15 23 42 / 14%);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 5%);
 }
 
 .canvasToolbar {
@@ -14,10 +14,10 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   border-radius: 11px 11px 0 0;
-  color: #f8fafc;
+  color: #1e293b;
 }
 
 .toolbarLeft {
@@ -37,7 +37,7 @@
 .toolbarLabel {
   font-size: 12.5px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: #64748b;
   margin-right: 4px;
 }
 
@@ -47,9 +47,9 @@
   gap: 7px;
   padding: 6px 12px;
   border-radius: 99px;
-  border: 1px solid #475569;
-  background: #1e293b;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -61,7 +61,7 @@
 
 .wireTypeBtn:hover {
   border-color: #94a3b8;
-  color: #ffffff;
+  color: #1e293b;
 }
 
 .wireTypeBtn:focus-visible,
@@ -76,13 +76,13 @@
 .portOut:focus-visible,
 .cableTypeSwitch:focus-visible,
 .cableDeleteBtn:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #0284c7;
   outline-offset: 2px;
 }
 
 .wireTypeBtnActive {
-  background: #0369a1;
-  border-color: #38bdf8;
+  background: #0284c7;
+  border-color: #0284c7;
   color: #ffffff;
 }
 
@@ -97,7 +97,7 @@
 }
 
 .dotBlue {
-  background: #38bdf8;
+  background: #0284c7;
 }
 
 .dotGreen {
@@ -113,16 +113,16 @@
 
 .simToolbarInfo p {
   font-size: 12.5px;
-  color: #e2e8f0;
+  color: #475569;
   margin: 0;
 }
 
 .simPulseBadge {
   padding: 4px 10px;
   border-radius: 6px;
-  background: #047857;
-  border: 1px solid #34d399;
-  color: #ffffff;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -130,9 +130,9 @@
 .simQuickBtn {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid #475569;
-  background: #1e293b;
-  color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -142,8 +142,8 @@
 }
 
 .simQuickBtn:hover {
-  background: #334155;
-  border-color: #64748b;
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .toolbarRight {
@@ -156,16 +156,16 @@
 .clearFocusBtn {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid #38bdf8;
-  background: #0c4a6e;
-  color: #e0f2fe;
+  border: 1px solid #bae6fd;
+  background: #e0f2fe;
+  color: #0369a1;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .clearFocusBtn:hover {
-  background: #075985;
+  background: #bae6fd;
 }
 
 .toggleCablesLabel {
@@ -173,21 +173,21 @@
   align-items: center;
   gap: 6px;
   font-size: 12.5px;
-  color: #e2e8f0;
+  color: #475569;
   cursor: pointer;
   user-select: none;
 }
 
 .toggleCablesLabel input {
-  accent-color: #38bdf8;
+  accent-color: #0284c7;
 }
 
 .guideToggleBtn {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid #475569;
-  background: #1e293b;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -198,22 +198,22 @@
 }
 
 .guideToggleBtn:hover {
-  background: #334155;
+  background: #f1f5f9;
   border-color: #94a3b8;
-  color: #ffffff;
+  color: #1e293b;
 }
 
 .guideToggleBtnActive {
-  background: #0c4a6e;
-  border-color: #38bdf8;
-  color: #e0f2fe;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
 }
 
 .simToggleBtn {
   padding: 7px 14px;
   border-radius: 8px;
-  border: 1px solid #38bdf8;
-  background: #0369a1;
+  border: 1px solid #0284c7;
+  background: #0284c7;
   color: #ffffff;
   font-size: 12.5px;
   font-weight: 700;
@@ -224,12 +224,13 @@
 }
 
 .simToggleBtn:hover {
-  background: #0284c7;
+  background: #0369a1;
+  border-color: #0369a1;
 }
 
 .simToggleBtnActive {
   background: #047857;
-  border-color: #34d399;
+  border-color: #059669;
 }
 
 .simToggleBtnActive:hover {
@@ -243,9 +244,9 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 9px 18px;
-  background: #111c30;
-  border-bottom: 1px solid #1e293b;
-  color: #cbd5e1;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
   font-size: 12px;
   line-height: 1.4;
 }
@@ -259,20 +260,20 @@
 }
 
 .instructionsStrip strong {
-  color: #7dd3fc;
+  color: #0369a1;
 }
 
 .instructionsStrip code {
-  color: #fde68a;
+  color: #92400e;
   font-weight: 700;
 }
 
 .hideGuideBtn {
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #cbd5e1;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
@@ -284,9 +285,9 @@
 }
 
 .hideGuideBtn:hover {
-  background: #1e293b;
-  border-color: #64748b;
-  color: #ffffff;
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 
 .boardViewport {
@@ -295,8 +296,8 @@
   overflow-y: hidden;
   padding-bottom: 8px;
   border-radius: 0 0 11px 11px;
-  background-color: #0b1320;
-  background-image: radial-gradient(#1e293b 1.25px, transparent 1.25px);
+  background-color: #f3f6fa;
+  background-image: radial-gradient(#cbd5e1 1.25px, transparent 1.25px);
   background-size: 22px 22px;
   -webkit-overflow-scrolling: touch;
 }
@@ -308,20 +309,20 @@
 
 .boardViewport::-webkit-scrollbar-track,
 .stickyScrollbar::-webkit-scrollbar-track {
-  background: #0f172a;
-  border-top: 1px solid #1e293b;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
 }
 
 .boardViewport::-webkit-scrollbar-thumb,
 .stickyScrollbar::-webkit-scrollbar-thumb {
-  background-color: #38bdf8;
+  background-color: #94a3b8;
   border-radius: 99px;
-  border: 3px solid #0f172a;
+  border: 3px solid #f1f5f9;
 }
 
 .boardViewport::-webkit-scrollbar-thumb:hover,
 .stickyScrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #7dd3fc;
+  background-color: #64748b;
 }
 
 .boardViewportStickyActive::-webkit-scrollbar {
@@ -335,8 +336,8 @@
   width: 100%;
   overflow-x: scroll;
   overflow-y: hidden;
-  background: #0f172a;
-  border-top: 1px solid #1e293b;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
   border-radius: 0 0 11px 11px;
 }
 
@@ -388,9 +389,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 99px;
-  background: #0f172a;
-  border: 1.5px solid #475569;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 45%);
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 12%);
   overflow: hidden;
 }
 
@@ -417,8 +418,8 @@
 
 .cableDeleteBtn {
   border: none;
-  background: #1e293b;
-  color: #fecaca;
+  background: #ffffff;
+  color: #991b1b;
   font-size: 10.5px;
   font-weight: 800;
   padding: 3px 7px;
@@ -426,8 +427,8 @@
 }
 
 .cableDeleteBtn:hover {
-  background: #b91c1c;
-  color: #ffffff;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .bankColumn {
@@ -436,8 +437,8 @@
   width: 268px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: #0f172a;
-  border: 1.5px dashed #64748b;
+  background: #ffffff;
+  border: 1.5px dashed #f59e0b;
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -457,21 +458,21 @@
 .bankHeader h3 {
   font-size: 14.5px;
   font-weight: 700;
-  color: #f8fafc;
+  color: #0f172a;
   margin: 0;
 }
 
 .bankSub {
   display: block;
   font-size: 11.5px;
-  color: #fde68a;
+  color: #92400e;
   font-weight: 600;
   margin-top: 2px;
 }
 
 .bankHint {
   font-size: 12px;
-  color: #cbd5e1;
+  color: #64748b;
   line-height: 1.4;
   margin: 0;
 }
@@ -484,8 +485,9 @@
   gap: 12px;
   padding: 14px;
   border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 4%);
 }
 
 .yearGroupHeader {
@@ -498,24 +500,24 @@
 .yearBadge {
   font-size: 13px;
   font-weight: 700;
-  color: #7dd3fc;
+  color: #0369a1;
   margin: 0;
 }
 
 .yearAnualAddBtn {
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid #475569;
-  background: #1e293b;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .yearAnualAddBtn:hover {
-  border-color: #7dd3fc;
-  color: #ffffff;
+  border-color: #0284c7;
+  color: #0369a1;
 }
 
 .periodsGrid {
@@ -528,8 +530,8 @@
   width: 268px;
   flex-shrink: 0;
   border-radius: 10px;
-  background: #162033;
-  border: 1.5px solid #334155;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -540,9 +542,9 @@
 }
 
 .slotDragOver {
-  border-color: #38bdf8 !important;
+  border-color: #0284c7 !important;
   border-style: solid !important;
-  background: #0c2d48 !important;
+  background: #e0f2fe !important;
 }
 
 .periodHeader {
@@ -551,27 +553,27 @@
   justify-content: space-between;
   gap: 8px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .periodHeader h4 {
   font-size: 13.5px;
   font-weight: 700;
-  color: #f8fafc;
+  color: #0f172a;
   margin: 0;
 }
 
 .periodHeader span {
   font-size: 11.5px;
-  color: #cbd5e1;
+  color: #64748b;
 }
 
 .slotAddBtn {
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid #38bdf8;
-  background: #0c4a6e;
-  color: #e0f2fe;
+  border: 1px solid #bae6fd;
+  background: #e0f2fe;
+  color: #0369a1;
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
@@ -579,7 +581,7 @@
 }
 
 .slotAddBtn:hover {
-  background: #0369a1;
+  background: #0284c7;
   color: #ffffff;
 }
 
@@ -595,16 +597,16 @@
   margin-bottom: auto;
   padding: 18px 12px;
   border-radius: 8px;
-  border: 1px dashed #475569;
+  border: 1px dashed #cbd5e1;
   text-align: center;
   font-size: 12px;
-  color: #cbd5e1;
+  color: #64748b;
   line-height: 1.45;
 }
 
 .anualNotice {
   font-size: 11.5px;
-  color: #cbd5e1;
+  color: #64748b;
   text-align: right;
 }
 
@@ -613,15 +615,15 @@
   z-index: 5;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #1e293b;
-  border: 1.5px solid #475569;
-  color: #f8fafc;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
   cursor: grab;
   user-select: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 2px 8px rgb(2 6 23 / 35%);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,
@@ -637,35 +639,35 @@
 }
 
 .cardInactive {
-  background: #172030;
+  background: #f8fafc;
   border-style: dashed;
-  border-color: #64748b;
+  border-color: #94a3b8;
 }
 
 .cardFocused {
-  border-color: #38bdf8 !important;
-  background: #0f2942 !important;
-  box-shadow: 0 0 0 2px #38bdf8 !important;
+  border-color: #0284c7 !important;
+  background: #f0f9ff !important;
+  box-shadow: 0 0 0 2px #0284c7 !important;
 }
 
 .cardPrereqDirect {
   border-color: #f59e0b !important;
-  background: #2b2111 !important;
+  background: #fffbeb !important;
 }
 
 .cardPrereqIndirect {
   border-color: #d97706 !important;
-  background: #231c12 !important;
+  background: #fffbeb !important;
 }
 
 .cardUnlockedDirect {
   border-color: #10b981 !important;
-  background: #0d2b24 !important;
+  background: #ecfdf5 !important;
 }
 
 .cardUnlockedIndirect {
   border-color: #059669 !important;
-  background: #0f2421 !important;
+  background: #f0fdf4 !important;
 }
 
 .cardDimmed {
@@ -674,13 +676,13 @@
 
 .cardDropTargetOk {
   border-color: #10b981 !important;
-  background: #064e3b !important;
+  background: #dcfce7 !important;
   box-shadow: 0 0 0 2px #10b981 !important;
 }
 
 .cardDropTargetCycle {
   border-color: #f43f5e !important;
-  background: #4c0519 !important;
+  background: #fff1f2 !important;
   box-shadow: 0 0 0 2px #f43f5e !important;
 }
 
@@ -707,9 +709,9 @@
   display: inline-block;
   padding: 2px 7px;
   border-radius: 5px;
-  background: #0c4a6e;
-  border: 1px solid #0284c7;
-  color: #e0f2fe;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -720,8 +722,8 @@
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #3730a3;
-  color: #ffffff;
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
 .inactiveTag {
@@ -729,9 +731,9 @@
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #334155;
+  background: #f1f5f9;
   border: 1px dashed #94a3b8;
-  color: #f1f5f9;
+  color: #475569;
 }
 
 .cardQuickBtns {
@@ -743,9 +745,9 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid #475569;
-  background: #0f172a;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 11.5px;
   cursor: pointer;
   display: grid;
@@ -753,14 +755,14 @@
 }
 
 .iconActionBtn:hover {
-  background: #334155;
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .iconDeleteBtn:hover {
-  background: #991b1b;
-  border-color: #f87171;
-  color: #ffffff;
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
 .cardMainBtn {
@@ -780,7 +782,7 @@
 }
 
 .cardMainBtn:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #0284c7;
   outline-offset: 2px;
 }
 
@@ -788,7 +790,7 @@
   font-size: 13.5px;
   font-weight: 700;
   line-height: 1.3;
-  color: #f8fafc;
+  color: #0f172a;
   margin: 0;
 }
 
@@ -797,8 +799,8 @@
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgb(255 255 255 / 12%);
-  color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .cycleLiveWarning {
@@ -826,24 +828,24 @@
   gap: 6px;
   width: 100%;
   padding-top: 6px;
-  border-top: 1px solid rgb(255 255 255 / 12%);
+  border-top: 1px solid #e2e8f0;
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
-  color: #cbd5e1;
+  color: #64748b;
 }
 
 .studentsPillActive {
-  color: #f1f5f9;
+  color: #1e293b;
   font-weight: 700;
 }
 
 .studentsPillZero {
-  color: #cbd5e1;
+  color: #64748b;
 }
 
 .linksCounter {
   font-weight: 700;
-  color: #7dd3fc;
+  color: #0369a1;
 }
 
 .portDot {
@@ -858,7 +860,7 @@
   left: -7px;
   width: 13px;
   height: 13px;
-  background: #0f172a;
+  background: #ffffff;
   border: 2.5px solid #94a3b8;
 }
 
@@ -866,8 +868,8 @@
   right: -12px;
   width: 24px;
   height: 24px;
-  background: #0369a1;
-  border: 2px solid #7dd3fc;
+  background: #0284c7;
+  border: 2px solid #ffffff;
   color: #ffffff;
   display: grid;
   place-items: center;
@@ -880,14 +882,14 @@
 }
 
 .portOut:hover {
-  background: #38bdf8;
-  color: #0f172a;
+  background: #0369a1;
+  color: #ffffff;
 }
 
 .portOutActive {
   background: #f59e0b;
-  border-color: #fef3c7;
-  color: #0f172a;
+  border-color: #ffffff;
+  color: #451a03;
   box-shadow: 0 0 0 3px rgb(245 158 11 / 35%);
 }
 
@@ -899,12 +901,12 @@
 
 .simCard_aprobada {
   border-color: #10b981 !important;
-  background: #064e3b !important;
+  background: #ecfdf5 !important;
 }
 
 .simCard_regularizada {
   border-color: #f59e0b !important;
-  background: #451a03 !important;
+  background: #fffbeb !important;
 }
 
 .simCardBody {
@@ -927,8 +929,8 @@
 }
 
 .simPill_pendiente {
-  background: #334155;
-  color: #f1f5f9;
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .simPill_regularizada {
@@ -950,9 +952,9 @@
   display: block;
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgb(16 185 129 / 22%);
-  border: 1px solid #34d399;
-  color: #a7f3d0;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
   font-weight: 700;
 }
 
@@ -960,9 +962,9 @@
   display: block;
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgb(244 63 94 / 20%);
-  border: 1px solid #fb7185;
-  color: #fecdd3;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
   font-weight: 600;
 }
 
