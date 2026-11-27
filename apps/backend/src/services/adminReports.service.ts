@@ -1,4 +1,5 @@
 import { AppError } from "../lib/AppError.js";
+import { attendancePercent, attendedWeight } from "../lib/attendance.js";
 import { adminReportsRepository } from "../repositories/adminReports.repository.js";
 import { ENROLLMENT_STATUS } from "../types/academic.js";
 
@@ -108,24 +109,12 @@ export const adminReportsService = {
           : 0;
 
       // Promedio de asistencia de la comisión
-      let totalAttRecords = 0;
-      let totalPresent = 0;
-      for (const enr of activeEnrollments) {
-        for (const att of enr.attendances) {
-          totalAttRecords++;
-          if (
-            att.attendanceStatus === "PRESENTE" ||
-            att.attendanceStatus === "JUSTIFICADO" ||
-            att.attendanceStatus === "TARDANZA"
-          ) {
-            totalPresent++;
-          }
-        }
-      }
-      const promedioAsistencia =
-        totalAttRecords > 0
-          ? Math.round((totalPresent / totalAttRecords) * 100)
-          : 100;
+      // Misma regla que el cierre: asistencia ponderada sobre todas las clases de cada alumno activo.
+      const totalPresent = activeEnrollments.reduce(
+        (sum, enr) => sum + attendedWeight(enr.attendances.map((att) => att.attendanceStatus)),
+        0,
+      );
+      const promedioAsistencia = attendancePercent(totalPresent, activos * co._count.classSessions);
 
       return {
         offeringId: String(co.courseOfferingId),

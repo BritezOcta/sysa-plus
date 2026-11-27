@@ -11,7 +11,7 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { CambioPasswordPage } from "./pages/CambioPasswordPage";
 import { CertificadosPage } from "./pages/CertificadosPage";
 import { CursadoPage } from "./pages/CursadoPage";
-import StudentAttendancePage from "../../pages/studentAttendancePage";
+import { AsistenciasPage } from "./pages/AsistenciasPage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
@@ -56,7 +56,7 @@ export function StudentArea({ user, onLogout }: Props) {
         {/* RF-04: inscripción a cursadas */}
         <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
         {/* RF-05: consulta de asistencias */}
-        <Route path="asistencias" element={<StudentAttendancePage />} />
+        <Route path="asistencias" element={<AsistenciasPage />} />
         {/* RF-11: generación y descarga de certificados */}
         <Route path="certificados" element={<CertificadosPage />} />
         <Route path="password" element={<CambioPasswordPage />} />

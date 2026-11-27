@@ -1,4 +1,5 @@
 export * from './academicRules.constants'
+export * from './attendance.constants'
 export * from './audit.constants'
 export * from './auth.constants'
 export * from './canvas.constants'

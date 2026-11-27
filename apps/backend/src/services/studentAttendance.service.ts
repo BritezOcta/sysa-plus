@@ -1,4 +1,8 @@
 import { AppError } from "../lib/AppError.js";
+import { attendanceSummary } from "../lib/attendance.js";
+import { isCourseInProgress } from "../lib/studentCourses.js";
+import { MIN_ATTENDANCE_PERCENT } from "../types/academic.js";
+import { todayAsDate } from "./courseEnrollment.service.js";
 import { studentAttendanceRepository } from "../repositories/studentAttendance.repository.js";
 
 export const studentAttendanceService = {
@@ -18,6 +22,7 @@ export const studentAttendanceService = {
         profile.studentId,
       );
 
+    const today = todayAsDate();
     return enrollments.map((enr) => {
       const attendanceBySession = new Map(
         enr.attendances.map((a) => [a.classSessionId, a.attendanceStatus]),
@@ -31,23 +36,10 @@ export const studentAttendanceService = {
           attendanceBySession.get(session.classSessionId) ?? "SIN_REGISTRO",
       }));
 
-      const recordedSessions = sessions.filter(
-        (s) => s.status !== "SIN_REGISTRO",
+      // Una clase sin registro del alumno cuenta como falta (misma regla que el cierre de cursada).
+      const summary = attendanceSummary(
+        enr.courseOffering.classSessions.map((session) => attendanceBySession.get(session.classSessionId) ?? null),
       );
-      const presentCount = recordedSessions.filter(
-        (s) =>
-          s.status === "PRESENTE" ||
-          s.status === "JUSTIFICADO" ||
-          s.status === "TARDANZA",
-      ).length;
-      const absentCount = recordedSessions.filter(
-        (s) => s.status === "AUSENTE",
-      ).length;
-      const totalRecorded = recordedSessions.length;
-      const attendancePercentage =
-        totalRecorded > 0
-          ? Math.round((presentCount / totalRecorded) * 100)
-          : 100;
 
       return {
         enrollmentId: String(enr.courseEnrollmentId),
@@ -56,11 +48,11 @@ export const studentAttendanceService = {
         commission: enr.courseOffering.commission,
         period: `${enr.courseOffering.academicPeriod.year} - ${enr.courseOffering.academicPeriod.semester}° Cuat.`,
         enrollmentStatus: enr.enrollmentStatus,
+        inProgress: isCourseInProgress(enr.courseOffering.academicPeriod.periodEndDate, today),
         summary: {
-          totalClasses: totalRecorded,
-          presentCount,
-          absentCount,
-          attendancePercentage,
+          ...summary,
+          minPercentage: MIN_ATTENDANCE_PERCENT,
+          atRisk: summary.totalClasses > 0 && summary.attendancePercentage < MIN_ATTENDANCE_PERCENT,
         },
         sessions,
       };
