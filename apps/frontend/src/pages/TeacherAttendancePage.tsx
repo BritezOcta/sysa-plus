@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type AttendanceStudentRow,
   type CommissionAttendanceResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES, ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
+import { ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
 import type { AttendanceStatus } from "../types/teacherAttendance.types";
-import styles from "./TeacherAttendancePage.module.css";
+import pageStyles from "./TeacherAttendancePage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
+import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 
 function getTodayIso(): string {
@@ -198,13 +203,11 @@ export default function TeacherAttendancePage() {
   const students = attendanceData?.students ?? [];
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
-          <h1 className={styles.title}>Registro y Consulta de Asistencias</h1>
+          <h1 className={common.title}>Registro y Consulta de Asistencias</h1>
+          <p className={common.subtitle}>Tomá asistencia por clase y consultá el acumulado de cada alumno</p>
         </div>
       </header>
 

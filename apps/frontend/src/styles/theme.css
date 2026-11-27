@@ -1,11 +1,14 @@
 /* ============================================================
    SysA+ · Tema del área del alumno (claro / oscuro)
 
-   Todo está limitado al contenedor .sysa-student, así que NO pisa
+   Todo está limitado al contenedor .sysa-app (alias histórico: .sysa-student), así que NO pisa
    variables.css ni global.css del resto de la app.
-   El tema se aplica con <div class="sysa-student" data-theme="light|dark">
+   El tema se aplica con <div class="sysa-app" data-theme="light|dark">.
+   El modo oscuro solo existe para el área del alumno (.sysa-student).
    ============================================================ */
 
+.sysa-app,
+.sysa-app[data-theme="light"],
 .sysa-student,
 .sysa-student[data-theme="light"] {
   --sa-bg: #eef2f7;
@@ -63,6 +66,7 @@
   color-scheme: dark;
 }
 
+.sysa-app,
 .sysa-student {
   background: var(--sa-bg);
   color: var(--sa-text);
@@ -72,23 +76,23 @@
 }
 
 /* :where() = especificidad cero, para no pisar las clases de cada componente */
-:where(.sysa-student) *,
-:where(.sysa-student) *::before,
-:where(.sysa-student) *::after {
+:where(.sysa-app, .sysa-student) *,
+:where(.sysa-app, .sysa-student) *::before,
+:where(.sysa-app, .sysa-student) *::after {
   box-sizing: border-box;
 }
 
-:where(.sysa-student) button {
+:where(.sysa-app, .sysa-student) button {
   font: inherit;
 }
 
-:where(.sysa-student) :focus-visible {
+:where(.sysa-app, .sysa-student) :focus-visible {
   outline: 2px solid var(--sa-accent);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :where(.sysa-student) * {
+  :where(.sysa-app, .sysa-student) * {
     transition: none !important;
     animation: none !important;
   }

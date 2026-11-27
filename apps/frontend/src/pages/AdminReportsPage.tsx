@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import {
   adminReportsApi,
   type AcademicReportResponse,
   type ReportFilterOptions,
   type ReportType,
 } from "../api/adminReports.api";
-import { APP_ROUTES } from "../constants";
 import {
   exportReportToExcel,
   exportReportToPdf,
   type ReportExportMeta,
 } from "../helpers/ReportExportHelper";
+import common from "../features/student/common.module.css";
+import s from "./AdminReportsPage.module.css";
 
 const REPORT_LABELS: Record<ReportType, string> = {
   RENDIMIENTO: "Rendimiento Académico (Aprobación)",
@@ -116,122 +116,74 @@ export default function AdminReportsPage() {
     }
   }
 
+  const selects: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    options: { id: string; label: string }[];
+    allLabel?: string;
+  }[] = [
+    {
+      id: "report-type",
+      label: "Tipo de reporte",
+      value: reportType,
+      onChange: (v) => setReportType(v as ReportType),
+      options: (Object.keys(REPORT_LABELS) as ReportType[]).map((key) => ({ id: key, label: REPORT_LABELS[key] })),
+    },
+    { id: "filter-career", label: "Carrera", value: careerId, onChange: setCareerId, options: filters.careers, allLabel: "Todas las carreras" },
+    { id: "filter-subject", label: "Materia", value: subjectId, onChange: setSubjectId, options: filters.subjects, allLabel: "Todas las materias" },
+    { id: "filter-period", label: "Período académico", value: periodId, onChange: setPeriodId, options: filters.periods, allLabel: "Todos los períodos" },
+  ];
+
+  const stats: [string, string][] = report
+    ? [
+        ["Comisiones analizadas", String(report.summary.totalCommissions)],
+        ["Total inscriptos", String(report.summary.totalInscriptos)],
+        ["Aprobación promedio", `${report.summary.avgAprobacion}%`],
+        ["Asistencia promedio", `${report.summary.avgAsistencia}%`],
+        ["Deserción promedio", `${report.summary.avgDesercion}%`],
+      ]
+    : [];
+
   return (
-    <div style={{ maxWidth: 1150, margin: "0 auto", padding: "1.5rem" }}>
-      <header style={{ marginBottom: "1.5rem" }}>
-        <Link to={APP_ROUTES.ACADEMIC_OFFER}>← Volver a Gestión Académica</Link>
-        <h1>Reportes Académicos (RF-12)</h1>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
+        <div>
+          <h1 className={common.title}>Reportes académicos</h1>
+          <p className={common.subtitle}>Rendimiento, asistencia, inscripciones y deserción por carrera, materia o período</p>
+        </div>
       </header>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <div>
-          <label
-            htmlFor="report-type"
-            style={{ display: "block", marginBottom: 4 }}
-          >
-            Tipo de reporte
-          </label>
-          <select
-            id="report-type"
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value as ReportType)}
-            style={{ width: "100%", padding: "0.5rem" }}
-          >
-            {(Object.keys(REPORT_LABELS) as ReportType[]).map((key) => (
-              <option key={key} value={key}>
-                {REPORT_LABELS[key]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="filter-career"
-            style={{ display: "block", marginBottom: 4 }}
-          >
-            Carrera
-          </label>
-          <select
-            id="filter-career"
-            value={careerId}
-            onChange={(e) => setCareerId(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem" }}
-          >
-            <option value="">Todas las carreras</option>
-            {filters.careers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="filter-subject"
-            style={{ display: "block", marginBottom: 4 }}
-          >
-            Materia
-          </label>
-          <select
-            id="filter-subject"
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem" }}
-          >
-            <option value="">Todas las materias</option>
-            {filters.subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="filter-period"
-            style={{ display: "block", marginBottom: 4 }}
-          >
-            Período académico
-          </label>
-          <select
-            id="filter-period"
-            value={periodId}
-            onChange={(e) => setPeriodId(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem" }}
-          >
-            <option value="">Todos los períodos</option>
-            {filters.periods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+      <section className={`${common.card} ${common.cardPad}`}>
+        <div className={s.filters}>
+          {selects.map((f) => (
+            <label key={f.id} htmlFor={f.id} className={s.filterField}>
+              {f.label}
+              <select
+                id={f.id}
+                value={f.value}
+                onChange={(e) => f.onChange(e.target.value)}
+                className={`${common.field} ${s.control}`}
+              >
+                {f.allLabel && <option value="">{f.allLabel}</option>}
+                {f.options.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
         </div>
       </section>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          flexWrap: "wrap",
-          marginBottom: "1.5rem",
-        }}
-      >
+      <div className={common.toolbar}>
         <button
           type="button"
           onClick={() => void handleGenerate()}
           disabled={isLoading}
-          style={{ padding: "0.6rem 1.2rem", cursor: "pointer" }}
+          className={`${common.btn} ${common.btnPrimary}`}
         >
           {isLoading ? "Generando..." : "Generar reporte"}
         </button>
@@ -242,7 +194,7 @@ export default function AdminReportsPage() {
               type="button"
               onClick={() => void handleExport("excel")}
               disabled={isExporting}
-              style={{ padding: "0.6rem 1.2rem", cursor: "pointer" }}
+              className={`${common.btn} ${common.btnGhost}`}
             >
               Exportar Excel (.xlsx)
             </button>
@@ -250,7 +202,7 @@ export default function AdminReportsPage() {
               type="button"
               onClick={() => void handleExport("pdf")}
               disabled={isExporting}
-              style={{ padding: "0.6rem 1.2rem", cursor: "pointer" }}
+              className={`${common.btn} ${common.btnGhost}`}
             >
               {isExporting ? "Exportando..." : "Exportar PDF"}
             </button>
@@ -259,186 +211,120 @@ export default function AdminReportsPage() {
       </div>
 
       {error && (
-        <div role="alert" style={{ color: "#b91c1c", marginBottom: "1rem" }}>
-          {error}{" "}
-          <button type="button" onClick={() => void handleGenerate()}>
+        <div role="alert" className={s.feedbackError}>
+          {error}
+          <button type="button" onClick={() => void handleGenerate()} className={`${common.btn} ${common.btnGhost}`}>
             Reintentar
           </button>
         </div>
       )}
 
       {successMsg && (
-        <div role="status" style={{ color: "#15803d", marginBottom: "1rem" }}>
+        <div role="status" className={s.feedbackOk}>
           {successMsg}
         </div>
       )}
 
       {report && report.rows.length === 0 && (
-        <p>No hay información disponible para los filtros seleccionados.</p>
+        <div className={`${common.card} ${common.empty}`}>No hay información disponible para los filtros seleccionados.</div>
       )}
 
       {report && report.rows.length > 0 && (
         <>
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "1rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div
-              style={{
-                border: "1px solid #cbd5e1",
-                borderRadius: 8,
-                padding: "1rem",
-              }}
-            >
-              <small>Comisiones analizadas</small>
-              <h2 style={{ margin: "0.25rem 0 0" }}>
-                {report.summary.totalCommissions}
-              </h2>
-            </div>
-            <div
-              style={{
-                border: "1px solid #cbd5e1",
-                borderRadius: 8,
-                padding: "1rem",
-              }}
-            >
-              <small>Total inscriptos</small>
-              <h2 style={{ margin: "0.25rem 0 0" }}>
-                {report.summary.totalInscriptos}
-              </h2>
-            </div>
-            <div
-              style={{
-                border: "1px solid #cbd5e1",
-                borderRadius: 8,
-                padding: "1rem",
-              }}
-            >
-              <small>Aprobación promedio</small>
-              <h2 style={{ margin: "0.25rem 0 0" }}>
-                {report.summary.avgAprobacion}%
-              </h2>
-            </div>
-            <div
-              style={{
-                border: "1px solid #cbd5e1",
-                borderRadius: 8,
-                padding: "1rem",
-              }}
-            >
-              <small>Asistencia promedio</small>
-              <h2 style={{ margin: "0.25rem 0 0" }}>
-                {report.summary.avgAsistencia}%
-              </h2>
-            </div>
-            <div
-              style={{
-                border: "1px solid #cbd5e1",
-                borderRadius: 8,
-                padding: "1rem",
-              }}
-            >
-              <small>Deserción promedio</small>
-              <h2 style={{ margin: "0.25rem 0 0" }}>
-                {report.summary.avgDesercion}%
-              </h2>
-            </div>
+          <section className={s.stats}>
+            {stats.map(([label, value]) => (
+              <div key={label} className={`${common.card} ${common.cardPad}`}>
+                <span className={common.muted}>{label}</span>
+                <p className={s.statValue}>{value}</p>
+              </div>
+            ))}
           </section>
 
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr
-                style={{ textAlign: "left", borderBottom: "1px solid #cbd5e1" }}
-              >
-                <th style={{ padding: "0.5rem" }}>Materia / Com.</th>
-                <th style={{ padding: "0.5rem" }}>Período</th>
-                <th style={{ padding: "0.5rem" }}>Inscriptos</th>
-                {report.reportType === "RENDIMIENTO" && (
-                  <>
-                    <th style={{ padding: "0.5rem" }}>Aprob. / Reg.</th>
-                    <th style={{ padding: "0.5rem" }}>Tasa Aprobación</th>
-                  </>
-                )}
-                {report.reportType === "ASISTENCIA" && (
-                  <th style={{ padding: "0.5rem" }}>Asistencia Promedio</th>
-                )}
-                {report.reportType === "INSCRIPCIONES" && (
-                  <>
-                    <th style={{ padding: "0.5rem" }}>Cupo</th>
-                    <th style={{ padding: "0.5rem" }}>Activos / Bajas</th>
-                  </>
-                )}
-                {report.reportType === "DESERCION" && (
-                  <>
-                    <th style={{ padding: "0.5rem" }}>Libres / Canceladas</th>
-                    <th style={{ padding: "0.5rem" }}>Tasa Deserción</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {report.rows.map((r) => (
-                <tr
-                  key={r.offeringId}
-                  style={{ borderBottom: "1px solid #e2e8f0" }}
-                >
-                  <td style={{ padding: "0.5rem" }}>
-                    <strong>
-                      {r.subjectName} ({r.subjectCode})
-                    </strong>
-                    <div>
-                      <small>
-                        Com. {r.commission} · {r.careerName}
-                      </small>
-                    </div>
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>{r.period}</td>
-                  <td style={{ padding: "0.5rem" }}>{r.totalInscriptos}</td>
+          <section className={common.card}>
+            <div className={common.tableWrap}>
+              <table className={common.table}>
+                <thead>
+                  <tr>
+                    <th>Materia / Com.</th>
+                    <th>Período</th>
+                    <th>Inscriptos</th>
+                    {report.reportType === "RENDIMIENTO" && (
+                      <>
+                        <th>Aprob. / Reg.</th>
+                        <th>Tasa Aprobación</th>
+                      </>
+                    )}
+                    {report.reportType === "ASISTENCIA" && <th>Asistencia Promedio</th>}
+                    {report.reportType === "INSCRIPCIONES" && (
+                      <>
+                        <th>Cupo</th>
+                        <th>Activos / Bajas</th>
+                      </>
+                    )}
+                    {report.reportType === "DESERCION" && (
+                      <>
+                        <th>Libres / Canceladas</th>
+                        <th>Tasa Deserción</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.rows.map((r) => (
+                    <tr key={r.offeringId}>
+                      <td>
+                        <strong>
+                          {r.subjectName} ({r.subjectCode})
+                        </strong>
+                        <div className={common.muted}>
+                          Com. {r.commission} · {r.careerName}
+                        </div>
+                      </td>
+                      <td>{r.period}</td>
+                      <td className={common.num}>{r.totalInscriptos}</td>
 
-                  {report.reportType === "RENDIMIENTO" && (
-                    <>
-                      <td style={{ padding: "0.5rem" }}>
-                        {r.aprobados} / {r.regulares}
-                      </td>
-                      <td style={{ padding: "0.5rem" }}>
-                        <strong>{r.tasaAprobacion}%</strong>
-                      </td>
-                    </>
-                  )}
+                      {report.reportType === "RENDIMIENTO" && (
+                        <>
+                          <td className={common.num}>
+                            {r.aprobados} / {r.regulares}
+                          </td>
+                          <td className={common.num}>
+                            <strong>{r.tasaAprobacion}%</strong>
+                          </td>
+                        </>
+                      )}
 
-                  {report.reportType === "ASISTENCIA" && (
-                    <td style={{ padding: "0.5rem" }}>
-                      <strong>{r.promedioAsistencia}%</strong>
-                    </td>
-                  )}
+                      {report.reportType === "ASISTENCIA" && (
+                        <td className={common.num}>
+                          <strong>{r.promedioAsistencia}%</strong>
+                        </td>
+                      )}
 
-                  {report.reportType === "INSCRIPCIONES" && (
-                    <>
-                      <td style={{ padding: "0.5rem" }}>{r.capacity}</td>
-                      <td style={{ padding: "0.5rem" }}>
-                        {r.activos} / {r.canceladas}
-                      </td>
-                    </>
-                  )}
+                      {report.reportType === "INSCRIPCIONES" && (
+                        <>
+                          <td className={common.num}>{r.capacity}</td>
+                          <td className={common.num}>
+                            {r.activos} / {r.canceladas}
+                          </td>
+                        </>
+                      )}
 
-                  {report.reportType === "DESERCION" && (
-                    <>
-                      <td style={{ padding: "0.5rem" }}>
-                        {r.libres} / {r.canceladas}
-                      </td>
-                      <td style={{ padding: "0.5rem" }}>
-                        <strong>{r.tasaDesercion}%</strong>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {report.reportType === "DESERCION" && (
+                        <>
+                          <td className={common.num}>
+                            {r.libres} / {r.canceladas}
+                          </td>
+                          <td className={common.num}>
+                            <strong>{r.tasaDesercion}%</strong>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </>
       )}
     </div>

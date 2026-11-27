@@ -6,7 +6,6 @@ import tableStyles from '../components/academic/CurriculumTableView.module.css'
 import modalStyles from '../components/academic/Modals.module.css'
 import { ConfirmActionModal } from '../components/academic/modals'
 import StudentStatusModal from '../components/admin/StudentStatusModal'
-import TopNavbar from '../components/layout/TopNavbar'
 import ModalShell from '../components/ui/ModalShell'
 import ToastViewport from '../components/ui/ToastViewport'
 import { useToastNotifications } from '../hooks/useToastNotifications'
@@ -101,7 +100,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar />
 
       <main className={styles.mainContent}>
         <section className={styles.careersSection}>

@@ -1,6 +1,5 @@
 import { ConfirmActionModal, NetworkErrorModal } from '../components/academic/modals'
 import tableStyles from '../components/academic/CurriculumTableView.module.css'
-import TopNavbar from '../components/layout/TopNavbar'
 import AssignTeacherModal from '../components/teacherAssignment/AssignTeacherModal'
 import SubjectCommissionsCard from '../components/teacherAssignment/SubjectCommissionsCard'
 import TeacherLoadView from '../components/teacherAssignment/TeacherLoadView'
@@ -35,7 +34,6 @@ export default function TeacherAssignmentPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar />
 
       <main className={styles.mainContent}>
         <section className={styles.careersSection}>

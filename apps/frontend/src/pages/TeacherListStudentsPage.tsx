@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type CommissionStudentItem,
   type CommissionStudentsResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES } from "../constants";
-import styles from "./TeacherListStudentsPage.module.css";
+import pageStyles from "./TeacherListStudentsPage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
+import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 export default function TeacherListStudentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -150,13 +154,11 @@ export default function TeacherListStudentsPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
-          <h1 className={styles.title}>Alumnos Inscriptos y Observaciones</h1>
+          <h1 className={common.title}>Alumnos Inscriptos y Observaciones</h1>
+          <p className={common.subtitle}>Consultá tus alumnos por comisión y registrá observaciones</p>
         </div>
       </header>
 
