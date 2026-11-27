@@ -61,6 +61,9 @@ export default function TopNavbar({
         <Link to={APP_ROUTES.ADMIN_RECORDS} className={styles.auditBtn}>
           Actas
         </Link>
+        <Link to={APP_ROUTES.ADMIN_REPORTS} className={styles.auditBtn}>
+          Reportes
+        </Link>
 
         {onOpenAuditDrawer && (
           <button

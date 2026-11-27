@@ -144,15 +144,15 @@ export default function AssignTeacherModal({
           <p className={modalStyles.hint}>
             El docente asignado podrá cargar asistencias y notas y ver el listado de alumnos solo de esta comisión.
           </p>
-        </div>
 
-        <div className={modalStyles.modalFooter}>
-          <button type="button" className={modalStyles.secondaryBtn} onClick={onClose} disabled={isSaving}>
-            Cancelar
-          </button>
-          <button type="submit" className={modalStyles.primaryBtn} disabled={!selected?.isActive || isSaving}>
-            {isSaving ? 'Asignando…' : selected ? `Asignar a ${selected.fullName}` : 'Elegí un docente'}
-          </button>
+          <div className={modalStyles.modalFooter}>
+            <button type="button" className={modalStyles.secondaryBtn} onClick={onClose} disabled={isSaving}>
+              Cancelar
+            </button>
+            <button type="submit" className={modalStyles.primaryBtn} disabled={!selected?.isActive || isSaving}>
+              {isSaving ? 'Asignando…' : selected ? `Asignar a ${selected.fullName}` : 'Elegí un docente'}
+            </button>
+          </div>
         </div>
       </form>
     </ModalShell>
