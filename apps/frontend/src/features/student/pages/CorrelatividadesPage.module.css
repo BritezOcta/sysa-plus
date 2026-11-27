@@ -1,0 +1,27 @@
+.reqs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.req {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mark {
+  font-weight: 700;
+  width: 1em;
+  text-align: center;
+}
+
+.met {
+  color: var(--sa-ok);
+}
+
+.unmet {
+  color: var(--sa-danger);
+}

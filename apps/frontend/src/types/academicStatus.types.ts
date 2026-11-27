@@ -9,6 +9,11 @@ export interface StatusMissingRequirement {
   requiredCondition: 'APROBADA' | 'REGULAR'
 }
 
+/** Correlativa con indicación de si el alumno ya la cumple. */
+export interface StatusRequirement extends StatusMissingRequirement {
+  met: boolean
+}
+
 export interface SubjectStatusRow {
   studyPlanSubjectId: number
   subjectCode: string
@@ -25,6 +30,8 @@ export interface SubjectStatusRow {
   canTakeExam: boolean
   missingToEnroll: StatusMissingRequirement[]
   missingForExam: StatusMissingRequirement[]
+  requirementsToEnroll: StatusRequirement[]
+  requirementsForExam: StatusRequirement[]
 }
 
 export interface AcademicHistoryEntry {

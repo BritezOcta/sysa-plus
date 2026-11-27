@@ -12,11 +12,10 @@ import { CambioPasswordPage } from "./pages/CambioPasswordPage";
 import { CertificadosPage } from "./pages/CertificadosPage";
 import { CursadoPage } from "./pages/CursadoPage";
 import { AsistenciasPage } from "./pages/AsistenciasPage";
+import { CorrelatividadesPage } from "./pages/CorrelatividadesPage";
 
 /** Opciones del menú que todavía no tienen pantalla propia */
 const PLACEHOLDERS = [
-  "correlatividad-cursar",
-  "correlatividad-rendir",
   "bee",
   "censo",
   "avisos",
@@ -57,6 +56,9 @@ export function StudentArea({ user, onLogout }: Props) {
         <Route path="inscripcion-cursado" element={<EnrollmentPage />} />
         {/* RF-05: consulta de asistencias */}
         <Route path="asistencias" element={<AsistenciasPage />} />
+        {/* Cuadro completo de correlatividades del plan */}
+        <Route path="correlatividad-cursar" element={<CorrelatividadesPage mode="cursar" />} />
+        <Route path="correlatividad-rendir" element={<CorrelatividadesPage mode="rendir" />} />
         {/* RF-11: generación y descarga de certificados */}
         <Route path="certificados" element={<CertificadosPage />} />
         <Route path="password" element={<CambioPasswordPage />} />
