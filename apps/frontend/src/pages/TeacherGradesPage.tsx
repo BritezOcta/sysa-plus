@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   teacherApi,
   type AssessmentItem,
@@ -9,8 +9,12 @@ import {
   type TeacherCommissionSummary,
   type TeacherExamCallSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES } from "../constants";
-import styles from "./TeacherGradesPage.module.css";
+import pageStyles from "./TeacherGradesPage.module.css";
+import sharedStyles from "./TeacherShared.module.css";
+import common from "../features/student/common.module.css";
+
+// Controles comunes del profesor + estilos propios de la página (los propios tienen prioridad).
+const styles = { ...sharedStyles, ...pageStyles };
 
 type StudentRow = CommissionGradesResponse["students"][number];
 
@@ -415,13 +419,11 @@ export default function TeacherGradesPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <Link to={APP_ROUTES.TEACHER_AREA} className={styles.backLink}>
-            ← Volver al Panel Docente
-          </Link>
-          <h1 className={styles.title}>Carga de Notas y Cierre de Actas</h1>
+          <h1 className={common.title}>Carga de Notas y Cierre de Actas</h1>
+          <p className={common.subtitle}>Cargá notas de parciales y finales, y cerrá las actas</p>
         </div>
       </header>
 

@@ -1,10 +1,12 @@
 import { AppError } from "../lib/AppError.js";
+import { evaluateRequirements } from "../lib/correlativityRequirements.js";
 import { academicStatusRepository as repo } from "../repositories/academicStatus.repository.js";
-import { CORRELATIVITY_TYPE, ENROLLMENT_STATUS, FINAL_EXAM_PASSING_GRADE } from "../types/academic.js";
+import { ENROLLMENT_STATUS, FINAL_EXAM_PASSING_GRADE } from "../types/academic.js";
 import type {
   AcademicStatusDto,
   HistoryEntryDto,
   MissingRequirementDto,
+  RequirementDto,
   SubjectStatus,
   SubjectStatusDto,
 } from "../types/academicStatus.js";
@@ -102,14 +104,6 @@ function statusOf(r: SubjectRecord | undefined): SubjectStatus {
   return r.lastFailure ?? "PENDIENTE";
 }
 
-function toMissing(req: PlanSubject["requirements"][number], requiredCondition: "APROBADA" | "REGULAR"): MissingRequirementDto {
-  return {
-    studyPlanSubjectId: req.requiredSubject.studyPlanSubjectId,
-    subjectCode: req.requiredSubject.subject.subjectCode,
-    subjectName: req.requiredSubject.subject.subjectName,
-    requiredCondition,
-  };
-}
 
 /** RF-09 Error Handling: una correlativa que apunta a otro plan es un dato roto, no un requisito. */
 function assertConsistentCorrelativities(subjects: PlanSubject[], studyPlanId: number) {
@@ -179,30 +173,17 @@ export const academicStatusService = {
 
     const records = buildRecords(courses, exams, today);
     const statusById = new Map(planSubjects.map((sps) => [sps.studyPlanSubjectId, statusOf(records.get(sps.studyPlanSubjectId))]));
-    // Una correlativa inactiva (fuera de statusById) cuenta como no cumplida.
-    const isApproved = (id: number) => statusById.get(id) === "APROBADA";
-    const isRegularOrApproved = (id: number) => isApproved(id) || statusById.get(id) === "REGULAR";
 
     const subjects: SubjectStatusDto[] = planSubjects.map((sps) => {
       const status = statusById.get(sps.studyPlanSubjectId)!;
       const record = records.get(sps.studyPlanSubjectId);
 
-      const missingToEnroll: MissingRequirementDto[] = [];
-      const missingForExam: MissingRequirementDto[] = [];
-      for (const req of sps.requirements) {
-        const id = req.requiredSubject.studyPlanSubjectId;
-        switch (req.correlativityType) {
-          case CORRELATIVITY_TYPE.APPROVED_TO_ENROLL:
-            if (!isApproved(id)) missingToEnroll.push(toMissing(req, "APROBADA"));
-            break;
-          case CORRELATIVITY_TYPE.REGULAR_TO_ENROLL:
-            if (!isRegularOrApproved(id)) missingToEnroll.push(toMissing(req, "REGULAR"));
-            break;
-          case CORRELATIVITY_TYPE.APPROVED_FOR_EXAM:
-            if (!isApproved(id)) missingForExam.push(toMissing(req, "APROBADA"));
-            break;
-        }
-      }
+      // Una correlativa inactiva (fuera de statusById) cuenta como no cumplida.
+      const requirements = evaluateRequirements(sps.requirements, (id) => statusById.get(id));
+      const missing = (list: RequirementDto[]): MissingRequirementDto[] =>
+        list.filter((r) => !r.met).map(({ met: _met, ...rest }) => rest);
+      const missingToEnroll = missing(requirements.toEnroll);
+      const missingForExam = missing(requirements.forExam);
 
       const canBeTaken = status === "PENDIENTE" || status === "LIBRE" || status === "DESAPROBADA";
       // Mismo criterio que la inscripción a mesas (RF-06): con la regularidad vencida no se rinde como regular.
@@ -226,6 +207,8 @@ export const academicStatusService = {
         canTakeExam: status === "REGULAR" && regularityValid && missingForExam.length === 0,
         missingToEnroll: canBeTaken ? missingToEnroll : [],
         missingForExam: status === "REGULAR" ? missingForExam : [],
+        requirementsToEnroll: requirements.toEnroll,
+        requirementsForExam: requirements.forExam,
       };
     });
 

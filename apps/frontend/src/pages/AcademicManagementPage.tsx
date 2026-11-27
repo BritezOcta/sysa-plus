@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import CurriculumCanvas from "../components/academic/canvas/CurriculumCanvas";
 import ActiveCareerWorkspaceHeader from "../components/academic/careers/ActiveCareerWorkspaceHeader";
 import CareerFormModal from "../components/academic/careers/CareerFormModal";
@@ -12,9 +11,8 @@ import {
 } from "../components/academic/modals";
 import SubjectFormModal from "../components/academic/subjects/SubjectFormModal";
 import CurriculumTableView from "../components/academic/table/CurriculumTableView";
-import TopNavbar from "../components/layout/TopNavbar";
 import ToastViewport from "../components/ui/ToastViewport";
-import { VIEW_MODES, APP_ROUTES } from "../constants";
+import { VIEW_MODES } from "../constants";
 import { useAcademicManagement } from "../hooks";
 import styles from "./AcademicManagementPage.module.css";
 import { useState } from "react";
@@ -74,47 +72,29 @@ export default function AcademicManagementPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar
-        onReloadData={handleReloadData}
-        auditCount={auditLogs.length}
-        unreadAuditCount={unreadAuditCount}
-        onOpenAuditDrawer={openAuditDrawer}
-      />
-
       <main className={styles.mainContent}>
-        <nav
-          aria-label="Accesos de administración"
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            flexWrap: "wrap",
-            marginBottom: "1rem",
-          }}
+        {/* Acciones de la página (antes estaban en la barra superior del administrador). */}
+        <div
+          className={styles.navControls}
+          style={{ justifyContent: "flex-end", marginBottom: "1rem" }}
         >
-          <Link
-            to={APP_ROUTES.ADMIN_STUDENTS}
-            style={{
-              padding: "0.5rem 0.9rem",
-              borderRadius: 6,
-              border: "1px solid #cbd5e1",
-              textDecoration: "none",
-              fontWeight: 500,
-            }}
+          <button
+            type="button"
+            onClick={handleReloadData}
+            className={styles.resetMockBtn}
           >
-            Listado de Alumnos y Observaciones
-          </Link>
-          <Link
-            to={APP_ROUTES.ADMIN_REPORTS}
-            style={{
-              padding: "0.5rem 0.9rem",
-              borderRadius: 6,
-              border: "1px solid #cbd5e1",
-              textDecoration: "none",
-              fontWeight: 500,
-            }}
+            Recargar datos
+          </button>
+          <button
+            type="button"
+            onClick={openAuditDrawer}
+            className={styles.auditBtn}
           >
-            Reportes Académicos
-          </Link>
+            Auditoría ({auditLogs.length})
+            {unreadAuditCount > 0 && (
+              <span className={styles.unreadDot}>+{unreadAuditCount}</span>
+            )}
+          </button>
           <button
             type="button"
             onClick={() => setNoticeModalOpen(true)}
@@ -130,7 +110,7 @@ export default function AcademicManagementPage() {
           >
             + Nuevo aviso
           </button>
-        </nav>
+        </div>
         <CareersSection
           careers={careers}
           activeCareerId={activeCareer?.id}

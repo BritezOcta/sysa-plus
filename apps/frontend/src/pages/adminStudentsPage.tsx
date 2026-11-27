@@ -6,7 +6,6 @@ import {
 } from '../api/adminStudents.api'
 import adminStyles from '../components/admin/AdminPages.module.css'
 import tableStyles from '../components/academic/CurriculumTableView.module.css'
-import TopNavbar from '../components/layout/TopNavbar'
 import styles from './AcademicManagementPage.module.css'
 
 /** Porcentaje mínimo de asistencia para no quedar libre (RF-05 / RF-07). */
@@ -120,7 +119,6 @@ export default function AdminStudentsPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar />
 
       <main className={styles.mainContent}>
         <section className={styles.careersSection}>

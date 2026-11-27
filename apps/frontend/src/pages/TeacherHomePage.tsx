@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { teacherApi, type TeacherCommissionSummary } from "../api/teacher.api";
 import { APP_ROUTES } from "../constants";
+import { useAuth } from "../auth/AuthContext";
 import styles from "./TeacherHomePage.module.css";
+import common from "../features/student/common.module.css";
 
 export default function TeacherHomePage() {
+  const { user } = useAuth();
   const [commissions, setCommissions] = useState<TeacherCommissionSummary[]>(
     [],
   );
@@ -33,7 +36,21 @@ export default function TeacherHomePage() {
   }, []);
 
   return (
-    <div className={styles.page}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
+        <div>
+          <div>
+            <h1 className={common.title}>Panel Docente</h1>
+            <p className={common.subtitle}>
+              Bienvenido/a,{" "}
+              {user ? `${user.firstName} ${user.lastName}` : "Docente"}{" "}
+              <span className={styles.role}>· Profesor</span>
+            </p>
+          </div>
+        </div>
+
+      </header>
+
       <main className={styles.container}>
         <section>
           <h2 className={styles.sectionTitle}>Accesos rápidos</h2>

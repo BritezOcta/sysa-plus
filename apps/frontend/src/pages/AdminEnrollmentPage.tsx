@@ -14,7 +14,6 @@ import adminStyles from '../components/admin/AdminPages.module.css'
 import tableStyles from '../components/academic/CurriculumTableView.module.css'
 import { ConfirmActionModal } from '../components/academic/modals'
 import { CommissionModal, ExamCallModal, PeriodModal, SessionModal } from '../components/adminCalendar/CalendarModals'
-import TopNavbar from '../components/layout/TopNavbar'
 import ToastViewport from '../components/ui/ToastViewport'
 import { useToastNotifications } from '../hooks/useToastNotifications'
 import type { ConfirmDialogConfig } from '../types'
@@ -154,7 +153,6 @@ export default function AdminEnrollmentPage() {
 
   return (
     <div className={styles.pageLayout}>
-      <TopNavbar />
 
       <main className={styles.mainContent}>
         <section className={styles.careersSection}>
