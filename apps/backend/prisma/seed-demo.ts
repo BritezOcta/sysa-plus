@@ -707,11 +707,94 @@ async function seedCurrentCourses() {
   );
 }
 
+// ===========================================================================
+// 5. Asistencias de las cursadas en curso (RF-05)
+//
+// Va aparte para cargarse sobre una base ya sembrada. Cada clase es semanal desde el inicio
+// del cuatrimestre; solo se crean las que ya pasaron. Tardanza = ½ asistencia; null = sin registro.
+//
+// Casos de prueba para Lucía (33333333), con las 10 / 8 clases completas:
+//   - Física I 1K1             → P,P,T,P,J,P,P,P,–,P = 8,5 de 10 → 85%.
+//   - Análisis de Sistemas 2K1 → P,A,A,P,A,P,A,–     = 3 de 8    → 38%: riesgo de quedar libre.
+// ===========================================================================
+
+type SeedAttendance = "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "TARDANZA" | null;
+
+const CURRENT_ATTENDANCE: { subject: SubjectCode; commission: string; topics: string[]; statuses: SeedAttendance[] }[] = [
+  {
+    subject: "FIS1",
+    commission: "1K1",
+    topics: ["Magnitudes y unidades", "Cinemática", "Movimiento en el plano", "Dinámica", "Trabajo y energía",
+      "Impulso", "Rotación", "Estática", "Fluidos", "Repaso para el parcial"],
+    statuses: ["PRESENTE", "PRESENTE", "TARDANZA", "PRESENTE", "JUSTIFICADO", "PRESENTE", "PRESENTE", "PRESENTE", null, "PRESENTE"],
+  },
+  {
+    subject: "ADS",
+    commission: "2K1",
+    topics: ["Sistemas de información", "Relevamiento", "Entrevistas", "Casos de uso", "Diagramas de actividad",
+      "Requerimientos", "Prototipos", "Revisión de entregas"],
+    statuses: ["PRESENTE", "AUSENTE", "AUSENTE", "PRESENTE", "AUSENTE", "PRESENTE", "AUSENTE", null],
+  },
+];
+
+async function seedCurrentAttendance() {
+  const now = new Date();
+  const today = utcDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const ongoing = { year: now.getFullYear(), semester: now.getMonth() < 7 ? 1 : 2 };
+
+  for (const c of CURRENT_ATTENDANCE) {
+    const offering = await prisma.courseOffering.findFirst({
+      where: {
+        commission: c.commission,
+        academicPeriod: ongoing,
+        studyPlanSubject: { subject: { subjectCode: c.subject }, studyPlan: { career: { careerCode: "ISI" } } },
+      },
+      select: {
+        courseOfferingId: true,
+        academicPeriod: { select: { periodStartDate: true } },
+        _count: { select: { classSessions: true } },
+        courseEnrollments: {
+          where: { studentCareer: { studentProfile: { user: { dni: "33333333" } } } },
+          select: { courseEnrollmentId: true },
+        },
+      },
+    });
+    const enrollment = offering?.courseEnrollments[0];
+    if (!offering || !enrollment) {
+      console.log(`No existe la cursada en curso ${c.subject} ${c.commission} de Lucía. Omitiendo sus asistencias.`);
+      continue;
+    }
+    if (offering._count.classSessions > 0) {
+      console.log(`${c.subject} ${c.commission} ya tiene clases cargadas. Omitiendo sus asistencias.`);
+      continue;
+    }
+
+    let created = 0;
+    for (const [i, status] of c.statuses.entries()) {
+      const sessionDate = addDays(offering.academicPeriod.periodStartDate, i * 7);
+      if (sessionDate > today) break;
+      await prisma.classSession.create({
+        data: {
+          courseOfferingId: offering.courseOfferingId,
+          sessionDate,
+          sessionTopic: c.topics[i] ?? null,
+          ...(status
+            ? { attendances: { create: { courseEnrollmentId: enrollment.courseEnrollmentId, attendanceStatus: status } } }
+            : {}),
+        },
+      });
+      created++;
+    }
+    console.log(`✔ Asistencias de Lucía en ${c.subject} ${c.commission}: ${created} clases`);
+  }
+}
+
 async function main() {
   await seedUsers();
   await seedAcademicData();
   await seedExamSession();
   await seedCurrentCourses();
+  await seedCurrentAttendance();
 }
 
 main()
