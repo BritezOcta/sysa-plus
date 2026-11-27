@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useAuth, useAuthenticatedUser } from "../../auth/AuthContext";
 import { APP_ROUTES, ROLE_LABELS } from "../../constants";
@@ -45,6 +46,9 @@ export function TeacherShell() {
  */
 export function AccountShell() {
   const user = useAuthenticatedUser();
-  if (user.mustChangePassword) return <Outlet />;
+  // Se decide una sola vez al entrar: si cambiara al guardar, el formulario se volvería a montar
+  // y se perdería el mensaje de "contraseña actualizada".
+  const [bare] = useState(user.mustChangePassword);
+  if (bare) return <Outlet />;
   return user.role === "ADMINISTRADOR" ? <AdminShell /> : <TeacherShell />;
 }
