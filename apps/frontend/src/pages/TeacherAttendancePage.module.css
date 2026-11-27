@@ -1,32 +1,3 @@
-.page {
-  min-height: 100vh;
-  background-color: #f3f6fa;
-  padding: 2rem;
-  color: #1e293b;
-}
-
-.header,
-.container {
-  max-width: 1150px;
-  margin: 0 auto;
-}
-
-.header {
-  margin-bottom: 1.5rem;
-}
-
-.backLink {
-  color: #0284c7;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.title {
-  margin: 0.35rem 0 0;
-  font-size: 1.5rem;
-}
-
 .container {
   display: flex;
   flex-direction: column;
@@ -35,9 +6,9 @@
 
 .controlsCard,
 .tableCard {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
   padding: 1.25rem;
 }
 
@@ -57,16 +28,16 @@
 
 .input {
   padding: 0.55rem 0.75rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--sa-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: #ffffff;
+  background: var(--sa-surface);
 }
 
 .hint {
   font-size: 0.75rem;
   font-weight: 400;
-  color: #64748b;
+  color: var(--sa-text-muted);
 }
 
 .errorBanner,
@@ -81,23 +52,23 @@
 }
 
 .errorBanner {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--sa-danger-soft);
+  color: var(--sa-danger);
+  border: 1px solid color-mix(in srgb, var(--sa-danger) 40%, transparent);
 }
 
 .warningBanner {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background: var(--sa-warn-soft);
+  color: var(--sa-warn);
+  border: 1px solid color-mix(in srgb, var(--sa-warn) 40%, transparent);
 }
 
 .editBtn {
   padding: 0.45rem 0.85rem;
-  border: 1px solid #92400e;
+  border: 1px solid var(--sa-warn);
   border-radius: 6px;
-  background: #ffffff;
-  color: #92400e;
+  background: var(--sa-surface);
+  color: var(--sa-warn);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -117,16 +88,16 @@
 
 .secondaryBtn {
   padding: 0.45rem 0.85rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--sa-border);
   border-radius: 8px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--sa-surface-2);
+  color: var(--sa-text);
   font-weight: 600;
   cursor: pointer;
 }
 
 .secondaryBtn:hover {
-  background: #e2e8f0;
+  background: var(--sa-surface-2);
 }
 
 .table {
@@ -139,7 +110,7 @@
 .table td {
   text-align: left;
   padding: 0.75rem 0.6rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--sa-border);
 }
 
 .statusGroup {
@@ -166,30 +137,30 @@
 }
 
 .badgeRegular {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--sa-ok-soft);
+  color: var(--sa-ok);
 }
 
 .badgeRisk {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--sa-warn-soft);
+  color: var(--sa-warn);
 }
 
 .badgeLibre {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--sa-danger-soft);
+  color: var(--sa-danger);
 }
 
 .formError {
   margin: 1rem 0 0;
-  color: #b91c1c;
+  color: var(--sa-danger);
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .formSuccess {
   margin: 1rem 0 0;
-  color: #15803d;
+  color: var(--sa-ok);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -204,12 +175,12 @@
   padding: 0.65rem 1.3rem;
   border: none;
   border-radius: 8px;
-  background: #0284c7;
+  background: var(--sa-accent);
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
 }
 
 .saveBtn:hover {
-  background: #0369a1;
+  background: var(--sa-accent-strong);
 }

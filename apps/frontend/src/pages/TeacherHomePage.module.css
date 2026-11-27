@@ -1,68 +1,13 @@
-.page {
-  min-height: 100vh;
-  background-color: #f3f6fa;
-  color: #1e293b;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
 .logo {
   height: 36px;
 }
 
-.title {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
 .role {
-  color: #0284c7;
+  color: var(--sa-accent);
   font-weight: 600;
-}
-
-.logoutButton {
-  padding: 0.55rem 1.1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #0284c7;
-  color: #ffffff;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.headerActions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.logoutButton:hover {
-  background-color: #0369a1;
 }
 
 .container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -82,24 +27,23 @@
 
 .moduleCard,
 .commissionCard {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background-color: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
   padding: 1.25rem;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--sa-shadow);
 }
 
 .moduleCard {
-  transition:
-    transform 0.15s ease,
+  transition: transform 0.15s ease,
     border-color 0.15s ease;
 }
 
 .moduleCard:hover {
   transform: translateY(-2px);
-  border-color: #0284c7;
+  border-color: var(--sa-accent);
 }
 
 .moduleCard h3,
@@ -113,7 +57,7 @@
 .meta {
   margin: 0.25rem 0;
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--sa-text-muted);
 }
 
 .commissionHeader {
@@ -124,8 +68,8 @@
 }
 
 .badge {
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: var(--sa-accent-soft);
+  color: var(--sa-accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.25rem 0.6rem;
@@ -144,14 +88,14 @@
   text-align: center;
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background-color: var(--sa-surface-2);
+  color: var(--sa-text);
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .actionBtn:hover {
-  background-color: #0284c7;
+  background-color: var(--sa-accent);
   color: #ffffff;
 }

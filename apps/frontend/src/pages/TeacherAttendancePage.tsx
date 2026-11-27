@@ -9,6 +9,7 @@ import {
 import { ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
 import type { AttendanceStatus } from "../types/teacherAttendance.types";
 import styles from "./TeacherAttendancePage.module.css";
+import common from "../features/student/common.module.css";
 
 
 function getTodayIso(): string {
@@ -198,10 +199,11 @@ export default function TeacherAttendancePage() {
   const students = attendanceData?.students ?? [];
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <h1 className={styles.title}>Registro y Consulta de Asistencias</h1>
+          <h1 className={common.title}>Registro y Consulta de Asistencias</h1>
+          <p className={common.subtitle}>Tomá asistencia por clase y consultá el acumulado de cada alumno</p>
         </div>
       </header>
 

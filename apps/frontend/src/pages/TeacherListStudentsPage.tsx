@@ -7,6 +7,7 @@ import {
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
 import styles from "./TeacherListStudentsPage.module.css";
+import common from "../features/student/common.module.css";
 
 export default function TeacherListStudentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -149,10 +150,11 @@ export default function TeacherListStudentsPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <h1 className={styles.title}>Alumnos Inscriptos y Observaciones</h1>
+          <h1 className={common.title}>Alumnos Inscriptos y Observaciones</h1>
+          <p className={common.subtitle}>Consultá tus alumnos por comisión y registrá observaciones</p>
         </div>
       </header>
 

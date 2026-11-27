@@ -10,6 +10,7 @@ import {
   type TeacherExamCallSummary,
 } from "../api/teacher.api";
 import styles from "./TeacherGradesPage.module.css";
+import common from "../features/student/common.module.css";
 
 type StudentRow = CommissionGradesResponse["students"][number];
 
@@ -414,10 +415,11 @@ export default function TeacherGradesPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={common.page}>
+      <header className={common.pageHeader}>
         <div>
-          <h1 className={styles.title}>Carga de Notas y Cierre de Actas</h1>
+          <h1 className={common.title}>Carga de Notas y Cierre de Actas</h1>
+          <p className={common.subtitle}>Cargá notas de parciales y finales, y cerrá las actas</p>
         </div>
       </header>
 
