@@ -24,6 +24,7 @@ import TeacherListStudentsPage from "./pages/TeacherListStudentsPage";
 import AdminStudentsPage from "./pages/adminStudentsPage";
 import AdminRecordsPage from "./pages/AdminRecordsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
 
 function StudentRoute() {
   const navigate = useNavigate();
@@ -82,6 +83,14 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AdminStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.ADMIN_REPORTS}
+            element={
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
+                <AdminReportsPage />
               </ProtectedRoute>
             }
           />

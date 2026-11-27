@@ -1,21 +1,22 @@
-import CurriculumCanvas from '../components/academic/canvas/CurriculumCanvas'
-import ActiveCareerWorkspaceHeader from '../components/academic/careers/ActiveCareerWorkspaceHeader'
-import CareerFormModal from '../components/academic/careers/CareerFormModal'
-import CareersSection from '../components/academic/careers/CareersSection'
+import { Link } from "react-router";
+import CurriculumCanvas from "../components/academic/canvas/CurriculumCanvas";
+import ActiveCareerWorkspaceHeader from "../components/academic/careers/ActiveCareerWorkspaceHeader";
+import CareerFormModal from "../components/academic/careers/CareerFormModal";
+import CareersSection from "../components/academic/careers/CareersSection";
 import {
   AuditDrawer,
   CircularConflictModal,
   ConfirmActionModal,
   NetworkErrorModal,
   StudentDeletionBlockModal,
-} from '../components/academic/modals'
-import SubjectFormModal from '../components/academic/subjects/SubjectFormModal'
-import CurriculumTableView from '../components/academic/table/CurriculumTableView'
-import TopNavbar from '../components/layout/TopNavbar'
-import ToastViewport from '../components/ui/ToastViewport'
-import { VIEW_MODES } from '../constants'
-import { useAcademicManagement } from '../hooks'
-import styles from './AcademicManagementPage.module.css'
+} from "../components/academic/modals";
+import SubjectFormModal from "../components/academic/subjects/SubjectFormModal";
+import CurriculumTableView from "../components/academic/table/CurriculumTableView";
+import TopNavbar from "../components/layout/TopNavbar";
+import ToastViewport from "../components/ui/ToastViewport";
+import { VIEW_MODES, APP_ROUTES } from "../constants";
+import { useAcademicManagement } from "../hooks";
+import styles from "./AcademicManagementPage.module.css";
 
 export default function AcademicManagementPage() {
   const {
@@ -67,7 +68,7 @@ export default function AcademicManagementPage() {
     handleCycleCorrelativityType,
     handleRemoveCorrelativity,
     handleResetMockData,
-  } = useAcademicManagement()
+  } = useAcademicManagement();
 
   return (
     <div className={styles.pageLayout}>
@@ -81,6 +82,40 @@ export default function AcademicManagementPage() {
       />
 
       <main className={styles.mainContent}>
+        <nav
+          aria-label="Accesos de administración"
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+            marginBottom: "1rem",
+          }}
+        >
+          <Link
+            to={APP_ROUTES.ADMIN_STUDENTS}
+            style={{
+              padding: "0.5rem 0.9rem",
+              borderRadius: 6,
+              border: "1px solid #cbd5e1",
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
+            Listado de Alumnos y Observaciones
+          </Link>
+          <Link
+            to={APP_ROUTES.ADMIN_REPORTS}
+            style={{
+              padding: "0.5rem 0.9rem",
+              borderRadius: 6,
+              border: "1px solid #cbd5e1",
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
+            Reportes Académicos
+          </Link>
+        </nav>
         <CareersSection
           careers={careers}
           activeCareerId={activeCareer?.id}
@@ -203,5 +238,5 @@ export default function AcademicManagementPage() {
 
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </div>
-  )
+  );
 }

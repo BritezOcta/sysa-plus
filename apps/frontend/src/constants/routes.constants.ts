@@ -13,6 +13,7 @@ export const APP_ROUTES = {
   TEACHER_STUDENTS: "/profesor/alumnos",
   ADMIN_STUDENTS: "/admin/alumnos",
   ADMIN_RECORDS: "/admin/actas",
+  ADMIN_REPORTS: "/admin/reportes",
   CHANGE_PASSWORD: "/cuenta/contrasena",
 } as const;
 
