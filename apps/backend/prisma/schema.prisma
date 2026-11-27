@@ -115,6 +115,7 @@ model CourseEnrollment {
   assessmentGrades   AssessmentGrade[]
   attendances        Attendance[]
   studentObservations StudentObservation[]
+  surveySubmission   SurveySubmission?
   courseOffering     CourseOffering    @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_CE_OFFERING")
   studentCareer      StudentCareer     @relation(fields: [studentCareerId], references: [studentCareerId], onUpdate: NoAction, map: "FK_CE_STUDENT_CAREER")
 
@@ -139,6 +140,7 @@ model CourseOffering {
   academicPeriod     AcademicPeriod      @relation(fields: [academicPeriodId], references: [academicPeriodId], onUpdate: NoAction, map: "FK_CO_PERIOD")
   studyPlanSubject   StudyPlanSubject    @relation(fields: [studyPlanSubjectId], references: [studyPlanSubjectId], onUpdate: NoAction, map: "FK_CO_SPS")
   teacherAssignments TeacherAssignment[]
+  surveyResponses    SurveyResponse[]
 
   @@unique([studyPlanSubjectId, academicPeriodId, commission], map: "UQ_COURSE_OFFERING")
   @@index([academicPeriodId], map: "IX_CO_PERIOD")
@@ -420,4 +422,31 @@ model Certificate {
 
   @@index([studentCareerId], map: "IX_CERT_STUDENT_CAREER")
   @@map("CERTIFICATE")
+}
+
+/// Encuesta docente: registra solo QUE el alumno respondió (una vez por cursada). Lo que respondió está en SurveyResponse.
+model SurveySubmission {
+  surveySubmissionId Int              @id(map: "PK_SURVEY_SUBMISSION") @default(autoincrement()) @map("SURVEY_SUBMISSION_ID")
+  courseEnrollmentId Int              @unique(map: "UQ_SURVEY_SUBMISSION_ENROLLMENT") @map("COURSE_ENROLLMENT_ID")
+  submittedAt        DateTime         @default(now(), map: "DF_SURVEY_SUBMISSION_AT") @map("SUBMITTED_AT")
+  courseEnrollment   CourseEnrollment @relation(fields: [courseEnrollmentId], references: [courseEnrollmentId], onUpdate: NoAction, map: "FK_SS_ENROLLMENT")
+
+  @@map("SURVEY_SUBMISSION")
+}
+
+/// Respuesta anónima a la encuesta docente: sin referencia al alumno ni fecha, a propósito.
+/// El id es un UUID aleatorio (no autoincremental) para que el orden de inserción no permita cruzarla con SurveySubmission.
+model SurveyResponse {
+  surveyResponseId String         @id(map: "PK_SURVEY_RESPONSE") @default(uuid()) @map("SURVEY_RESPONSE_ID") @db.UniqueIdentifier
+  courseOfferingId Int            @map("COURSE_OFFERING_ID")
+  q1               Int            @map("Q1") @db.TinyInt
+  q2               Int            @map("Q2") @db.TinyInt
+  q3               Int            @map("Q3") @db.TinyInt
+  q4               Int            @map("Q4") @db.TinyInt
+  q5               Int            @map("Q5") @db.TinyInt
+  comment          String?        @map("COMMENT") @db.NVarChar(1000)
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [courseOfferingId], onUpdate: NoAction, map: "FK_SR_OFFERING")
+
+  @@index([courseOfferingId], map: "IX_SR_OFFERING")
+  @@map("SURVEY_RESPONSE")
 }

@@ -586,10 +586,132 @@ async function seedExamSession() {
   );
 }
 
+// ===========================================================================
+// 4. Cursadas en curso con notas de parciales (Cursado / Notas / Encuestas)
+//
+// Va aparte para poder cargarse sobre una base ya sembrada. Las validaciones de
+// RF-04 son por período, así que no alteran los casos del próximo cuatrimestre.
+//
+// Casos de prueba para Lucía (33333333) en el cuatrimestre que se está cursando hoy:
+//   - Física I 1K1             → 1er Parcial 4 (definitiva), recuperatorio sin nota,
+//                                2do Parcial 7,5 (provisoria). Encuesta disponible.
+//                                Docente 22222222: puede seguir cargando notas.
+//   - Análisis de Sistemas 2K1 → sin evaluaciones cargadas. Encuesta disponible.
+// ===========================================================================
+
+async function seedCurrentCourses() {
+  const now = new Date();
+  const today = utcDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const ongoing = { year: now.getFullYear(), semester: now.getMonth() < 7 ? 1 : 2 };
+  const dates = semesterDates(ongoing.year, ongoing.semester);
+  if (today < dates.periodStartDate || today > dates.periodEndDate) {
+    console.log("Hoy no hay un cuatrimestre en curso (receso). Omitiendo seed de cursadas en curso.");
+    return;
+  }
+
+  const lucia = await prisma.studentCareer.findFirst({
+    where: { studentProfile: { user: { dni: "33333333" } }, career: { careerCode: "ISI" } },
+    select: { studentCareerId: true },
+  });
+  if (!lucia) {
+    console.log("No existe Lucía en la carrera ISI. Omitiendo seed de cursadas en curso.");
+    return;
+  }
+
+  const period =
+    (await prisma.academicPeriod.findUnique({ where: { year_semester: ongoing } })) ??
+    (await prisma.academicPeriod.create({ data: { ...ongoing, ...dates } }));
+
+  const already = await prisma.courseEnrollment.count({
+    where: { studentCareerId: lucia.studentCareerId, courseOffering: { academicPeriodId: period.academicPeriodId } },
+  });
+  if (already > 0) {
+    console.log("Lucía ya tiene cursadas en el cuatrimestre en curso. Omitiendo seed de cursadas en curso.");
+    return;
+  }
+
+  console.log("Inicializando cursadas en curso con notas de parciales...");
+
+  const spsOf = async (code: SubjectCode) =>
+    (
+      await prisma.studyPlanSubject.findFirstOrThrow({
+        where: { subject: { subjectCode: code }, studyPlan: { career: { careerCode: "ISI" } } },
+        select: { studyPlanSubjectId: true },
+      })
+    ).studyPlanSubjectId;
+  const teacher = await prisma.teacherProfile.findFirst({ where: { user: { dni: "22222222" } } });
+
+  async function ongoingCourse(code: SubjectCode, commission: string) {
+    const offering = await prisma.courseOffering.create({
+      data: {
+        studyPlanSubjectId: await spsOf(code),
+        academicPeriodId: period.academicPeriodId,
+        commission,
+        capacity: 40,
+        offeringStatus: OFFERING_STATUS.ABIERTA,
+        ...(teacher ? { teacherAssignments: { create: { teacherId: teacher.teacherId } } } : {}),
+      },
+    });
+    const enrollment = await prisma.courseEnrollment.create({
+      data: {
+        studentCareerId: lucia!.studentCareerId,
+        courseOfferingId: offering.courseOfferingId,
+        enrollmentDate: dates.periodStartDate,
+        enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO,
+      },
+    });
+    return { offeringId: offering.courseOfferingId, enrollmentId: enrollment.courseEnrollmentId };
+  }
+
+  const fis1 = await ongoingCourse("FIS1", "1K1");
+  const parcial1 = await prisma.assessment.create({
+    data: {
+      courseOfferingId: fis1.offeringId,
+      assessmentName: "1er Parcial",
+      assessmentType: "PARCIAL",
+      assessmentDate: addDays(dates.periodStartDate, 35),
+      maxScore: 10,
+      isClosed: true,
+    },
+  });
+  await prisma.assessment.create({
+    data: {
+      courseOfferingId: fis1.offeringId,
+      assessmentName: "Recuperatorio 1er Parcial",
+      assessmentType: "RECUPERATORIO",
+      maxScore: 10,
+      recoversAssessmentId: parcial1.assessmentId,
+    },
+  });
+  const parcial2 = await prisma.assessment.create({
+    data: {
+      courseOfferingId: fis1.offeringId,
+      assessmentName: "2do Parcial",
+      assessmentType: "PARCIAL",
+      assessmentDate: addDays(dates.periodStartDate, 80),
+      maxScore: 10,
+    },
+  });
+  await prisma.assessmentGrade.createMany({
+    data: [
+      { assessmentId: parcial1.assessmentId, courseEnrollmentId: fis1.enrollmentId, gradeScore: 4 },
+      { assessmentId: parcial2.assessmentId, courseEnrollmentId: fis1.enrollmentId, gradeScore: 7.5 },
+    ],
+  });
+
+  await ongoingCourse("ADS", "2K1");
+
+  console.log(
+    `✔ Cursadas en curso de Lucía (${ongoing.semester}° cuatrimestre ${ongoing.year}): ` +
+      "Física I con notas de parciales y Análisis de Sistemas sin evaluaciones; encuestas disponibles",
+  );
+}
+
 async function main() {
   await seedUsers();
   await seedAcademicData();
   await seedExamSession();
+  await seedCurrentCourses();
 }
 
 main()
