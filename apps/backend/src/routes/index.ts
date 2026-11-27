@@ -10,6 +10,7 @@ import { teacherRouter } from "./teacher.routes.js";
 import { studentAttendanceRouter } from "./studentAttendance.routes.js";
 import { adminStudentsRouter } from "./adminStudents.routes.js";
 import { adminRecordsRouter } from "./adminRecords.routes.js";
+import { adminReportsRouter } from "./adminReports.routes.js";
 import { teacherAssignmentRouter } from "./teacherAssignment.routes.js";
 
 export const apiRouter = Router();
@@ -24,5 +25,4 @@ apiRouter.use("/exam-enrollments", examEnrollmentRouter);
 apiRouter.use("/teacher", teacherRouter);
 apiRouter.use("/student/attendance", studentAttendanceRouter);
 apiRouter.use("/admin/records", adminRecordsRouter);
-apiRouter.use("/admin/teacher-assignments", teacherAssignmentRouter);
 apiRouter.use("/admin", adminStudentsRouter);

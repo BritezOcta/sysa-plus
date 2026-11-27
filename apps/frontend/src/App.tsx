@@ -26,6 +26,7 @@ import AdminRecordsPage from "./pages/AdminRecordsPage";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import TeacherAssignmentPage from "./pages/TeacherAssignmentPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
 
 function StudentRoute() {
   const navigate = useNavigate();
@@ -72,8 +73,14 @@ function App() {
             }
           />
           {/* RF-11: verificación pública de certificados (sin sesión, la abre el QR). */}
-          <Route path={APP_ROUTES.VERIFY_CERTIFICATE} element={<VerifyCertificatePage />} />
-          <Route path={`${APP_ROUTES.VERIFY_CERTIFICATE}/:code`} element={<VerifyCertificatePage />} />
+          <Route
+            path={APP_ROUTES.VERIFY_CERTIFICATE}
+            element={<VerifyCertificatePage />}
+          />
+          <Route
+            path={`${APP_ROUTES.VERIFY_CERTIFICATE}/:code`}
+            element={<VerifyCertificatePage />}
+          />
           <Route
             path={APP_ROUTES.ACADEMIC_OFFER}
             element={
@@ -87,6 +94,14 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMINISTRADOR"]}>
                 <AdminStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={APP_ROUTES.ADMIN_REPORTS}
+            element={
+              <ProtectedRoute roles={["ADMINISTRADOR"]}>
+                <AdminReportsPage />
               </ProtectedRoute>
             }
           />

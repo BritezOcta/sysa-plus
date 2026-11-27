@@ -13,6 +13,7 @@ export const APP_ROUTES = {
   TEACHER_STUDENTS: "/profesor/alumnos",
   ADMIN_STUDENTS: "/admin/alumnos",
   ADMIN_RECORDS: "/admin/actas",
+  ADMIN_REPORTS: "/admin/reportes",
   ADMIN_TEACHER_ASSIGNMENTS: "/admin/asignacion-docentes",
   CHANGE_PASSWORD: "/cuenta/contrasena",
   VERIFY_CERTIFICATE: "/verificar",
