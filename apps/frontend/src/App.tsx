@@ -29,6 +29,7 @@ import AdminEnrollmentPage from "./pages/AdminEnrollmentPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
+import TeacherLayout from "./components/layout/TeacherLayout";
 
 function StudentRoute() {
   const navigate = useNavigate();
@@ -158,37 +159,29 @@ function App() {
             }
           />
           <Route
-            path={APP_ROUTES.TEACHER_AREA}
             element={
               <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherHomePage />
+                <TeacherLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path={APP_ROUTES.TEACHER_ATTENDANCE}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherAttendancePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.TEACHER_GRADES}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherGradesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={APP_ROUTES.TEACHER_STUDENTS}
-            element={
-              <ProtectedRoute roles={["PROFESOR"]}>
-                <TeacherListStudentsPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route
+              path={APP_ROUTES.TEACHER_AREA}
+              element={<TeacherHomePage />}
+            />
+            <Route
+              path={APP_ROUTES.TEACHER_ATTENDANCE}
+              element={<TeacherAttendancePage />}
+            />
+            <Route
+              path={APP_ROUTES.TEACHER_GRADES}
+              element={<TeacherGradesPage />}
+            />
+            <Route
+              path={APP_ROUTES.TEACHER_STUDENTS}
+              element={<TeacherListStudentsPage />}
+            />
+          </Route>
           <Route
             path={APP_ROUTES.CHANGE_PASSWORD}
             element={

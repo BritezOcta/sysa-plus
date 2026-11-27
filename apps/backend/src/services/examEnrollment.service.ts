@@ -2,7 +2,12 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../lib/AppError.js";
 import { courseEnrollmentRepository } from "../repositories/courseEnrollment.repository.js";
 import { examEnrollmentRepository as repo } from "../repositories/examEnrollment.repository.js";
-import { EXAM_CALL_STATUS, EXAM_STATUS, REGULARITY_VALID_YEARS, type CorrelativityType } from "../types/academic.js";
+import {
+  EXAM_CALL_STATUS,
+  EXAM_STATUS,
+  REGULARITY_VALID_YEARS,
+  type CorrelativityType,
+} from "../types/academic.js";
 import type { AuthUser } from "../types/auth.js";
 import type { MissingRequirementDto } from "../types/courseEnrollment.js";
 import type {
@@ -13,7 +18,13 @@ import type {
   StudentExamEnrollmentDto,
 } from "../types/examEnrollment.js";
 import { AUDIT_ACTIONS, auditService } from "./audit.service.js";
-import { formatDisplayDate, loadStudentContext, todayAsDate, toIsoDate } from "./courseEnrollment.service.js";
+import {
+  formatDisplayDate,
+  loadStudentContext,
+  todayAsDate,
+  toIsoDate,
+} from "./courseEnrollment.service.js";
+import { notificationsService } from "./notifications.service.js";
 
 export const EXAM_ENROLLMENT_ERROR_CODES = {
   INVALID_INPUT: "INVALID_INPUT",
@@ -70,14 +81,20 @@ function toSessionDto(session: SessionRecord, today: Date): ExamSessionDto {
   return {
     examSessionId: session.examSessionId,
     name: session.examName,
-    enrollmentStartDate: session.enrollmentStartDate ? toIsoDate(session.enrollmentStartDate) : "",
-    enrollmentEndDate: session.enrollmentEndDate ? toIsoDate(session.enrollmentEndDate) : "",
+    enrollmentStartDate: session.enrollmentStartDate
+      ? toIsoDate(session.enrollmentStartDate)
+      : "",
+    enrollmentEndDate: session.enrollmentEndDate
+      ? toIsoDate(session.enrollmentEndDate)
+      : "",
     isOpen: isWindowOpen(session, today),
   };
 }
 
 /** Turno a mostrar: el que tiene la inscripción abierta hoy; si no, el próximo; si tampoco, el último. */
-async function resolveCurrentSession(today: Date): Promise<SessionRecord | null> {
+async function resolveCurrentSession(
+  today: Date,
+): Promise<SessionRecord | null> {
   const sessions = await repo.findSessionsWithEnrollmentWindow();
   return (
     sessions.find((s) => isWindowOpen(s, today)) ??
@@ -109,7 +126,10 @@ interface StudentStanding {
   regularSince: Map<number, Date>;
 }
 
-async function loadStanding(studentCareerId: number, today: Date): Promise<StudentStanding> {
+async function loadStanding(
+  studentCareerId: number,
+  today: Date,
+): Promise<StudentStanding> {
   const [history, regularCourses] = await Promise.all([
     courseEnrollmentRepository.findAcademicHistory(studentCareerId),
     repo.findRegularCourses(studentCareerId),
@@ -121,16 +141,22 @@ async function loadStanding(studentCareerId: number, today: Date): Promise<Stude
     // Mientras el cuatrimestre no termina, REGULAR es una condición parcial de RF-05, no el cierre de la cursada.
     if (end >= today) continue;
     const previous = regularSince.get(courseOffering.studyPlanSubjectId);
-    if (!previous || end > previous) regularSince.set(courseOffering.studyPlanSubjectId, end);
+    if (!previous || end > previous)
+      regularSince.set(courseOffering.studyPlanSubjectId, end);
   }
   return { approved: history.approved, regularSince };
 }
 
 type CallRecord = Awaited<ReturnType<typeof repo.findOpenCalls>>[number];
 
-function findMissingRequirements(call: CallRecord, standing: StudentStanding): MissingRequirementDto[] {
+function findMissingRequirements(
+  call: CallRecord,
+  standing: StudentStanding,
+): MissingRequirementDto[] {
   return call.studyPlanSubject.requirements
-    .filter((req) => !standing.approved.has(req.requiredSubject.studyPlanSubjectId))
+    .filter(
+      (req) => !standing.approved.has(req.requiredSubject.studyPlanSubjectId),
+    )
     .map((req) => ({
       studyPlanSubjectId: req.requiredSubject.studyPlanSubjectId,
       subjectCode: req.requiredSubject.subject.subjectCode,
@@ -149,9 +175,15 @@ interface Ineligibility {
  * Condiciones académicas para rendir la materia de la mesa: regularidad vigente a la
  * fecha de la mesa y correlativas para rendir aprobadas. Cupo y duplicados se validan aparte.
  */
-function checkAcademicConditions(call: CallRecord, standing: StudentStanding, missing: MissingRequirementDto[]): Ineligibility | null {
+function checkAcademicConditions(
+  call: CallRecord,
+  standing: StudentStanding,
+  missing: MissingRequirementDto[],
+): Ineligibility | null {
   const subjectName = call.studyPlanSubject.subject.subjectName;
-  const regularSince = standing.regularSince.get(call.studyPlanSubject.studyPlanSubjectId);
+  const regularSince = standing.regularSince.get(
+    call.studyPlanSubject.studyPlanSubjectId,
+  );
 
   if (!regularSince) {
     // TODO(RF-06): el PDF admite rendir en condición de libre "según corresponda"; falta definir
@@ -184,7 +216,9 @@ function checkAcademicConditions(call: CallRecord, standing: StudentStanding, mi
 // Mapeo a DTO
 // ---------------------------------------------------------------------------
 
-function teacherName(teacher: { user: { firstName: string; lastName: string } } | null): string | null {
+function teacherName(
+  teacher: { user: { firstName: string; lastName: string } } | null,
+): string | null {
   return teacher ? `${teacher.user.firstName} ${teacher.user.lastName}` : null;
 }
 
@@ -192,9 +226,14 @@ function enrollmentCode(examEnrollmentId: number): string {
   return `EX-${String(examEnrollmentId).padStart(6, "0")}`;
 }
 
-type EnrollmentRecord = Awaited<ReturnType<typeof repo.findUpcomingEnrollments>>[number];
+type EnrollmentRecord = Awaited<
+  ReturnType<typeof repo.findUpcomingEnrollments>
+>[number];
 
-function toEnrollmentDto(record: EnrollmentRecord, today: Date): StudentExamEnrollmentDto {
+function toEnrollmentDto(
+  record: EnrollmentRecord,
+  today: Date,
+): StudentExamEnrollmentDto {
   const call = record.examCall;
   return {
     examEnrollmentId: record.examEnrollmentId,
@@ -216,7 +255,11 @@ function mapConcurrencyError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     // P2002: dos requests simultáneos del mismo alumno a la misma mesa.
     if (error.code === "P2002") {
-      throw new AppError(409, EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED, "Ya estás inscripto en esta mesa.");
+      throw new AppError(
+        409,
+        EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+        "Ya estás inscripto en esta mesa.",
+      );
     }
     // P2034: conflicto de escritura / deadlock entre transacciones SERIALIZABLE.
     if (error.code === "P2034") {
@@ -245,13 +288,22 @@ export const examEnrollmentService = {
       loadStanding(context.studentCareerId, today),
     ]);
 
-    const student = { isActive: context.isActive, careerName: context.careerName, studyPlan: context.studyPlanResolution };
+    const student = {
+      isActive: context.isActive,
+      careerName: context.careerName,
+      studyPlan: context.studyPlanResolution,
+    };
     const enrollments = upcoming.map((e) => toEnrollmentDto(e, today));
     if (!session) return { session: null, student, calls: [], enrollments };
 
-    const calls = await repo.findOpenCalls(session.examSessionId, context.studyPlanId);
+    const calls = await repo.findOpenCalls(
+      session.examSessionId,
+      context.studyPlanId,
+    );
     const enrolledCallIds = new Set(enrollments.map((e) => e.examCallId));
-    const enrolledSubjectIds = new Set(enrollments.map((e) => e.studyPlanSubjectId));
+    const enrolledSubjectIds = new Set(
+      enrollments.map((e) => e.studyPlanSubjectId),
+    );
     const callCountBySubject = new Map<number, number>();
 
     const callDtos: ExamCallDto[] = [];
@@ -273,8 +325,15 @@ export const examEnrollmentService = {
             message: "Ya estás inscripto en otro llamado de esta materia.",
           };
         }
-        if (!ineligibility && call.capacity !== null && call._count.examEnrollments >= call.capacity) {
-          ineligibility = { code: "CALL_FULL", message: "La mesa no tiene más cupo disponible." };
+        if (
+          !ineligibility &&
+          call.capacity !== null &&
+          call._count.examEnrollments >= call.capacity
+        ) {
+          ineligibility = {
+            code: "CALL_FULL",
+            message: "La mesa no tiene más cupo disponible.",
+          };
         }
       }
 
@@ -296,13 +355,26 @@ export const examEnrollmentService = {
       });
     }
 
-    return { session: toSessionDto(session, today), student, calls: callDtos, enrollments };
+    return {
+      session: toSessionDto(session, today),
+      student,
+      calls: callDtos,
+      enrollments,
+    };
   },
 
-  async enroll(user: AuthUser, rawExamCallId: unknown, ipAddress: string | null): Promise<StudentExamEnrollmentDto> {
+  async enroll(
+    user: AuthUser,
+    rawExamCallId: unknown,
+    ipAddress: string | null,
+  ): Promise<StudentExamEnrollmentDto> {
     const examCallId = Number(rawExamCallId);
     if (!Number.isInteger(examCallId) || examCallId <= 0) {
-      throw new AppError(400, EXAM_ENROLLMENT_ERROR_CODES.INVALID_INPUT, "Seleccioná una mesa de examen válida.");
+      throw new AppError(
+        400,
+        EXAM_ENROLLMENT_ERROR_CODES.INVALID_INPUT,
+        "Seleccioná una mesa de examen válida.",
+      );
     }
 
     const context = await loadStudentContext(user.userId);
@@ -318,7 +390,12 @@ export const examEnrollmentService = {
 
     const call = await repo.findCall(examCallId);
     const subject = call?.studyPlanSubject;
-    if (!call || !subject || subject.studyPlanId !== context.studyPlanId || !subject.isActive) {
+    if (
+      !call ||
+      !subject ||
+      subject.studyPlanId !== context.studyPlanId ||
+      !subject.isActive
+    ) {
       throw new AppError(
         404,
         EXAM_ENROLLMENT_ERROR_CODES.CALL_NOT_FOUND,
@@ -327,7 +404,8 @@ export const examEnrollmentService = {
     }
 
     const today = todayAsDate();
-    if (!isWindowOpen(call.examSession, today)) throw periodClosedError(call.examSession);
+    if (!isWindowOpen(call.examSession, today))
+      throw periodClosedError(call.examSession);
 
     const subjectName = subject.subject.subjectName;
     if (call.callStatus !== EXAM_CALL_STATUS.ABIERTA) {
@@ -350,48 +428,85 @@ export const examEnrollmentService = {
     const missing = findMissingRequirements(call, standing);
     const ineligibility = checkAcademicConditions(call, standing, missing);
     if (ineligibility) {
-      throw new AppError(409, EXAM_ENROLLMENT_ERROR_CODES[ineligibility.code], ineligibility.message, {
-        missingRequirements: missing,
-      });
+      throw new AppError(
+        409,
+        EXAM_ENROLLMENT_ERROR_CODES[ineligibility.code],
+        ineligibility.message,
+        {
+          missingRequirements: missing,
+        },
+      );
     }
 
-    const studentStudyPlan = await repo.findStudentStudyPlan(context.studentCareerId, context.studyPlanId);
-    if (!studentStudyPlan) throw new Error(`Alumno ${context.studentCareerId} sin STUDENT_STUDY_PLAN para el plan ${context.studyPlanId}`);
+    const studentStudyPlan = await repo.findStudentStudyPlan(
+      context.studentCareerId,
+      context.studyPlanId,
+    );
+    if (!studentStudyPlan)
+      throw new Error(
+        `Alumno ${context.studentCareerId} sin STUDENT_STUDY_PLAN para el plan ${context.studyPlanId}`,
+      );
 
     const { studentCareerId } = context;
     let examEnrollmentId: number;
     try {
-      examEnrollmentId = await courseEnrollmentRepository.runSerializable(async (tx) => {
-        const upcoming = await repo.findUpcomingEnrollments(studentCareerId, today, tx);
-
-        if (upcoming.some((e) => e.examCall.examCallId === examCallId)) {
-          throw new AppError(409, EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED, "Ya estás inscripto en esta mesa.");
-        }
-
-        const sameSubject = upcoming.find((e) => e.examCall.studyPlanSubject.studyPlanSubjectId === subject.studyPlanSubjectId);
-        if (sameSubject) {
-          throw new AppError(
-            409,
-            EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
-            `Ya estás inscripto a ${subjectName} en la mesa del ${formatDisplayDate(sameSubject.examCall.callDate)}. Si querés cambiar de llamado, primero cancelá esa inscripción.`,
+      examEnrollmentId = await courseEnrollmentRepository.runSerializable(
+        async (tx) => {
+          const upcoming = await repo.findUpcomingEnrollments(
+            studentCareerId,
+            today,
+            tx,
           );
-        }
 
-        if (call.capacity !== null && (await repo.countActiveEnrollments(examCallId, tx)) >= call.capacity) {
-          throw new AppError(
-            409,
-            EXAM_ENROLLMENT_ERROR_CODES.CALL_FULL,
-            `La mesa de ${subjectName} del ${formatDisplayDate(call.callDate)} ya no tiene cupo disponible.`,
+          if (upcoming.some((e) => e.examCall.examCallId === examCallId)) {
+            throw new AppError(
+              409,
+              EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+              "Ya estás inscripto en esta mesa.",
+            );
+          }
+
+          const sameSubject = upcoming.find(
+            (e) =>
+              e.examCall.studyPlanSubject.studyPlanSubjectId ===
+              subject.studyPlanSubjectId,
           );
-        }
+          if (sameSubject) {
+            throw new AppError(
+              409,
+              EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
+              `Ya estás inscripto a ${subjectName} en la mesa del ${formatDisplayDate(sameSubject.examCall.callDate)}. Si querés cambiar de llamado, primero cancelá esa inscripción.`,
+            );
+          }
 
-        // Si se había inscripto antes a esta misma mesa y canceló, se reactiva ese registro.
-        const previous = await repo.findEnrollment(examCallId, studentCareerId, tx);
-        const saved = previous
-          ? await repo.reactivateEnrollment(previous.examEnrollmentId, tx)
-          : await repo.createEnrollment(examCallId, studentCareerId, studentStudyPlan.studentStudyPlanId, tx);
-        return saved.examEnrollmentId;
-      });
+          if (
+            call.capacity !== null &&
+            (await repo.countActiveEnrollments(examCallId, tx)) >= call.capacity
+          ) {
+            throw new AppError(
+              409,
+              EXAM_ENROLLMENT_ERROR_CODES.CALL_FULL,
+              `La mesa de ${subjectName} del ${formatDisplayDate(call.callDate)} ya no tiene cupo disponible.`,
+            );
+          }
+
+          // Si se había inscripto antes a esta misma mesa y canceló, se reactiva ese registro.
+          const previous = await repo.findEnrollment(
+            examCallId,
+            studentCareerId,
+            tx,
+          );
+          const saved = previous
+            ? await repo.reactivateEnrollment(previous.examEnrollmentId, tx)
+            : await repo.createEnrollment(
+                examCallId,
+                studentCareerId,
+                studentStudyPlan.studentStudyPlanId,
+                tx,
+              );
+          return saved.examEnrollmentId;
+        },
+      );
     } catch (error) {
       if (error instanceof AppError) throw error;
       mapConcurrencyError(error);
@@ -406,27 +521,57 @@ export const examEnrollmentService = {
       ipAddress,
     });
 
-    // TODO(notificaciones): el PDF pide "enviar al alumno la confirmación". Por ahora la
-    // confirmación es la respuesta de la API (modal en pantalla) y el listado "Mis exámenes".
+    await notificationsService.notify({
+      userId: user.userId,
+      title: "Inscripción a examen final confirmada",
+      body: `Quedaste inscripto en ${subjectName} para el ${formatDisplayDate(call.callDate)} a las ${toTime(call.callDate)} (${call.examSession.examName}). Comprobante: ${enrollmentCode(examEnrollmentId)}.`,
+      type: "importante",
+      link: "/alumno/examenes",
+    });
+
     const upcoming = await repo.findUpcomingEnrollments(studentCareerId, today);
-    const created = upcoming.find((e) => e.examEnrollmentId === examEnrollmentId);
-    if (!created) throw new Error(`Inscripción a examen ${examEnrollmentId} no encontrada luego de guardarla`);
+    const created = upcoming.find(
+      (e) => e.examEnrollmentId === examEnrollmentId,
+    );
+    if (!created)
+      throw new Error(
+        `Inscripción a examen ${examEnrollmentId} no encontrada luego de guardarla`,
+      );
     return toEnrollmentDto(created, today);
   },
 
-  async cancel(user: AuthUser, rawExamEnrollmentId: unknown, ipAddress: string | null): Promise<void> {
+  async cancel(
+    user: AuthUser,
+    rawExamEnrollmentId: unknown,
+    ipAddress: string | null,
+  ): Promise<void> {
     const examEnrollmentId = Number(rawExamEnrollmentId);
     if (!Number.isInteger(examEnrollmentId) || examEnrollmentId <= 0) {
-      throw new AppError(400, EXAM_ENROLLMENT_ERROR_CODES.INVALID_INPUT, "Inscripción inválida.");
+      throw new AppError(
+        400,
+        EXAM_ENROLLMENT_ERROR_CODES.INVALID_INPUT,
+        "Inscripción inválida.",
+      );
     }
 
     const enrollment = await repo.findEnrollmentById(examEnrollmentId);
     // Una inscripción de otro alumno se informa como inexistente.
-    if (!enrollment || enrollment.studentCareer.studentProfile.userId !== user.userId) {
-      throw new AppError(404, EXAM_ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_FOUND, "La inscripción no existe.");
+    if (
+      !enrollment ||
+      enrollment.studentCareer.studentProfile.userId !== user.userId
+    ) {
+      throw new AppError(
+        404,
+        EXAM_ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_FOUND,
+        "La inscripción no existe.",
+      );
     }
     if (enrollment.examStatus !== EXAM_STATUS.INSCRIPTO) {
-      throw new AppError(409, EXAM_ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_ACTIVE, "Esta inscripción ya no está vigente.");
+      throw new AppError(
+        409,
+        EXAM_ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_ACTIVE,
+        "Esta inscripción ya no está vigente.",
+      );
     }
 
     const { examSession, callDate, studyPlanSubject } = enrollment.examCall;
@@ -447,6 +592,14 @@ export const examEnrollmentService = {
       entityId: String(examEnrollmentId),
       details: `Baja de inscripción a final de ${studyPlanSubject.subject.subjectCode} - ${studyPlanSubject.subject.subjectName}, mesa del ${formatDisplayDate(callDate)}`,
       ipAddress,
+    });
+
+    await notificationsService.notify({
+      userId: user.userId,
+      title: "Baja de examen final confirmada",
+      body: `Cancelaste tu inscripción a la mesa de ${studyPlanSubject.subject.subjectName} del ${formatDisplayDate(callDate)}.`,
+      type: "info",
+      link: "/alumno/examenes",
     });
   },
 };

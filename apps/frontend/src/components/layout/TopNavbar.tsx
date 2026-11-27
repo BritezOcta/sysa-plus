@@ -1,24 +1,25 @@
-import { Link } from 'react-router'
-import utnLogo from '../../assets/images/utn-logotipo.svg'
-import { APP_ROUTES, INSTITUTION_BRAND } from '../../constants'
-import styles from '../../pages/AcademicManagementPage.module.css'
-import UserProfilePill from './UserProfilePill'
+import { Link } from "react-router";
+import utnLogo from "../../assets/images/utn-logotipo.svg";
+import { APP_ROUTES, INSTITUTION_BRAND } from "../../constants";
+import styles from "../../pages/AcademicManagementPage.module.css";
+import UserProfilePill from "./UserProfilePill";
+import NotificationBell from "../ui/NotificationBell";
 
 /**
  * Barra superior de las páginas del Administrador. El botón de recarga y el de auditoría
  * son opcionales: solo se muestran si la página los provee (Oferta académica los usa).
  */
 interface TopNavbarProps {
-  onReloadData?: () => void
-  resetButtonLabel?: string
-  auditCount?: number
-  unreadAuditCount?: number
-  onOpenAuditDrawer?: () => void
+  onReloadData?: () => void;
+  resetButtonLabel?: string;
+  auditCount?: number;
+  unreadAuditCount?: number;
+  onOpenAuditDrawer?: () => void;
 }
 
 export default function TopNavbar({
   onReloadData,
-  resetButtonLabel = 'Recargar datos',
+  resetButtonLabel = "Recargar datos",
   auditCount = 0,
   unreadAuditCount = 0,
   onOpenAuditDrawer,
@@ -44,7 +45,11 @@ export default function TopNavbar({
 
       <div className={styles.navControls}>
         {onReloadData && (
-          <button type="button" onClick={onReloadData} className={styles.resetMockBtn}>
+          <button
+            type="button"
+            onClick={onReloadData}
+            className={styles.resetMockBtn}
+          >
             {resetButtonLabel}
           </button>
         )}
@@ -52,7 +57,10 @@ export default function TopNavbar({
         <Link to={APP_ROUTES.ACADEMIC_OFFER} className={styles.auditBtn}>
           Oferta académica
         </Link>
-        <Link to={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS} className={styles.auditBtn}>
+        <Link
+          to={APP_ROUTES.ADMIN_TEACHER_ASSIGNMENTS}
+          className={styles.auditBtn}
+        >
           Docentes
         </Link>
         <Link to={APP_ROUTES.ADMIN_ENROLLMENT} className={styles.auditBtn}>
@@ -84,8 +92,10 @@ export default function TopNavbar({
           </button>
         )}
 
+        <NotificationBell />
+
         <UserProfilePill />
       </div>
     </header>
-  )
+  );
 }

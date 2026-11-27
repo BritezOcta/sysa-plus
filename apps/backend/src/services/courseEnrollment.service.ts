@@ -1,8 +1,18 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../lib/AppError.js";
-import { formatScheduleText, schedulesOverlap, toScheduleDtos, type ScheduleSlot } from "../lib/schedule.js";
+import {
+  formatScheduleText,
+  schedulesOverlap,
+  toScheduleDtos,
+  type ScheduleSlot,
+} from "../lib/schedule.js";
 import { courseEnrollmentRepository as repo } from "../repositories/courseEnrollment.repository.js";
-import { CORRELATIVITY_TYPE, ENROLLMENT_STATUS, OFFERING_STATUS, type CorrelativityType } from "../types/academic.js";
+import {
+  CORRELATIVITY_TYPE,
+  ENROLLMENT_STATUS,
+  OFFERING_STATUS,
+  type CorrelativityType,
+} from "../types/academic.js";
 import type { AuthUser } from "../types/auth.js";
 import type {
   AvailableSubjectDto,
@@ -13,6 +23,7 @@ import type {
   StudentEnrollmentDto,
 } from "../types/courseEnrollment.js";
 import { AUDIT_ACTIONS, auditService } from "./audit.service.js";
+import { notificationsService } from "./notifications.service.js";
 
 export const ENROLLMENT_ERROR_CODES = {
   INVALID_INPUT: "INVALID_INPUT",
@@ -73,8 +84,12 @@ function toPeriodDto(period: PeriodRecord, today: Date): EnrollmentPeriodDto {
     academicPeriodId: period.academicPeriodId,
     year: period.year,
     semester: period.semester,
-    enrollmentStartDate: period.enrollmentStartDate ? toIsoDate(period.enrollmentStartDate) : "",
-    enrollmentEndDate: period.enrollmentEndDate ? toIsoDate(period.enrollmentEndDate) : "",
+    enrollmentStartDate: period.enrollmentStartDate
+      ? toIsoDate(period.enrollmentStartDate)
+      : "",
+    enrollmentEndDate: period.enrollmentEndDate
+      ? toIsoDate(period.enrollmentEndDate)
+      : "",
     isOpen: isWindowOpen(period, today),
   };
 }
@@ -116,14 +131,18 @@ interface StudentContext {
   studyPlanResolution: string;
 }
 
-export async function loadStudentContext(userId: number): Promise<StudentContext> {
+export async function loadStudentContext(
+  userId: number,
+): Promise<StudentContext> {
   const profile = await repo.findStudentContext(userId);
 
   // TODO(multi-carrera): si el alumno tiene más de una carrera activa se toma la primera.
   // Cuando haga falta, agregar un selector de carrera en la UI y recibir studentCareerId.
   for (const studentCareer of profile?.studentCareers ?? []) {
     if (!studentCareer.career.isActive) continue;
-    const plan = studentCareer.studentStudyPlans.find((ssp) => ssp.studyPlan.isActive)?.studyPlan;
+    const plan = studentCareer.studentStudyPlans.find(
+      (ssp) => ssp.studyPlan.isActive,
+    )?.studyPlan;
     if (!plan) continue;
     return {
       isActive: profile!.user.isActive,
@@ -159,7 +178,10 @@ function assertStudentActive(context: StudentContext) {
 
 interface RequirementRecord {
   correlativityType: string;
-  requiredSubject: { studyPlanSubjectId: number; subject: { subjectCode: string; subjectName: string } };
+  requiredSubject: {
+    studyPlanSubjectId: number;
+    subject: { subjectCode: string; subjectName: string };
+  };
 }
 
 interface AcademicHistory {
@@ -167,13 +189,19 @@ interface AcademicHistory {
   regular: Set<number>;
 }
 
-function findMissingRequirements(requirements: RequirementRecord[], history: AcademicHistory): MissingRequirementDto[] {
+function findMissingRequirements(
+  requirements: RequirementRecord[],
+  history: AcademicHistory,
+): MissingRequirementDto[] {
   const missing: MissingRequirementDto[] = [];
   for (const req of requirements) {
     const id = req.requiredSubject.studyPlanSubjectId;
-    const needsApproval = req.correlativityType === CORRELATIVITY_TYPE.APPROVED_TO_ENROLL;
+    const needsApproval =
+      req.correlativityType === CORRELATIVITY_TYPE.APPROVED_TO_ENROLL;
     // Una materia aprobada también cumple el requisito de "regularizada".
-    const satisfied = needsApproval ? history.approved.has(id) : history.approved.has(id) || history.regular.has(id);
+    const satisfied = needsApproval
+      ? history.approved.has(id)
+      : history.approved.has(id) || history.regular.has(id);
     if (satisfied) continue;
     missing.push({
       studyPlanSubjectId: id,
@@ -188,7 +216,10 @@ function findMissingRequirements(requirements: RequirementRecord[], history: Aca
 
 function describeMissing(missing: MissingRequirementDto[]): string {
   return missing
-    .map((m) => `${m.subjectName} (${m.requiredCondition === "APROBADA" ? "aprobada" : "regularizada"})`)
+    .map(
+      (m) =>
+        `${m.subjectName} (${m.requiredCondition === "APROBADA" ? "aprobada" : "regularizada"})`,
+    )
     .join(", ");
 }
 
@@ -201,12 +232,16 @@ interface OfferingRecord {
   commission: string;
   capacity: number;
   schedules: ScheduleSlot[];
-  teacherAssignments: { teacherProfile: { user: { firstName: string; lastName: string } } }[];
+  teacherAssignments: {
+    teacherProfile: { user: { firstName: string; lastName: string } };
+  }[];
   _count: { courseEnrollments: number };
 }
 
 function teacherNames(offering: OfferingRecord): string[] {
-  return offering.teacherAssignments.map(({ teacherProfile: { user } }) => `${user.firstName} ${user.lastName}`);
+  return offering.teacherAssignments.map(
+    ({ teacherProfile: { user } }) => `${user.firstName} ${user.lastName}`,
+  );
 }
 
 function toCommissionDto(offering: OfferingRecord): CommissionDto {
@@ -221,9 +256,13 @@ function toCommissionDto(offering: OfferingRecord): CommissionDto {
   };
 }
 
-type ActiveEnrollmentRecord = Awaited<ReturnType<typeof repo.findActiveEnrollmentsInPeriod>>[number];
+type ActiveEnrollmentRecord = Awaited<
+  ReturnType<typeof repo.findActiveEnrollmentsInPeriod>
+>[number];
 
-function toStudentEnrollmentDto(record: ActiveEnrollmentRecord): StudentEnrollmentDto {
+function toStudentEnrollmentDto(
+  record: ActiveEnrollmentRecord,
+): StudentEnrollmentDto {
   const offering = record.courseOffering;
   return {
     courseEnrollmentId: record.courseEnrollmentId,
@@ -247,7 +286,11 @@ function mapConcurrencyError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     // P2002: dos requests simultáneos del mismo alumno a la misma comisión.
     if (error.code === "P2002") {
-      throw new AppError(409, ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED, "Ya estás inscripto en esta comisión.");
+      throw new AppError(
+        409,
+        ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+        "Ya estás inscripto en esta comisión.",
+      );
     }
     // P2034: conflicto de escritura / deadlock entre transacciones SERIALIZABLE.
     if (error.code === "P2034") {
@@ -284,13 +327,23 @@ export const courseEnrollmentService = {
 
     const [history, planSubjects, activeEnrollments] = await Promise.all([
       repo.findAcademicHistory(context.studentCareerId),
-      repo.findOfferedPlanSubjects(context.studyPlanId, period.academicPeriodId),
-      repo.findActiveEnrollmentsInPeriod(context.studentCareerId, period.academicPeriodId),
+      repo.findOfferedPlanSubjects(
+        context.studyPlanId,
+        period.academicPeriodId,
+      ),
+      repo.findActiveEnrollmentsInPeriod(
+        context.studentCareerId,
+        period.academicPeriodId,
+      ),
     ]);
 
     const subjects: AvailableSubjectDto[] = planSubjects
       // Las materias ya regularizadas o aprobadas no se vuelven a cursar.
-      .filter((sps) => !history.approved.has(sps.studyPlanSubjectId) && !history.regular.has(sps.studyPlanSubjectId))
+      .filter(
+        (sps) =>
+          !history.approved.has(sps.studyPlanSubjectId) &&
+          !history.regular.has(sps.studyPlanSubjectId),
+      )
       .map((sps) => ({
         studyPlanSubjectId: sps.studyPlanSubjectId,
         subjectCode: sps.subject.subjectCode,
@@ -309,17 +362,29 @@ export const courseEnrollmentService = {
     };
   },
 
-  async enroll(user: AuthUser, rawCourseOfferingId: unknown, ipAddress: string | null): Promise<StudentEnrollmentDto> {
+  async enroll(
+    user: AuthUser,
+    rawCourseOfferingId: unknown,
+    ipAddress: string | null,
+  ): Promise<StudentEnrollmentDto> {
     const courseOfferingId = Number(rawCourseOfferingId);
     if (!Number.isInteger(courseOfferingId) || courseOfferingId <= 0) {
-      throw new AppError(400, ENROLLMENT_ERROR_CODES.INVALID_INPUT, "Seleccioná una comisión válida.");
+      throw new AppError(
+        400,
+        ENROLLMENT_ERROR_CODES.INVALID_INPUT,
+        "Seleccioná una comisión válida.",
+      );
     }
 
     const context = await loadStudentContext(user.userId);
     assertStudentActive(context);
 
     const offering = await repo.findOfferingForEnrollment(courseOfferingId);
-    if (!offering || offering.studyPlanSubject.studyPlanId !== context.studyPlanId || !offering.studyPlanSubject.isActive) {
+    if (
+      !offering ||
+      offering.studyPlanSubject.studyPlanId !== context.studyPlanId ||
+      !offering.studyPlanSubject.isActive
+    ) {
       throw new AppError(
         404,
         ENROLLMENT_ERROR_CODES.OFFERING_NOT_FOUND,
@@ -328,7 +393,8 @@ export const courseEnrollmentService = {
     }
 
     const today = todayAsDate();
-    if (!isWindowOpen(offering.academicPeriod, today)) throw periodClosedError(offering.academicPeriod);
+    if (!isWindowOpen(offering.academicPeriod, today))
+      throw periodClosedError(offering.academicPeriod);
 
     const subject = offering.studyPlanSubject;
     const subjectName = subject.subject.subjectName;
@@ -342,7 +408,10 @@ export const courseEnrollmentService = {
     }
 
     const history = await repo.findAcademicHistory(context.studentCareerId);
-    if (history.approved.has(subject.studyPlanSubjectId) || history.regular.has(subject.studyPlanSubjectId)) {
+    if (
+      history.approved.has(subject.studyPlanSubjectId) ||
+      history.regular.has(subject.studyPlanSubjectId)
+    ) {
       throw new AppError(
         409,
         ENROLLMENT_ERROR_CODES.SUBJECT_ALREADY_COMPLETED,
@@ -366,13 +435,28 @@ export const courseEnrollmentService = {
     let courseEnrollmentId: number;
     try {
       courseEnrollmentId = await repo.runSerializable(async (tx) => {
-        const active = await repo.findActiveEnrollmentsInPeriod(studentCareerId, academicPeriodId, tx);
+        const active = await repo.findActiveEnrollmentsInPeriod(
+          studentCareerId,
+          academicPeriodId,
+          tx,
+        );
 
-        if (active.some((e) => e.courseOffering.courseOfferingId === courseOfferingId)) {
-          throw new AppError(409, ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED, "Ya estás inscripto en esta comisión.");
+        if (
+          active.some(
+            (e) => e.courseOffering.courseOfferingId === courseOfferingId,
+          )
+        ) {
+          throw new AppError(
+            409,
+            ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+            "Ya estás inscripto en esta comisión.",
+          );
         }
 
-        const sameSubject = active.find((e) => e.courseOffering.studyPlanSubjectId === subject.studyPlanSubjectId);
+        const sameSubject = active.find(
+          (e) =>
+            e.courseOffering.studyPlanSubjectId === subject.studyPlanSubjectId,
+        );
         if (sameSubject) {
           throw new AppError(
             409,
@@ -381,7 +465,9 @@ export const courseEnrollmentService = {
           );
         }
 
-        const conflict = active.find((e) => schedulesOverlap(e.courseOffering.schedules, offering.schedules));
+        const conflict = active.find((e) =>
+          schedulesOverlap(e.courseOffering.schedules, offering.schedules),
+        );
         if (conflict) {
           throw new AppError(
             409,
@@ -391,7 +477,10 @@ export const courseEnrollmentService = {
           );
         }
 
-        const enrolledCount = await repo.countActiveEnrollments(courseOfferingId, tx);
+        const enrolledCount = await repo.countActiveEnrollments(
+          courseOfferingId,
+          tx,
+        );
         if (enrolledCount >= offering.capacity) {
           throw new AppError(
             409,
@@ -401,10 +490,23 @@ export const courseEnrollmentService = {
         }
 
         // Si se había inscripto antes a esta misma comisión y canceló, se reactiva ese registro.
-        const previous = await repo.findEnrollment(studentCareerId, courseOfferingId, tx);
+        const previous = await repo.findEnrollment(
+          studentCareerId,
+          courseOfferingId,
+          tx,
+        );
         const saved = previous
-          ? await repo.reactivateEnrollment(previous.courseEnrollmentId, today, tx)
-          : await repo.createEnrollment(studentCareerId, courseOfferingId, today, tx);
+          ? await repo.reactivateEnrollment(
+              previous.courseEnrollmentId,
+              today,
+              tx,
+            )
+          : await repo.createEnrollment(
+              studentCareerId,
+              courseOfferingId,
+              today,
+              tx,
+            );
         return saved.courseEnrollmentId;
       });
     } catch (error) {
@@ -421,31 +523,65 @@ export const courseEnrollmentService = {
       ipAddress,
     });
 
-    // TODO(notificaciones): el PDF pide "enviar al alumno la confirmación". Por ahora la
-    // confirmación es la respuesta de la API (toast en pantalla) y el listado "Mis materias".
-    const enrollments = await repo.findActiveEnrollmentsInPeriod(studentCareerId, academicPeriodId);
-    const created = enrollments.find((e) => e.courseEnrollmentId === courseEnrollmentId);
-    if (!created) throw new Error(`Inscripción ${courseEnrollmentId} no encontrada luego de guardarla`);
+    await notificationsService.notify({
+      userId: user.userId,
+      title: "Inscripción a cursada confirmada",
+      body: `Te inscribiste correctamente en ${subjectName} (Comisión ${offering.commission} - ${offering.academicPeriod.semester}° cuat. ${offering.academicPeriod.year}).`,
+      type: "info",
+      link: "/alumno/cursado",
+    });
+
+    const enrollments = await repo.findActiveEnrollmentsInPeriod(
+      studentCareerId,
+      academicPeriodId,
+    );
+    const created = enrollments.find(
+      (e) => e.courseEnrollmentId === courseEnrollmentId,
+    );
+    if (!created)
+      throw new Error(
+        `Inscripción ${courseEnrollmentId} no encontrada luego de guardarla`,
+      );
     return toStudentEnrollmentDto(created);
   },
 
-  async cancel(user: AuthUser, rawCourseEnrollmentId: unknown, ipAddress: string | null): Promise<void> {
+  async cancel(
+    user: AuthUser,
+    rawCourseEnrollmentId: unknown,
+    ipAddress: string | null,
+  ): Promise<void> {
     const courseEnrollmentId = Number(rawCourseEnrollmentId);
     if (!Number.isInteger(courseEnrollmentId) || courseEnrollmentId <= 0) {
-      throw new AppError(400, ENROLLMENT_ERROR_CODES.INVALID_INPUT, "Inscripción inválida.");
+      throw new AppError(
+        400,
+        ENROLLMENT_ERROR_CODES.INVALID_INPUT,
+        "Inscripción inválida.",
+      );
     }
 
     const enrollment = await repo.findEnrollmentById(courseEnrollmentId);
     // Una inscripción de otro alumno se informa como inexistente.
-    if (!enrollment || enrollment.studentCareer.studentProfile.userId !== user.userId) {
-      throw new AppError(404, ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_FOUND, "La inscripción no existe.");
+    if (
+      !enrollment ||
+      enrollment.studentCareer.studentProfile.userId !== user.userId
+    ) {
+      throw new AppError(
+        404,
+        ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_FOUND,
+        "La inscripción no existe.",
+      );
     }
 
     if (enrollment.enrollmentStatus !== ENROLLMENT_STATUS.INSCRIPTO) {
-      throw new AppError(409, ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_ACTIVE, "Esta inscripción ya no está vigente.");
+      throw new AppError(
+        409,
+        ENROLLMENT_ERROR_CODES.ENROLLMENT_NOT_ACTIVE,
+        "Esta inscripción ya no está vigente.",
+      );
     }
 
-    const { academicPeriod, commission, studyPlanSubject } = enrollment.courseOffering;
+    const { academicPeriod, commission, studyPlanSubject } =
+      enrollment.courseOffering;
     if (!isWindowOpen(academicPeriod, todayAsDate())) {
       throw new AppError(
         409,
@@ -463,6 +599,14 @@ export const courseEnrollmentService = {
       entityId: String(courseEnrollmentId),
       details: `Cancelación de inscripción a ${studyPlanSubject.subject.subjectCode} - ${studyPlanSubject.subject.subjectName}, comisión ${commission}`,
       ipAddress,
+    });
+
+    await notificationsService.notify({
+      userId: user.userId,
+      title: "Baja de cursada confirmada",
+      body: `Cancelaste tu inscripción a ${studyPlanSubject.subject.subjectName} (Comisión ${commission}).`,
+      type: "info",
+      link: "/alumno/cursadas",
     });
   },
 };
