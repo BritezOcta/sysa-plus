@@ -25,4 +25,6 @@ apiRouter.use("/exam-enrollments", examEnrollmentRouter);
 apiRouter.use("/teacher", teacherRouter);
 apiRouter.use("/student/attendance", studentAttendanceRouter);
 apiRouter.use("/admin/records", adminRecordsRouter);
+apiRouter.use("/admin/reports", adminReportsRouter);
+apiRouter.use("/admin/teacher-assignments", teacherAssignmentRouter);
 apiRouter.use("/admin", adminStudentsRouter);
