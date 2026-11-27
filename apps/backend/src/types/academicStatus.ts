@@ -10,6 +10,11 @@ export interface MissingRequirementDto {
   requiredCondition: "APROBADA" | "REGULAR";
 }
 
+/** Correlativa con indicación de si el alumno ya la cumple (cuadro completo de correlatividades). */
+export interface RequirementDto extends MissingRequirementDto {
+  met: boolean;
+}
+
 export interface SubjectStatusDto {
   studyPlanSubjectId: number;
   subjectCode: string;
@@ -30,6 +35,10 @@ export interface SubjectStatusDto {
   missingToEnroll: MissingRequirementDto[];
   /** Correlativas que faltan para rendir el final (solo aplica a materias regulares). */
   missingForExam: MissingRequirementDto[];
+  /** Todas las correlativas para cursarla, cumplidas o no (independiente del estado de la materia). */
+  requirementsToEnroll: RequirementDto[];
+  /** Todas las correlativas para rendir el final, cumplidas o no. */
+  requirementsForExam: RequirementDto[];
 }
 
 export interface HistoryEntryDto {
