@@ -11,6 +11,7 @@ const authUserSelect = {
   isActive: true,
   failedLoginAttempts: true,
   lockedUntil: true,
+  mustChangePassword: true,
   studentProfile: { select: { legajo: true } },
 } as const;
 
@@ -41,7 +42,7 @@ export const userRepository = {
   },
 
   updatePasswordHash(userId: number, passwordHash: string) {
-    return prisma.user.update({ where: { userId }, data: { passwordHash } });
+    return prisma.user.update({ where: { userId }, data: { passwordHash, mustChangePassword: false } });
   },
 
   registerSuccessfulLogin(userId: number, at: Date) {

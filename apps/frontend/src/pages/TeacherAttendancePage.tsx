@@ -6,10 +6,10 @@ import {
   type CommissionAttendanceResponse,
   type TeacherCommissionSummary,
 } from "../api/teacher.api";
-import { APP_ROUTES } from "../constants";
+import { APP_ROUTES, ATTENDANCE_STATUSES, ATTENDANCE_WEIGHT } from "../constants";
+import type { AttendanceStatus } from "../types/teacherAttendance.types";
 import styles from "./TeacherAttendancePage.module.css";
 
-type AttendanceStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO";
 
 function getTodayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,7 +22,7 @@ function getProjectedStats(
   const totalClasses = student.previousTotalClasses + (status ? 1 : 0);
   const attended =
     student.previousAttendedClasses +
-    (status === "PRESENTE" || status === "JUSTIFICADO" ? 1 : 0);
+    (status ? ATTENDANCE_WEIGHT[status] : 0);
 
   if (totalClasses === 0) {
     return { percentage: 100, condition: "REGULAR" as const };
@@ -316,9 +316,7 @@ export default function TeacherAttendancePage() {
                       <td>{student.fullName}</td>
                       <td>
                         <div className={styles.statusGroup}>
-                          {(
-                            ["PRESENTE", "AUSENTE", "JUSTIFICADO"] as const
-                          ).map((opt) => (
+                          {ATTENDANCE_STATUSES.map((opt) => (
                             <button
                               key={opt}
                               type="button"

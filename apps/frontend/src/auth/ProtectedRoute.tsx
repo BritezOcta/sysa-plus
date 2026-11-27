@@ -36,6 +36,12 @@ export function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
     return <Navigate to={ROLE_HOME_ROUTES[user.role]} replace />
   }
 
+  // Contraseña restablecida por el Administrador: solo puede ir a cambiarla.
+  const passwordPath = user.role === "ALUMNO" ? `${APP_ROUTES.STUDENT_AREA}/password` : APP_ROUTES.CHANGE_PASSWORD
+  if (user.mustChangePassword && location.pathname !== passwordPath) {
+    return <Navigate to={passwordPath} replace />
+  }
+
   return <>{children}</>
 }
 

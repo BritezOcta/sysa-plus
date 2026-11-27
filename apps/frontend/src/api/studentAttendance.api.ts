@@ -1,10 +1,25 @@
 import { apiRequest } from "./httpClient";
 
+export type AttendanceSessionStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "TARDANZA" | "SIN_REGISTRO";
+
 export interface StudentAttendanceSession {
   sessionId: string;
   date: string;
   topic: string | null;
-  status: string;
+  status: AttendanceSessionStatus;
+}
+
+/** Mismo cálculo que el cierre de cursada: asistencia ponderada (tardanza = ½) sobre todas las clases. */
+export interface StudentAttendanceSummary {
+  totalClasses: number;
+  presentCount: number;
+  justifiedCount: number;
+  lateCount: number;
+  absentCount: number;
+  unrecordedCount: number;
+  attendancePercentage: number;
+  minPercentage: number;
+  atRisk: boolean;
 }
 
 export interface StudentCourseAttendance {
@@ -14,12 +29,9 @@ export interface StudentCourseAttendance {
   commission: string;
   period: string;
   enrollmentStatus: string;
-  summary: {
-    totalClasses: number;
-    presentCount: number;
-    absentCount: number;
-    attendancePercentage: number;
-  };
+  inProgress: boolean;
+  summary: StudentAttendanceSummary;
+  /** Más reciente primero. */
   sessions: StudentAttendanceSession[];
 }
 

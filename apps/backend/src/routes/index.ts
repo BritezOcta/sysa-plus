@@ -8,10 +8,13 @@ import { examEnrollmentRouter } from "./examEnrollment.routes.js";
 import { healthRouter } from "./health.routes.js";
 import { teacherRouter } from "./teacher.routes.js";
 import { studentAttendanceRouter } from "./studentAttendance.routes.js";
+import { studentCoursesRouter } from "./studentCourses.routes.js";
 import { adminStudentsRouter } from "./adminStudents.routes.js";
 import { adminRecordsRouter } from "./adminRecords.routes.js";
 import { adminReportsRouter } from "./adminReports.routes.js";
 import { teacherAssignmentRouter } from "./teacherAssignment.routes.js";
+import { adminUsersRouter } from "./adminUsers.routes.js";
+import { adminCalendarRouter } from "./adminCalendar.routes.js";
 
 export const apiRouter = Router();
 
@@ -24,7 +27,10 @@ apiRouter.use("/course-enrollments", courseEnrollmentRouter);
 apiRouter.use("/exam-enrollments", examEnrollmentRouter);
 apiRouter.use("/teacher", teacherRouter);
 apiRouter.use("/student/attendance", studentAttendanceRouter);
+apiRouter.use("/student/courses", studentCoursesRouter);
 apiRouter.use("/admin/records", adminRecordsRouter);
 apiRouter.use("/admin/reports", adminReportsRouter);
 apiRouter.use("/admin/teacher-assignments", teacherAssignmentRouter);
+apiRouter.use("/admin/users", adminUsersRouter);
+apiRouter.use("/admin/calendar", adminCalendarRouter);
 apiRouter.use("/admin", adminStudentsRouter);

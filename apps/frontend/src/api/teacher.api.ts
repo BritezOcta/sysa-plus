@@ -1,4 +1,5 @@
 import { apiRequest } from "./httpClient";
+import type { AttendanceStatus } from "../types/teacherAttendance.types";
 
 export interface StudentObservationItem {
   id: string;
@@ -47,7 +48,7 @@ export interface AttendanceStudentRow {
   fullName: string;
   previousTotalClasses: number;
   previousAttendedClasses: number;
-  currentStatus: "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "";
+  currentStatus: AttendanceStatus | "";
 }
 
 export interface CommissionAttendanceResponse {
@@ -72,7 +73,7 @@ export interface SaveAttendancePayload {
   allowOverwrite: boolean;
   records: {
     enrollmentId: string;
-    status: "PRESENTE" | "AUSENTE" | "JUSTIFICADO";
+    status: AttendanceStatus;
   }[];
 }
 

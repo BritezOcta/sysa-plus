@@ -5,6 +5,9 @@ import { clearSessionCookie, readSessionCookie } from "../lib/sessionCookie.js";
 import { AUTH_ERROR_CODES, authService } from "../services/auth.service.js";
 import type { Role } from "../types/auth.js";
 
+/** Rutas permitidas mientras la contraseña temporal no se cambió (logout no exige sesión). */
+const PASSWORD_CHANGE_ALLOWED = new Set(["GET /api/auth/me", "PUT /api/auth/password"]);
+
 const unauthenticated = () =>
   new AppError(401, AUTH_ERROR_CODES.UNAUTHENTICATED, "Tu sesión no es válida o expiró. Iniciá sesión nuevamente");
 
@@ -25,6 +28,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   req.user = user;
+
+  // Contraseña restablecida por el Administrador: solo puede consultar su sesión o cambiarla.
+  if (user.mustChangePassword && !PASSWORD_CHANGE_ALLOWED.has(`${req.method} ${req.baseUrl}${req.path}`)) {
+    throw new AppError(
+      403,
+      "PASSWORD_CHANGE_REQUIRED",
+      "Tenés que cambiar la contraseña temporal antes de continuar",
+    );
+  }
   next();
 }
 

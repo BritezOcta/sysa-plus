@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { computeCourseCondition, type ParcialResult } from "./courseCondition.js";
+import { attendancePercent, attendedWeight } from "./attendance.js";
 
 const parcial = (score: number | null, recoveryScore: number | null = null, hasRecovery = false): ParcialResult => ({
   maxScore: 10,
@@ -49,4 +50,14 @@ test("materia sin promoción → REGULAR aunque las notas sean altas", () => {
 test("las notas se normalizan a escala 0-10 según la nota máxima", () => {
   const p: ParcialResult = { maxScore: 100, score: 80, recoveryMaxScore: null, recoveryScore: null };
   assert.equal(computeCourseCondition({ ...base, parciales: [p] }), "APROBADA");
+});
+
+test("las tardanzas valen media asistencia: 2,5 de 4 clases (63%) → LIBRE", () => {
+  const pct = attendancePercent(attendedWeight(["PRESENTE", "TARDANZA", "TARDANZA", "TARDANZA"]), 4);
+  assert.equal(computeCourseCondition({ ...base, attendancePercent: pct, parciales: [parcial(9), parcial(9)] }), "LIBRE");
+});
+
+test("75% exacto con tardanzas no es libre", () => {
+  const pct = attendancePercent(attendedWeight(["PRESENTE", "PRESENTE", "TARDANZA", "TARDANZA"]), 4);
+  assert.equal(computeCourseCondition({ ...base, attendancePercent: pct, parciales: [parcial(9), parcial(9)] }), "APROBADA");
 });

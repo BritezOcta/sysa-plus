@@ -1,0 +1,139 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.surveyFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid var(--sa-border);
+}
+
+/* ---------- Cursadas anteriores (plegadas) ---------- */
+.pastCourse {
+  overflow: hidden;
+}
+
+.pastSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pastSummary::-webkit-details-marker {
+  display: none;
+}
+
+.pastSummary::before {
+  content: "▸";
+  color: var(--sa-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.pastCourse[open] > .pastSummary::before {
+  transform: rotate(90deg);
+}
+
+.pastCourse[open] > .pastSummary {
+  border-bottom: 1px solid var(--sa-border);
+}
+
+.pastSummary > .heading {
+  flex: 1;
+}
+
+/* ---------- Encuesta ---------- */
+.scaleHint {
+  margin: 0;
+  color: var(--sa-text-muted);
+  font-size: 13px;
+}
+
+.question {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.question legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.scale {
+  display: flex;
+  gap: 8px;
+}
+
+.scaleOption {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  border: 1px solid var(--sa-border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.scaleOption input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scaleOption:focus-within {
+  outline: 2px solid var(--sa-accent);
+  outline-offset: 2px;
+}
+
+.scaleSelected {
+  border-color: var(--sa-accent);
+  background: var(--sa-accent-strong);
+  color: #fff;
+}
+
+.commentLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.commentLabel textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 10px 12px;
+  border: 1px solid var(--sa-border);
+  border-radius: 10px;
+  background: var(--sa-surface);
+  color: inherit;
+  resize: vertical;
+}
+
+.counter {
+  align-self: flex-end;
+  color: var(--sa-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}

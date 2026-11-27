@@ -28,6 +28,8 @@ export const adminStudentsRepository = {
       where: { courseOfferingId },
       include: {
         academicPeriod: true,
+        // Denominador de la asistencia: todas las clases de la comisión.
+        _count: { select: { classSessions: true } },
         studyPlanSubject: {
           include: { subject: true },
         },
