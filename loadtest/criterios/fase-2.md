@@ -41,6 +41,21 @@ ajustado a la cantidad de instancias y límite de login por IP compatible con va
 | R5 | Uso normal, máx. 200 | `uso-normal.json` | `http_req_failed` → `value` | `== 0` |
 | R6 | Uso normal, máx. **500** (`-e MAX_USUARIOS=500`) | `uso-normal-500.json` | `http_req_duration` → `p(95)` | `< 1000` ms |
 
+## Cambios a los criterios
+
+- **2026-11-28 · El pico se evalúa con tres corridas** (decisión del equipo tras `fase-2-veredicto-2.md`,
+  **antes** de la medición que se evalúa). Con el mismo código el p95 del pico varió entre 1,73 y
+  2,05 s, y el criterio suponía una sola corrida. Desde ahora:
+  - El pico se corre **tres veces seguidas** sobre el mismo commit, cada una precedida por
+    `pnpm carga:seed`. Se informan **las tres**; no se descarta ni se repite ninguna salvo que falle un
+    criterio de validez, y en ese caso se informa también la descartada y el motivo.
+  - Archivos de cada corrida *n* (1, 2, 3): `pico-inscripcion-n.json` y `fase-2-cpu-n.txt` (CPU de esa
+    misma corrida). El commit medido queda anotado en `fase-2-medicion.md`.
+  - **V1, V2, V3, D1, D2, D3 y R2 se exigen en cada una de las tres corridas.**
+  - **R1 se evalúa con la mediana** de los tres p(95) de `http_req_duration{name:inscribir}`: `< 2000` ms.
+  - D5 se exige en todos los archivos de resultados de la fase (la tabla decía "los tres").
+  - Login masivo y uso normal (D4, D6, R3 a R6) siguen con una corrida cada uno, sobre el mismo commit.
+
 ## Línea base (Fase 1)
 
 - Pico 500: p95 de inscripción 10175.92 ms, 0 errores, 0 avisos.
