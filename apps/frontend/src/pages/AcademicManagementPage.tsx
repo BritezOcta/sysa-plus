@@ -53,6 +53,7 @@ export default function AcademicManagementPage() {
     pendingFailedOperation,
     dismissFailedOperation,
     toasts,
+    pushToast,
     dismissToast,
     handleSaveCareer,
     handleToggleCareerStatus,
@@ -234,7 +235,7 @@ export default function AcademicManagementPage() {
         <BroadcastNoticeModal
           onClose={() => setNoticeModalOpen(false)}
           onSuccess={(sentCount) => {
-            alert(`Aviso enviado a ${sentCount} alumno(s).`);
+            pushToast("success", "Aviso enviado", `Se envió a ${sentCount} alumno(s).`);
           }}
         />
       )}

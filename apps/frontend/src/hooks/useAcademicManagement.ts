@@ -592,6 +592,7 @@ export function useAcademicManagement() {
     pendingFailedOperation,
     dismissFailedOperation,
     toasts,
+    pushToast,
     dismissToast,
     handleSaveCareer,
     handleToggleCareerStatus,
