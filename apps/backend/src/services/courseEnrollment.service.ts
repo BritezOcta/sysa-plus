@@ -173,6 +173,35 @@ function assertStudentActive(context: StudentContext) {
 }
 
 // ---------------------------------------------------------------------------
+// Cache de la comisión para inscribir
+// ---------------------------------------------------------------------------
+
+/**
+ * En un pico de inscripción cientos de alumnos piden la misma comisión a la vez; cada carga son
+ * ~10 consultas (Prisma resuelve cada relación aparte en SQL Server). Se cachean unos segundos los
+ * datos que casi no cambian (horarios, período, materia, correlativas), por worker, y los pedidos
+ * simultáneos comparten la misma carga en curso. Lo que sí cambia (cupo ocupado) no se cachea, y
+ * repo.reserveCourseSeat vuelve a controlar en la base que la comisión siga disponible.
+ */
+const OFFERING_CACHE_MS = 5_000;
+type EnrollmentOffering = Awaited<ReturnType<typeof repo.findOfferingForEnrollment>>;
+const offeringCache = new Map<number, { expiresAt: number; offering: Promise<EnrollmentOffering> }>();
+
+function getOfferingForEnrollment(courseOfferingId: number): Promise<EnrollmentOffering> {
+  const now = Date.now();
+  const hit = offeringCache.get(courseOfferingId);
+  if (hit && hit.expiresAt > now) return hit.offering;
+
+  if (offeringCache.size > 1_000) {
+    for (const [id, entry] of offeringCache) if (entry.expiresAt <= now) offeringCache.delete(id);
+  }
+  const offering = repo.findOfferingForEnrollment(courseOfferingId);
+  offeringCache.set(courseOfferingId, { expiresAt: now + OFFERING_CACHE_MS, offering });
+  offering.catch(() => offeringCache.delete(courseOfferingId));
+  return offering;
+}
+
+// ---------------------------------------------------------------------------
 // Correlatividades
 // ---------------------------------------------------------------------------
 
@@ -379,7 +408,7 @@ export const courseEnrollmentService = {
     const context = await loadStudentContext(user.userId);
     assertStudentActive(context);
 
-    const offering = await repo.findOfferingForEnrollment(courseOfferingId);
+    const offering = await getOfferingForEnrollment(courseOfferingId);
     if (
       !offering ||
       offering.studyPlanSubject.studyPlanId !== context.studyPlanId ||
@@ -407,6 +436,25 @@ export const courseEnrollmentService = {
       );
     }
 
+    const { studentCareerId } = context;
+    const academicPeriodId = offering.academicPeriod.academicPeriodId;
+
+    /** Vacantes: una sola consulta. Va antes del historial para que, con la comisión llena, se rechace sin más trabajo. */
+    const checkSeat = async () => {
+      const holders = await repo.findSeatHolders(courseOfferingId);
+      if (holders.some((h) => h.studentCareerId === studentCareerId)) {
+        throw new AppError(409, ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED, "Ya estás inscripto en esta comisión.");
+      }
+      if (holders.length >= offering.capacity) {
+        throw new AppError(
+          409,
+          ENROLLMENT_ERROR_CODES.COMMISSION_FULL,
+          `La comisión ${offering.commission} de ${subjectName} ya no cuenta con vacantes disponibles.`,
+        );
+      }
+    };
+    await checkSeat();
+
     const history = await repo.findAcademicHistory(context.studentCareerId);
     if (
       history.approved.has(subject.studyPlanSubjectId) ||
@@ -429,30 +477,12 @@ export const courseEnrollmentService = {
       );
     }
 
-    const { studentCareerId } = context;
-    const academicPeriodId = offering.academicPeriod.academicPeriodId;
-
     /**
-     * Validaciones del alumno y del cupo, sin bloqueo: rechazan rápido y arman los mensajes.
-     * La verificación definitiva la repite repo.reserveCourseSeat en la base (mismas reglas en SQL).
+     * Validaciones del alumno contra sus otras inscripciones del período, sin bloqueo: rechazan rápido
+     * y arman los mensajes. La verificación definitiva la repite repo.reserveCourseSeat en la base.
      */
     const validate = async () => {
-      const active = await repo.findActiveEnrollmentsInPeriod(
-        studentCareerId,
-        academicPeriodId,
-      );
-
-      if (
-        active.some(
-          (e) => e.courseOffering.courseOfferingId === courseOfferingId,
-        )
-      ) {
-        throw new AppError(
-          409,
-          ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
-          "Ya estás inscripto en esta comisión.",
-        );
-      }
+      const active = await repo.findActiveEnrollmentsForValidation(studentCareerId, academicPeriodId);
 
       const sameSubject = active.find(
         (e) =>
@@ -470,25 +500,19 @@ export const courseEnrollmentService = {
         schedulesOverlap(e.courseOffering.schedules, offering.schedules),
       );
       if (conflict) {
+        // El detalle (docentes, inscriptos) solo se pide en este caso, que es poco frecuente.
+        const full = (await repo.findActiveEnrollmentsInPeriod(studentCareerId, academicPeriodId)).find(
+          (e) => e.courseEnrollmentId === conflict.courseEnrollmentId,
+        );
         throw new AppError(
           409,
           ENROLLMENT_ERROR_CODES.SCHEDULE_CONFLICT,
           `El horario de esta comisión (${formatScheduleText(offering.schedules)}) se superpone con ${conflict.courseOffering.studyPlanSubject.subject.subjectName} (${formatScheduleText(conflict.courseOffering.schedules)}). Por favor elegí otra comisión.`,
-          { conflictWith: toStudentEnrollmentDto(conflict) },
-        );
-      }
-
-      const enrolledCount = await repo.countActiveEnrollments(courseOfferingId);
-      if (enrolledCount >= offering.capacity) {
-        throw new AppError(
-          409,
-          ENROLLMENT_ERROR_CODES.COMMISSION_FULL,
-          `La comisión ${offering.commission} de ${subjectName} ya no cuenta con vacantes disponibles.`,
+          full ? { conflictWith: toStudentEnrollmentDto(full) } : undefined,
         );
       }
     };
 
-    // Sin bloqueo: con la comisión llena (la mayoría de los pedidos en un pico) se rechaza sin hacer fila.
     await validate();
 
     // Verificación definitiva y alta en una sola ida a la base, con el alumno y la comisión bloqueados.
@@ -504,9 +528,19 @@ export const courseEnrollmentService = {
     } catch (error) {
       mapConcurrencyError(error);
     }
+    if (reservation.result === "OFFERING_NOT_AVAILABLE") {
+      // La comisión se cerró (o cambió) mientras estaba en la cache: se descarta para el próximo pedido.
+      offeringCache.delete(courseOfferingId);
+      throw new AppError(
+        409,
+        ENROLLMENT_ERROR_CODES.OFFERING_NOT_AVAILABLE,
+        `La comisión ${offering.commission} de ${subjectName} no está habilitada para inscripciones.`,
+      );
+    }
     if (reservation.result !== "OK" || reservation.courseEnrollmentId === null) {
-      // Otro pedido ganó la carrera entre la validación previa y el alta. validate() ya ve ese pedido
-      // confirmado y arma el mismo mensaje (con su detalle) que en el caso común.
+      // Otro pedido ganó la carrera entre la validación previa y el alta. checkSeat() y validate() ya ven
+      // ese pedido confirmado y arman el mismo mensaje (con su detalle) que en el caso común.
+      await checkSeat();
       await validate();
       throw new AppError(
         409,

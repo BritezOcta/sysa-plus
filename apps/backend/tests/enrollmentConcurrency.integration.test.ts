@@ -171,6 +171,19 @@ test("inscripciones simultáneas respetan cupo y validaciones del alumno", async
       assert.equal(rows[0]!.courseEnrollmentId, before.courseEnrollmentId);
       assert.equal(rows[0]!.enrollmentStatus, "INSCRIPTO");
     });
+
+    // Último: inscribe a otro alumno en la comisión E, que los casos anteriores cuentan.
+    await t.test("una comisión cerrada no acepta inscripciones aunque esté en la cache del servicio", async () => {
+      const first = await post("/course-enrollments", cookies[10]!, { courseOfferingId: free.courseOfferingId });
+      assert.equal(first.status, 201); // deja la comisión en la cache (5 s)
+      await prisma.courseOffering.update({ where: { courseOfferingId: free.courseOfferingId }, data: { offeringStatus: "CERRADA" } });
+      try {
+        const second = await post("/course-enrollments", cookies[11]!, { courseOfferingId: free.courseOfferingId });
+        assert.deepEqual(second, { status: 409, code: "OFFERING_NOT_AVAILABLE" });
+      } finally {
+        await prisma.courseOffering.update({ where: { courseOfferingId: free.courseOfferingId }, data: { offeringStatus: "ABIERTA" } });
+      }
+    });
   } finally {
     server.close();
     await prisma.$disconnect();

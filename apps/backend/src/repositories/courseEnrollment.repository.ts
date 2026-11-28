@@ -11,7 +11,13 @@ type Db = Prisma.TransactionClient | typeof prisma;
 
 /** Resultado de reserveCourseSeat: OK con el id, o el motivo del rechazo. */
 export interface SeatReservation {
-  result: "OK" | "ALREADY_ENROLLED" | "ALREADY_ENROLLED_IN_SUBJECT" | "SCHEDULE_CONFLICT" | "COMMISSION_FULL";
+  result:
+    | "OK"
+    | "OFFERING_NOT_AVAILABLE"
+    | "ALREADY_ENROLLED"
+    | "ALREADY_ENROLLED_IN_SUBJECT"
+    | "SCHEDULE_CONFLICT"
+    | "COMMISSION_FULL";
   courseEnrollmentId: number | null;
 }
 
@@ -158,11 +164,18 @@ export const courseEnrollmentRepository = {
     });
   },
 
+  /**
+   * Datos de la comisión para validar una inscripción. Solo datos que casi no cambian (sin conteo
+   * de inscriptos ni docentes): el servicio los cachea unos segundos.
+   */
   findOfferingForEnrollment(courseOfferingId: number) {
     return prisma.courseOffering.findUnique({
       where: { courseOfferingId },
       select: {
-        ...offeringSelect,
+        courseOfferingId: true,
+        commission: true,
+        capacity: true,
+        schedules: { select: { dayOfWeek: true, startTime: true, endTime: true } },
         offeringStatus: true,
         academicPeriod: { select: periodSelect },
         studyPlanSubject: {
@@ -178,9 +191,34 @@ export const courseEnrollmentRepository = {
     });
   },
 
-  countActiveEnrollments(courseOfferingId: number, db: Db = prisma) {
-    return db.courseEnrollment.count({
+  /**
+   * Inscripciones vigentes del alumno en el período, con lo justo para validar una inscripción
+   * nueva (sin docentes ni conteos, que agregan consultas). El detalle completo se pide aparte.
+   */
+  findActiveEnrollmentsForValidation(studentCareerId: number, academicPeriodId: number) {
+    return prisma.courseEnrollment.findMany({
+      where: { studentCareerId, enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO, courseOffering: { academicPeriodId } },
+      orderBy: { courseEnrollmentId: "asc" },
+      select: {
+        courseEnrollmentId: true,
+        courseOffering: {
+          select: {
+            courseOfferingId: true,
+            commission: true,
+            studyPlanSubjectId: true,
+            schedules: { select: { dayOfWeek: true, startTime: true, endTime: true } },
+            studyPlanSubject: { select: { subject: subjectNameSelect } },
+          },
+        },
+      },
+    });
+  },
+
+  /** Quiénes ocupan una vacante de la comisión (INSCRIPTO): sirve para el cupo y para saber si el alumno ya está. */
+  findSeatHolders(courseOfferingId: number) {
+    return prisma.courseEnrollment.findMany({
       where: { courseOfferingId, enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO },
+      select: { studentCareerId: true },
     });
   },
 
@@ -219,6 +257,8 @@ export const courseEnrollmentRepository = {
    * Es la verificación definitiva: repite en SQL las reglas de `validate()` en
    * courseEnrollment.service.ts (misma comisión, misma materia, horarios superpuestos con la misma
    * regla que schedulesOverlap, y cupo). Si cambia una regla, hay que cambiarla en los dos lugares.
+   * También controla que la comisión siga disponible (abierta, materia activa, inscripción en
+   * fecha), porque el servicio valida eso con datos cacheados unos segundos.
    */
   async reserveCourseSeat(p: {
     studentCareerId: number;
@@ -237,7 +277,14 @@ export const courseEnrollmentRepository = {
       SELECT @lockedStudent = STUDENT_CAREER_ID FROM STUDENT_CAREER WITH (UPDLOCK, ROWLOCK) WHERE STUDENT_CAREER_ID = ${p.studentCareerId};
       SELECT @capacity = CAPACITY FROM COURSE_OFFERING WITH (UPDLOCK, ROWLOCK) WHERE COURSE_OFFERING_ID = ${p.courseOfferingId};
 
-      IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT
+      IF NOT EXISTS (SELECT 1 FROM COURSE_OFFERING o
+                     JOIN STUDY_PLAN_SUBJECT sps ON sps.STUDY_PLAN_SUBJECT_ID = o.STUDY_PLAN_SUBJECT_ID
+                     JOIN ACADEMIC_PERIOD ap ON ap.ACADEMIC_PERIOD_ID = o.ACADEMIC_PERIOD_ID
+                     WHERE o.COURSE_OFFERING_ID = ${p.courseOfferingId} AND o.OFFERING_STATUS = ${OFFERING_STATUS.ABIERTA}
+                       AND sps.IS_ACTIVE = 1
+                       AND ap.ENROLLMENT_START_DATE <= ${p.enrollmentDate} AND ap.ENROLLMENT_END_DATE >= ${p.enrollmentDate})
+        SET @result = 'OFFERING_NOT_AVAILABLE';
+      ELSE IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT
                  WHERE STUDENT_CAREER_ID = ${p.studentCareerId} AND COURSE_OFFERING_ID = ${p.courseOfferingId} AND ENROLLMENT_STATUS = ${active})
         SET @result = 'ALREADY_ENROLLED';
       ELSE IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT e JOIN COURSE_OFFERING o ON o.COURSE_OFFERING_ID = e.COURSE_OFFERING_ID
