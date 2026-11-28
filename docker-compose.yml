@@ -74,8 +74,10 @@ services:
     networks:
       - sysaplus-net
 
-  # Pruebas de carga (k6). No arranca con "up": se usa con "docker compose run --rm k6 run /scripts/<escenario>.js".
-  # Ver loadtest/README.md.
+  # Pruebas de carga (k6). No arranca con "up": se usa con
+  # "docker compose run --rm --no-deps k6 run /scripts/<escenario>.js" (ver loadtest/README.md).
+  # --no-deps es importante: sin él, Compose recrea el backend con la config del archivo y descarta
+  # cualquier ajuste que se esté midiendo (cantidad de workers, perfilador, etc.).
   k6:
     image: grafana/k6:latest
     profiles: ["carga"]

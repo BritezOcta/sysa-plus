@@ -47,8 +47,11 @@ export const options = {
 
 export function setup() {
   // Un alumno cualquiera alcanza para ubicar la comisión; su token no sale de setup().
-  const cookie = login(dniFor(1)).cookies[SESSION_COOKIE];
-  if (!cookie) fail(`No pudo iniciar sesión el alumno ${dniFor(1)}. ¿Corriste el seed de carga?`);
+  const res = login(dniFor(1));
+  const cookie = res.cookies[SESSION_COOKIE];
+  if (!cookie) {
+    fail(`No pudo iniciar sesión el alumno ${dniFor(1)} (HTTP ${res.status}: ${String(res.body).slice(0, 200)}). ¿Corriste el seed de carga?`);
+  }
 
   const overview = http.get(`${BASE_URL}/api/course-enrollments`, withSession(cookie[0].value));
   const peak = (overview.json("subjects") || []).flatMap((s) => s.commissions).find((c) => c.name === "PICO");
