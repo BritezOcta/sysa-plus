@@ -60,11 +60,16 @@ export const adminReportsApi = {
     careerId?: string;
     subjectId?: string;
     periodId?: string;
+    /** "AAAA-MM-DD" */
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<AcademicReportResponse> {
     const query = new URLSearchParams({ type: params.type });
     if (params.careerId) query.set("careerId", params.careerId);
     if (params.subjectId) query.set("subjectId", params.subjectId);
     if (params.periodId) query.set("periodId", params.periodId);
+    if (params.dateFrom) query.set("dateFrom", params.dateFrom);
+    if (params.dateTo) query.set("dateTo", params.dateTo);
 
     return apiRequest<AcademicReportResponse>(
       `/admin/reports?${query.toString()}`,

@@ -4,6 +4,9 @@ export interface ReportFilterParams {
   careerId?: number | undefined;
   subjectId?: number | undefined;
   academicPeriodId?: number | undefined;
+  /** Rango de fechas: entran las comisiones cuyo cuatrimestre se superpone con él. */
+  dateFrom?: Date | undefined;
+  dateTo?: Date | undefined;
 }
 export const adminReportsRepository = {
   async getFilterOptions() {
@@ -31,6 +34,14 @@ export const adminReportsRepository = {
       where: {
         ...(filters.academicPeriodId
           ? { academicPeriodId: filters.academicPeriodId }
+          : {}),
+        ...(filters.dateFrom || filters.dateTo
+          ? {
+              academicPeriod: {
+                ...(filters.dateTo ? { periodStartDate: { lte: filters.dateTo } } : {}),
+                ...(filters.dateFrom ? { periodEndDate: { gte: filters.dateFrom } } : {}),
+              },
+            }
           : {}),
         studyPlanSubject: {
           ...(filters.subjectId ? { subjectId: filters.subjectId } : {}),

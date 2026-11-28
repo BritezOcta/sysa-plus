@@ -8,8 +8,9 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-SysAPlus2026!Secure}"
       MSSQL_PID: "Developer"
+    # Solo desde esta PC: la base no queda expuesta a la red.
     ports:
-      - "${MSSQL_PORT:-1433}:1433"
+      - "127.0.0.1:${MSSQL_PORT:-1433}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
@@ -40,8 +41,12 @@ services:
       REMEMBER_ME_DAYS: "${REMEMBER_ME_DAYS:-7}"
       LOGIN_MAX_ATTEMPTS: "${LOGIN_MAX_ATTEMPTS:-5}"
       LOGIN_LOCK_MINUTES: "${LOGIN_LOCK_MINUTES:-15}"
+      LOGIN_IP_MAX_ATTEMPTS: "${LOGIN_IP_MAX_ATTEMPTS:-3}"
+      LOGIN_IP_BLOCK_MINUTES: "${LOGIN_IP_BLOCK_MINUTES:-15}"
+    # Solo desde esta PC: desde la red se entra por nginx (frontend), que es quien
+    # agrega X-Forwarded-For. Expuesta, cualquiera podría falsear su IP salteando nginx.
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
     depends_on:
       sqlserver:
         condition: service_healthy

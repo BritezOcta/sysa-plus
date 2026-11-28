@@ -320,14 +320,6 @@ export const teacherService = {
       },
     });
 
-    await notificationsService.notify({
-      userId: sp.userId,
-      title: `Nueva observación en ${assignment.courseOffering.studyPlanSubject.subject.subjectName}`,
-      body: `El docente registró una observación en tu cursada (Comisión ${assignment.courseOffering.commission}).`,
-      type: "info",
-      link: "/alumno/avisos",
-    });
-
     return {
       id: String(created.observationId),
       text: created.observationText,

@@ -15,6 +15,8 @@ export const adminReportsController = {
       rawCareerId: req.query["careerId"],
       rawSubjectId: req.query["subjectId"],
       rawPeriodId: req.query["periodId"],
+      rawDateFrom: req.query["dateFrom"],
+      rawDateTo: req.query["dateTo"],
     });
     res.status(200).json({ status: "OK", ...data });
   },

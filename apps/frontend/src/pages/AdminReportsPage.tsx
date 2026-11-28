@@ -31,6 +31,8 @@ export default function AdminReportsPage() {
   const [careerId, setCareerId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [periodId, setPeriodId] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const [report, setReport] = useState<AcademicReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +64,8 @@ export default function AdminReportsPage() {
         careerId: careerId || undefined,
         subjectId: subjectId || undefined,
         periodId: periodId || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       });
       setReport(data);
       if (data.rows.length > 0) {
@@ -93,6 +97,7 @@ export default function AdminReportsPage() {
         { label: "Carrera", value: labelOf(filters.careers, careerId, "Todas") },
         { label: "Materia", value: labelOf(filters.subjects, subjectId, "Todas") },
         { label: "Período", value: labelOf(filters.periods, periodId, "Todos") },
+        { label: "Rango de fechas", value: dateFrom || dateTo ? `${dateFrom || "…"} a ${dateTo || "…"}` : "Sin límite" },
       ],
     };
   }
@@ -175,6 +180,28 @@ export default function AdminReportsPage() {
               </select>
             </label>
           ))}
+          <label htmlFor="filter-date-from" className={s.filterField}>
+            Desde
+            <input
+              id="filter-date-from"
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className={`${common.field} ${s.control}`}
+            />
+          </label>
+          <label htmlFor="filter-date-to" className={s.filterField}>
+            Hasta
+            <input
+              id="filter-date-to"
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+              className={`${common.field} ${s.control}`}
+            />
+          </label>
         </div>
       </section>
 
