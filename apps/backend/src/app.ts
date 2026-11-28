@@ -8,6 +8,9 @@ export function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
+  // Detrás de nginx (Docker) o del proxy de Vite: req.ip toma la IP que agrega el proxy
+  // en X-Forwarded-For, no la del contenedor. Lo usan la auditoría y el límite de login por IP.
+  app.set("trust proxy", 1);
   app.use(express.json());
   app.use(cookieParser());
   app.use("/api", apiRouter);

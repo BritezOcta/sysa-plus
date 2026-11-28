@@ -1,0 +1,3 @@
+# Resúmenes de k6 (*.json): se regeneran en cada corrida.
+# Los veredictos del juez (*.md) sí se versionan como registro de cada fase.
+*.json

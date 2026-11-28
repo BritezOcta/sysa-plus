@@ -7,16 +7,12 @@ import { PlanMateriasPage } from "./pages/PlanMateriasPage";
 import { EstadoAcademicoPage } from "./pages/EstadoAcademicoPage";
 import { ExamenesPage } from "./pages/ExamenesPage";
 import { InscripcionExamenPage } from "./pages/InscripcionExamenPage";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { CambioPasswordPage } from "./pages/CambioPasswordPage";
 import { CertificadosPage } from "./pages/CertificadosPage";
 import { CursadoPage } from "./pages/CursadoPage";
 import { AsistenciasPage } from "./pages/AsistenciasPage";
 import { AvisosPage } from "./pages/AvisosPage";
 import { CorrelatividadesPage } from "./pages/CorrelatividadesPage";
-
-/** Opciones del menú que todavía no tienen pantalla propia */
-const PLACEHOLDERS = ["bee", "censo"];
 
 interface Props {
   user: StudentUser;
@@ -32,11 +28,7 @@ export function StudentArea({ user, onLogout }: Props) {
       <Routes>
         <Route
           element={
-            <StudentLayout
-              user={user}
-              onLogout={onLogout}
-              hayRelevamientoPendiente
-            />
+            <StudentLayout user={user} onLogout={onLogout} />
           }
         >
           <Route index element={<HomePage />} />
@@ -67,9 +59,6 @@ export function StudentArea({ user, onLogout }: Props) {
           <Route path="certificados" element={<CertificadosPage />} />
           <Route path="password" element={<CambioPasswordPage />} />
           <Route path="avisos" element={<AvisosPage />} />
-          {PLACEHOLDERS.map((id) => (
-            <Route key={id} path={id} element={<PlaceholderPage id={id} />} />
-          ))}
           <Route path="*" element={<Navigate to="/alumno" replace />} />
         </Route>
       </Routes>

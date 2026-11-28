@@ -8,7 +8,7 @@ export interface NavItem {
   to: string;
   icon: IconName;
   description: string;
-  /** Clave de insignia que interpreta el `badgeFor` de cada rol (el alumno usa "avisos" | "pendiente"). */
+  /** Clave de insignia que interpreta el `badgeFor` de cada rol (el alumno usa "avisos"). */
   badge?: string;
 }
 

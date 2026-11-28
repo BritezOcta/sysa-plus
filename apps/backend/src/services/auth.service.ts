@@ -1,7 +1,8 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { env } from "../config/env.js";
 import { AppError } from "../lib/AppError.js";
 import { signSessionToken } from "../lib/jwt.js";
+import { loginIpThrottleRepository } from "../repositories/loginIpThrottle.repository.js";
 import { userRepository } from "../repositories/user.repository.js";
 import { isRole, type AuthUser } from "../types/auth.js";
 import { AUDIT_ACTIONS, auditService } from "./audit.service.js";
@@ -17,6 +18,7 @@ export const AUTH_ERROR_CODES = {
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
   ACCOUNT_INACTIVE: "ACCOUNT_INACTIVE",
   ACCOUNT_LOCKED: "ACCOUNT_LOCKED",
+  TOO_MANY_ATTEMPTS: "TOO_MANY_ATTEMPTS",
   UNAUTHENTICATED: "UNAUTHENTICATED",
   FORBIDDEN: "FORBIDDEN",
   INVALID_CURRENT_PASSWORD: "INVALID_CURRENT_PASSWORD",
@@ -37,6 +39,15 @@ const accountLocked = (lockedUntil: Date) =>
     `Tu cuenta está bloqueada temporalmente tras ${env.LOGIN_MAX_ATTEMPTS} intentos fallidos. Intentá nuevamente en ${minutesUntil(lockedUntil)} minuto(s).`,
     { lockedUntil: lockedUntil.toISOString() },
   );
+
+const IP_THROTTLE = {
+  maxFailures: env.LOGIN_IP_MAX_ATTEMPTS,
+  blockMs: env.LOGIN_IP_BLOCK_MINUTES * 60_000,
+};
+
+// Solo cuentan los fallos de credenciales (401) y los intentos sobre una cuenta bloqueada (423).
+const countsAsIpFailure = (err: unknown) =>
+  err instanceof AppError && (err.statusCode === 401 || err.statusCode === 423);
 
 function minutesUntil(date: Date): number {
   return Math.max(1, Math.ceil((date.getTime() - Date.now()) / 60_000));
@@ -76,7 +87,36 @@ export interface LoginResult {
 }
 
 export const authService = {
-  async login({ dni, password, rememberMe, ipAddress }: LoginInput): Promise<LoginResult> {
+  async login(input: LoginInput): Promise<LoginResult> {
+    const ip = input.ipAddress;
+    const blockedMs = ip ? await loginIpThrottleRepository.blockedFor(ip) : 0;
+    if (blockedMs > 0) {
+      await auditService.record({
+        userId: null,
+        action: AUDIT_ACTIONS.LOGIN_LOCKED,
+        entity: "USERS",
+        details: "Intento de ingreso desde una IP bloqueada por intentos fallidos",
+        ipAddress: ip,
+      });
+      throw new AppError(
+        429,
+        AUTH_ERROR_CODES.TOO_MANY_ATTEMPTS,
+        `Demasiados intentos fallidos desde esta conexión. Intentá nuevamente en ${minutesUntil(new Date(Date.now() + blockedMs))} minuto(s).`,
+      );
+    }
+
+    try {
+      const result = await authService.checkCredentials(input);
+      if (ip) await loginIpThrottleRepository.reset(ip);
+      return result;
+    } catch (err) {
+      if (ip && countsAsIpFailure(err)) await loginIpThrottleRepository.registerFailure(ip, IP_THROTTLE);
+      throw err;
+    }
+  },
+
+  /** Valida credenciales y abre la sesión, sin el límite por IP. Usar login(). */
+  async checkCredentials({ dni, password, rememberMe, ipAddress }: LoginInput): Promise<LoginResult> {
     const dniValue = typeof dni === "string" ? dni.trim() : "";
     const passwordValue = typeof password === "string" ? password : "";
 

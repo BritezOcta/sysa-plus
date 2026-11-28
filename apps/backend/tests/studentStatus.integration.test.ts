@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { once } from "node:events";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 if (!databaseUrl || !/;database=sysaplus_test_[a-z0-9_]+;/i.test(databaseUrl)) {

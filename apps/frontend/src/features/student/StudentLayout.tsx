@@ -13,20 +13,14 @@ interface Props {
   user: StudentUser;
   /** Se llama al tocar "Salir": limpiá el token/sesión y redirigí al login. */
   onLogout: () => void;
-  hayRelevamientoPendiente?: boolean;
 }
 
 /** Marco del área del alumno: el AppShell común con su menú y modo oscuro. */
-export function StudentLayout({
-  user,
-  onLogout,
-  hayRelevamientoPendiente = false,
-}: Props) {
+export function StudentLayout({ user, onLogout }: Props) {
   const { unreadCount: avisosSinLeer } = useStudentNotifications();
 
   const badgeFor = (item: NavItem) => {
     if (item.badge === "avisos" && avisosSinLeer > 0) return { text: String(avisosSinLeer), warn: false };
-    if (item.badge === "pendiente" && hayRelevamientoPendiente) return { text: "Pendiente", warn: true };
     return null;
   };
 

@@ -261,7 +261,7 @@ function mapConcurrencyError(error: unknown): never {
         "Ya estás inscripto en esta mesa.",
       );
     }
-    // P2034: conflicto de escritura / deadlock entre transacciones SERIALIZABLE.
+    // P2034: deadlock que persistió tras los reintentos de runWithEnrollmentLocks (raro).
     if (error.code === "P2034") {
       throw new AppError(
         409,
@@ -448,47 +448,58 @@ export const examEnrollmentService = {
       );
 
     const { studentCareerId } = context;
+
+    /** Validaciones del alumno y del cupo. `db` = transacción con bloqueo, o sin bloqueo para rechazar rápido. */
+    const validate = async (db?: Prisma.TransactionClient) => {
+      const upcoming = await repo.findUpcomingEnrollments(
+        studentCareerId,
+        today,
+        db,
+      );
+
+      if (upcoming.some((e) => e.examCall.examCallId === examCallId)) {
+        throw new AppError(
+          409,
+          EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+          "Ya estás inscripto en esta mesa.",
+        );
+      }
+
+      const sameSubject = upcoming.find(
+        (e) =>
+          e.examCall.studyPlanSubject.studyPlanSubjectId ===
+          subject.studyPlanSubjectId,
+      );
+      if (sameSubject) {
+        throw new AppError(
+          409,
+          EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
+          `Ya estás inscripto a ${subjectName} en la mesa del ${formatDisplayDate(sameSubject.examCall.callDate)}. Si querés cambiar de llamado, primero cancelá esa inscripción.`,
+        );
+      }
+
+      if (
+        call.capacity !== null &&
+        (await repo.countActiveEnrollments(examCallId, db)) >= call.capacity
+      ) {
+        throw new AppError(
+          409,
+          EXAM_ENROLLMENT_ERROR_CODES.CALL_FULL,
+          `La mesa de ${subjectName} del ${formatDisplayDate(call.callDate)} ya no tiene cupo disponible.`,
+        );
+      }
+    };
+
+    // Sin bloqueo: con la mesa llena (la mayoría de los pedidos en un pico) se rechaza sin hacer fila.
+    await validate();
+
     let examEnrollmentId: number;
     try {
-      examEnrollmentId = await courseEnrollmentRepository.runSerializable(
+      examEnrollmentId = await courseEnrollmentRepository.runWithEnrollmentLocks(
+        { studentCareerId, examCallId },
         async (tx) => {
-          const upcoming = await repo.findUpcomingEnrollments(
-            studentCareerId,
-            today,
-            tx,
-          );
-
-          if (upcoming.some((e) => e.examCall.examCallId === examCallId)) {
-            throw new AppError(
-              409,
-              EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
-              "Ya estás inscripto en esta mesa.",
-            );
-          }
-
-          const sameSubject = upcoming.find(
-            (e) =>
-              e.examCall.studyPlanSubject.studyPlanSubjectId ===
-              subject.studyPlanSubjectId,
-          );
-          if (sameSubject) {
-            throw new AppError(
-              409,
-              EXAM_ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
-              `Ya estás inscripto a ${subjectName} en la mesa del ${formatDisplayDate(sameSubject.examCall.callDate)}. Si querés cambiar de llamado, primero cancelá esa inscripción.`,
-            );
-          }
-
-          if (
-            call.capacity !== null &&
-            (await repo.countActiveEnrollments(examCallId, tx)) >= call.capacity
-          ) {
-            throw new AppError(
-              409,
-              EXAM_ENROLLMENT_ERROR_CODES.CALL_FULL,
-              `La mesa de ${subjectName} del ${formatDisplayDate(call.callDate)} ya no tiene cupo disponible.`,
-            );
-          }
+          // Con la fila del alumno y la de la mesa bloqueadas: esta es la verificación que vale.
+          await validate(tx);
 
           // Si se había inscripto antes a esta misma mesa y canceló, se reactiva ese registro.
           const previous = await repo.findEnrollment(

@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { AppError } from "../lib/AppError.js";
 import { prisma } from "../lib/prisma.js";
 import { parseStudentStatusInput } from "../lib/studentStatus.js";

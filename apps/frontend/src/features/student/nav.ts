@@ -107,19 +107,6 @@ export const NAV_GROUPS: NavGroup[] = [
         "Certificado de alumno regular y otras constancias",
       ),
       item(
-        "bee",
-        "Boleto Especial Educativo",
-        "bus",
-        "Solicitá o renová tu boleto estudiantil",
-      ),
-      item(
-        "censo",
-        "Relevamiento de datos censales 2026",
-        "clipboardList",
-        "Actualizá tus datos personales y académicos",
-        "pendiente",
-      ),
-      item(
         "password",
         "Cambio de contraseña",
         "lock",

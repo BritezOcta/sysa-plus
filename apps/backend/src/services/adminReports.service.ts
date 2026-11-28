@@ -24,6 +24,19 @@ function parseOptionalId(raw: unknown): number | undefined {
   return num;
 }
 
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Fecha opcional "AAAA-MM-DD" (como la manda un <input type="date">), en UTC. */
+function parseOptionalDate(raw: unknown): Date | undefined {
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  const date = typeof raw === "string" && DATE_PATTERN.test(raw) ? new Date(`${raw}T00:00:00Z`) : null;
+  // El round-trip descarta fechas imposibles como 2026-02-31.
+  if (!date || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== raw) {
+    throw new AppError(400, "INVALID_FILTER", "Una de las fechas del rango no es válida.");
+  }
+  return date;
+}
+
 export const adminReportsService = {
   async getFilterOptions() {
     const { careers, subjects, periods } =
@@ -51,6 +64,8 @@ export const adminReportsService = {
     rawCareerId: unknown;
     rawSubjectId: unknown;
     rawPeriodId: unknown;
+    rawDateFrom: unknown;
+    rawDateTo: unknown;
   }) {
     const reportType =
       typeof params.rawType === "string" ? params.rawType.toUpperCase() : "";
@@ -65,17 +80,25 @@ export const adminReportsService = {
     const careerId = parseOptionalId(params.rawCareerId);
     const subjectId = parseOptionalId(params.rawSubjectId);
     const academicPeriodId = parseOptionalId(params.rawPeriodId);
+    const dateFrom = parseOptionalDate(params.rawDateFrom);
+    const dateTo = parseOptionalDate(params.rawDateTo);
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      throw new AppError(400, "INVALID_FILTER", "La fecha desde no puede ser posterior a la fecha hasta.");
+    }
 
     const offerings = await adminReportsRepository.findOfferingsForReport({
       careerId,
       subjectId,
       academicPeriodId,
+      dateFrom,
+      dateTo,
     });
 
+    const day = (d: Date | undefined) => d?.toISOString().slice(0, 10) ?? "sin límite";
     await adminReportsRepository.logReportGeneration({
       userId: params.user.userId,
       reportType,
-      details: `Filtros -> carrera:${careerId ?? "todas"}, materia:${subjectId ?? "todas"}, periodo:${academicPeriodId ?? "todos"}`,
+      details: `Filtros -> carrera:${careerId ?? "todas"}, materia:${subjectId ?? "todas"}, periodo:${academicPeriodId ?? "todos"}, rango:${day(dateFrom)} a ${day(dateTo)}`,
       ipAddress: params.ipAddress,
     });
 

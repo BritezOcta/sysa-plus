@@ -9,6 +9,18 @@ import {
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
+/** Resultado de reserveCourseSeat: OK con el id, o el motivo del rechazo. */
+export interface SeatReservation {
+  result:
+    | "OK"
+    | "OFFERING_NOT_AVAILABLE"
+    | "ALREADY_ENROLLED"
+    | "ALREADY_ENROLLED_IN_SUBJECT"
+    | "SCHEDULE_CONFLICT"
+    | "COMMISSION_FULL";
+  courseEnrollmentId: number | null;
+}
+
 /** Correlatividades que se exigen para CURSAR (las de rendir son de RF-06). */
 const COURSE_CORRELATIVITY_TYPES = [CORRELATIVITY_TYPE.REGULAR_TO_ENROLL, CORRELATIVITY_TYPE.APPROVED_TO_ENROLL];
 
@@ -152,11 +164,18 @@ export const courseEnrollmentRepository = {
     });
   },
 
+  /**
+   * Datos de la comisión para validar una inscripción. Solo datos que casi no cambian (sin conteo
+   * de inscriptos ni docentes): el servicio los cachea unos segundos.
+   */
   findOfferingForEnrollment(courseOfferingId: number) {
     return prisma.courseOffering.findUnique({
       where: { courseOfferingId },
       select: {
-        ...offeringSelect,
+        courseOfferingId: true,
+        commission: true,
+        capacity: true,
+        schedules: { select: { dayOfWeek: true, startTime: true, endTime: true } },
         offeringStatus: true,
         academicPeriod: { select: periodSelect },
         studyPlanSubject: {
@@ -172,32 +191,34 @@ export const courseEnrollmentRepository = {
     });
   },
 
-  countActiveEnrollments(courseOfferingId: number, db: Db = prisma) {
-    return db.courseEnrollment.count({
+  /**
+   * Inscripciones vigentes del alumno en el período, con lo justo para validar una inscripción
+   * nueva (sin docentes ni conteos, que agregan consultas). El detalle completo se pide aparte.
+   */
+  findActiveEnrollmentsForValidation(studentCareerId: number, academicPeriodId: number) {
+    return prisma.courseEnrollment.findMany({
+      where: { studentCareerId, enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO, courseOffering: { academicPeriodId } },
+      orderBy: { courseEnrollmentId: "asc" },
+      select: {
+        courseEnrollmentId: true,
+        courseOffering: {
+          select: {
+            courseOfferingId: true,
+            commission: true,
+            studyPlanSubjectId: true,
+            schedules: { select: { dayOfWeek: true, startTime: true, endTime: true } },
+            studyPlanSubject: { select: { subject: subjectNameSelect } },
+          },
+        },
+      },
+    });
+  },
+
+  /** Quiénes ocupan una vacante de la comisión (INSCRIPTO): sirve para el cupo y para saber si el alumno ya está. */
+  findSeatHolders(courseOfferingId: number) {
+    return prisma.courseEnrollment.findMany({
       where: { courseOfferingId, enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO },
-    });
-  },
-
-  findEnrollment(studentCareerId: number, courseOfferingId: number, db: Db = prisma) {
-    return db.courseEnrollment.findUnique({
-      where: { studentCareerId_courseOfferingId: { studentCareerId, courseOfferingId } },
-      select: { courseEnrollmentId: true, enrollmentStatus: true },
-    });
-  },
-
-  createEnrollment(studentCareerId: number, courseOfferingId: number, enrollmentDate: Date, db: Db = prisma) {
-    return db.courseEnrollment.create({
-      data: { studentCareerId, courseOfferingId, enrollmentDate, enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO },
-      select: { courseEnrollmentId: true },
-    });
-  },
-
-  /** Vuelve a activar una inscripción cancelada a la misma comisión (la tabla tiene UNIQUE alumno+comisión). */
-  reactivateEnrollment(courseEnrollmentId: number, enrollmentDate: Date, db: Db = prisma) {
-    return db.courseEnrollment.update({
-      where: { courseEnrollmentId },
-      data: { enrollmentStatus: ENROLLMENT_STATUS.INSCRIPTO, enrollmentDate },
-      select: { courseEnrollmentId: true },
+      select: { studentCareerId: true },
     });
   },
 
@@ -227,15 +248,108 @@ export const courseEnrollmentRepository = {
   },
 
   /**
-   * Ejecuta `fn` en una transacción SERIALIZABLE: el conteo de cupo y el alta quedan
-   * protegidos contra dos alumnos tomando la última vacante al mismo tiempo.
-   * SQL Server resuelve ese choque eligiendo una víctima de deadlock (P2034); en ese
-   * caso se reintenta, y el reintento ya ve el cupo actualizado.
+   * Inscribe al alumno en la comisión en UNA sola ida a la base: bloqueo del alumno y de la
+   * comisión, verificación y alta (o reactivación) en un bloque T-SQL con su propia transacción.
+   * Así el bloqueo de la comisión dura lo que tarda SQL Server, no las idas y vueltas de Node:
+   * con la comisión disputada, cada ida y vuelta esperaba en la cola de eventos del worker con la
+   * comisión bloqueada (medido con loadtest/pico-inscripcion.js, Fase 2).
+   *
+   * Es la verificación definitiva: repite en SQL las reglas de `validate()` en
+   * courseEnrollment.service.ts (misma comisión, misma materia, horarios superpuestos con la misma
+   * regla que schedulesOverlap, y cupo). Si cambia una regla, hay que cambiarla en los dos lugares.
+   * También controla que la comisión siga disponible (abierta, materia activa, inscripción en
+   * fecha), porque el servicio valida eso con datos cacheados unos segundos.
    */
-  async runSerializable<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>, maxAttempts = 3): Promise<T> {
+  async reserveCourseSeat(p: {
+    studentCareerId: number;
+    courseOfferingId: number;
+    academicPeriodId: number;
+    studyPlanSubjectId: number;
+    enrollmentDate: Date;
+  }): Promise<SeatReservation> {
+    const active = ENROLLMENT_STATUS.INSCRIPTO;
+    const rows = await prisma.$queryRaw<SeatReservation[]>`
+      SET NOCOUNT ON;
+      SET XACT_ABORT ON;
+      DECLARE @result NVARCHAR(30) = NULL, @id INT = NULL, @capacity INT, @lockedStudent INT;
+      BEGIN TRAN;
+      -- Orden fijo alumno -> comisión: los pedidos del mismo alumno y los de la misma comisión hacen fila.
+      SELECT @lockedStudent = STUDENT_CAREER_ID FROM STUDENT_CAREER WITH (UPDLOCK, ROWLOCK) WHERE STUDENT_CAREER_ID = ${p.studentCareerId};
+      SELECT @capacity = CAPACITY FROM COURSE_OFFERING WITH (UPDLOCK, ROWLOCK) WHERE COURSE_OFFERING_ID = ${p.courseOfferingId};
+
+      IF NOT EXISTS (SELECT 1 FROM COURSE_OFFERING o
+                     JOIN STUDY_PLAN_SUBJECT sps ON sps.STUDY_PLAN_SUBJECT_ID = o.STUDY_PLAN_SUBJECT_ID
+                     JOIN ACADEMIC_PERIOD ap ON ap.ACADEMIC_PERIOD_ID = o.ACADEMIC_PERIOD_ID
+                     WHERE o.COURSE_OFFERING_ID = ${p.courseOfferingId} AND o.OFFERING_STATUS = ${OFFERING_STATUS.ABIERTA}
+                       AND sps.IS_ACTIVE = 1
+                       AND ap.ENROLLMENT_START_DATE <= ${p.enrollmentDate} AND ap.ENROLLMENT_END_DATE >= ${p.enrollmentDate})
+        SET @result = 'OFFERING_NOT_AVAILABLE';
+      ELSE IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT
+                 WHERE STUDENT_CAREER_ID = ${p.studentCareerId} AND COURSE_OFFERING_ID = ${p.courseOfferingId} AND ENROLLMENT_STATUS = ${active})
+        SET @result = 'ALREADY_ENROLLED';
+      ELSE IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT e JOIN COURSE_OFFERING o ON o.COURSE_OFFERING_ID = e.COURSE_OFFERING_ID
+                      WHERE e.STUDENT_CAREER_ID = ${p.studentCareerId} AND e.ENROLLMENT_STATUS = ${active}
+                        AND o.ACADEMIC_PERIOD_ID = ${p.academicPeriodId} AND o.STUDY_PLAN_SUBJECT_ID = ${p.studyPlanSubjectId})
+        SET @result = 'ALREADY_ENROLLED_IN_SUBJECT';
+      ELSE IF EXISTS (SELECT 1 FROM COURSE_ENROLLMENT e
+                      JOIN COURSE_OFFERING o ON o.COURSE_OFFERING_ID = e.COURSE_OFFERING_ID
+                      JOIN COURSE_SCHEDULE mine ON mine.COURSE_OFFERING_ID = e.COURSE_OFFERING_ID
+                      JOIN COURSE_SCHEDULE target ON target.COURSE_OFFERING_ID = ${p.courseOfferingId}
+                       AND target.DAY_OF_WEEK = mine.DAY_OF_WEEK
+                       AND mine.START_TIME < target.END_TIME AND target.START_TIME < mine.END_TIME
+                      WHERE e.STUDENT_CAREER_ID = ${p.studentCareerId} AND e.ENROLLMENT_STATUS = ${active}
+                        AND o.ACADEMIC_PERIOD_ID = ${p.academicPeriodId})
+        SET @result = 'SCHEDULE_CONFLICT';
+      ELSE IF (SELECT COUNT(*) FROM COURSE_ENROLLMENT
+               WHERE COURSE_OFFERING_ID = ${p.courseOfferingId} AND ENROLLMENT_STATUS = ${active}) >= @capacity
+        SET @result = 'COMMISSION_FULL';
+      ELSE
+      BEGIN
+        -- Si se había inscripto antes a esta comisión y canceló, se reactiva ese registro (UNIQUE alumno+comisión).
+        SELECT @id = COURSE_ENROLLMENT_ID FROM COURSE_ENROLLMENT
+        WHERE STUDENT_CAREER_ID = ${p.studentCareerId} AND COURSE_OFFERING_ID = ${p.courseOfferingId};
+        IF @id IS NOT NULL
+          UPDATE COURSE_ENROLLMENT SET ENROLLMENT_STATUS = ${active}, ENROLLMENT_DATE = ${p.enrollmentDate}
+          WHERE COURSE_ENROLLMENT_ID = @id;
+        ELSE
+        BEGIN
+          INSERT INTO COURSE_ENROLLMENT (STUDENT_CAREER_ID, COURSE_OFFERING_ID, ENROLLMENT_DATE, ENROLLMENT_STATUS)
+          VALUES (${p.studentCareerId}, ${p.courseOfferingId}, ${p.enrollmentDate}, ${active});
+          SET @id = SCOPE_IDENTITY();
+        END
+        SET @result = 'OK';
+      END
+      COMMIT;
+      SELECT @result AS result, @id AS courseEnrollmentId;
+    `;
+    const row = rows[0];
+    if (!row) throw new Error("reserveCourseSeat: la base no devolvió resultado");
+    return row;
+  },
+
+  /**
+   * Inscripción a examen: ejecuta `fn` con la fila del alumno y la de la mesa bloqueadas (UPDLOCK)
+   * hasta el commit. Así las inscripciones a una misma mesa, y las de un mismo alumno, hacen fila en
+   * vez de chocar: el conteo de cupo y las validaciones del alumno que hace `fn` no se pueden pisar.
+   * Las de mesas y alumnos distintos siguen en paralelo.
+   *
+   * Reemplaza a SERIALIZABLE, que bajo carga generaba deadlocks (medido con loadtest/). El orden
+   * fijo alumno → mesa evita deadlocks; si igual SQL Server elige una víctima (P2034), se reintenta.
+   * Pendiente: con muchísima demanda sobre una misma mesa conviene el enfoque de una sola ida a la
+   * base de reserveCourseSeat (el bloqueo acá dura las idas y vueltas de Node).
+   */
+  async runWithEnrollmentLocks<T>(
+    lock: { studentCareerId: number; examCallId: number },
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    maxAttempts = 3,
+  ): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       try {
-        return await prisma.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        return await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT STUDENT_CAREER_ID FROM STUDENT_CAREER WITH (UPDLOCK, ROWLOCK) WHERE STUDENT_CAREER_ID = ${lock.studentCareerId}`;
+          await tx.$queryRaw`SELECT EXAM_CALL_ID FROM EXAM_CALL WITH (UPDLOCK, ROWLOCK) WHERE EXAM_CALL_ID = ${lock.examCallId}`;
+          return fn(tx);
+        });
       } catch (error) {
         const isConflict = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
         if (!isConflict || attempt >= maxAttempts) throw error;
