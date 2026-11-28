@@ -292,7 +292,7 @@ function mapConcurrencyError(error: unknown): never {
         "Ya estás inscripto en esta comisión.",
       );
     }
-    // P2034: conflicto de escritura / deadlock entre transacciones SERIALIZABLE.
+    // P2034: deadlock que persistió tras los reintentos de runWithEnrollmentLocks (raro).
     if (error.code === "P2034") {
       throw new AppError(
         409,
@@ -432,62 +432,71 @@ export const courseEnrollmentService = {
     const { studentCareerId } = context;
     const academicPeriodId = offering.academicPeriod.academicPeriodId;
 
+    /** Validaciones del alumno y del cupo. `db` = transacción con bloqueo, o sin bloqueo para rechazar rápido. */
+    const validate = async (db?: Prisma.TransactionClient) => {
+      const active = await repo.findActiveEnrollmentsInPeriod(
+        studentCareerId,
+        academicPeriodId,
+        db,
+      );
+
+      if (
+        active.some(
+          (e) => e.courseOffering.courseOfferingId === courseOfferingId,
+        )
+      ) {
+        throw new AppError(
+          409,
+          ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
+          "Ya estás inscripto en esta comisión.",
+        );
+      }
+
+      const sameSubject = active.find(
+        (e) =>
+          e.courseOffering.studyPlanSubjectId === subject.studyPlanSubjectId,
+      );
+      if (sameSubject) {
+        throw new AppError(
+          409,
+          ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
+          `Ya estás inscripto a ${subjectName} en la comisión ${sameSubject.courseOffering.commission}. Si querés cambiar de comisión, primero cancelá esa inscripción.`,
+        );
+      }
+
+      const conflict = active.find((e) =>
+        schedulesOverlap(e.courseOffering.schedules, offering.schedules),
+      );
+      if (conflict) {
+        throw new AppError(
+          409,
+          ENROLLMENT_ERROR_CODES.SCHEDULE_CONFLICT,
+          `El horario de esta comisión (${formatScheduleText(offering.schedules)}) se superpone con ${conflict.courseOffering.studyPlanSubject.subject.subjectName} (${formatScheduleText(conflict.courseOffering.schedules)}). Por favor elegí otra comisión.`,
+          { conflictWith: toStudentEnrollmentDto(conflict) },
+        );
+      }
+
+      const enrolledCount = await repo.countActiveEnrollments(
+        courseOfferingId,
+        db,
+      );
+      if (enrolledCount >= offering.capacity) {
+        throw new AppError(
+          409,
+          ENROLLMENT_ERROR_CODES.COMMISSION_FULL,
+          `La comisión ${offering.commission} de ${subjectName} ya no cuenta con vacantes disponibles.`,
+        );
+      }
+    };
+
+    // Sin bloqueo: con la comisión llena (la mayoría de los pedidos en un pico) se rechaza sin hacer fila.
+    await validate();
+
     let courseEnrollmentId: number;
     try {
-      courseEnrollmentId = await repo.runSerializable(async (tx) => {
-        const active = await repo.findActiveEnrollmentsInPeriod(
-          studentCareerId,
-          academicPeriodId,
-          tx,
-        );
-
-        if (
-          active.some(
-            (e) => e.courseOffering.courseOfferingId === courseOfferingId,
-          )
-        ) {
-          throw new AppError(
-            409,
-            ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED,
-            "Ya estás inscripto en esta comisión.",
-          );
-        }
-
-        const sameSubject = active.find(
-          (e) =>
-            e.courseOffering.studyPlanSubjectId === subject.studyPlanSubjectId,
-        );
-        if (sameSubject) {
-          throw new AppError(
-            409,
-            ENROLLMENT_ERROR_CODES.ALREADY_ENROLLED_IN_SUBJECT,
-            `Ya estás inscripto a ${subjectName} en la comisión ${sameSubject.courseOffering.commission}. Si querés cambiar de comisión, primero cancelá esa inscripción.`,
-          );
-        }
-
-        const conflict = active.find((e) =>
-          schedulesOverlap(e.courseOffering.schedules, offering.schedules),
-        );
-        if (conflict) {
-          throw new AppError(
-            409,
-            ENROLLMENT_ERROR_CODES.SCHEDULE_CONFLICT,
-            `El horario de esta comisión (${formatScheduleText(offering.schedules)}) se superpone con ${conflict.courseOffering.studyPlanSubject.subject.subjectName} (${formatScheduleText(conflict.courseOffering.schedules)}). Por favor elegí otra comisión.`,
-            { conflictWith: toStudentEnrollmentDto(conflict) },
-          );
-        }
-
-        const enrolledCount = await repo.countActiveEnrollments(
-          courseOfferingId,
-          tx,
-        );
-        if (enrolledCount >= offering.capacity) {
-          throw new AppError(
-            409,
-            ENROLLMENT_ERROR_CODES.COMMISSION_FULL,
-            `La comisión ${offering.commission} de ${subjectName} ya no cuenta con vacantes disponibles.`,
-          );
-        }
+      courseEnrollmentId = await repo.runWithEnrollmentLocks({ studentCareerId, courseOfferingId }, async (tx) => {
+        // Con la fila del alumno y la de la comisión bloqueadas: esta es la verificación que vale.
+        await validate(tx);
 
         // Si se había inscripto antes a esta misma comisión y canceló, se reactiva ese registro.
         const previous = await repo.findEnrollment(

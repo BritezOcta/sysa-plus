@@ -15,7 +15,7 @@
  *
  * Requiere un período con la inscripción abierta hoy y uno ya terminado (los crea db:seed:demo).
  */
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma.js";
 import { ATTENDANCE_STATUS } from "../src/lib/attendance.js";
 import { timeFromString } from "../src/lib/schedule.js";

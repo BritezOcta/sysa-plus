@@ -22,6 +22,10 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 3000),
   DATABASE_URL: required("DATABASE_URL"),
+  // Conexiones simultáneas a SQL Server (el driver usa 10 por defecto) y cuánto espera una
+  // transacción por una conexión libre antes de fallar. Se midieron con loadtest/pico-inscripcion.js.
+  DB_POOL_MAX: positiveInt("DB_POOL_MAX", 20),
+  DB_TX_MAX_WAIT_MS: positiveInt("DB_TX_MAX_WAIT_MS", 10_000),
 
   // RF-01 · Autenticación
   JWT_SECRET: required("JWT_SECRET"),

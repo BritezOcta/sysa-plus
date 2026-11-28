@@ -227,15 +227,31 @@ export const courseEnrollmentRepository = {
   },
 
   /**
-   * Ejecuta `fn` en una transacción SERIALIZABLE: el conteo de cupo y el alta quedan
-   * protegidos contra dos alumnos tomando la última vacante al mismo tiempo.
-   * SQL Server resuelve ese choque eligiendo una víctima de deadlock (P2034); en ese
-   * caso se reintenta, y el reintento ya ve el cupo actualizado.
+   * Ejecuta `fn` con la fila del alumno y la del recurso con cupo (comisión o mesa) bloqueadas
+   * (UPDLOCK) hasta el commit. Así las inscripciones a un mismo recurso, y las de un mismo
+   * alumno, hacen fila en vez de chocar: el conteo de cupo y las validaciones del alumno que
+   * hace `fn` no se pueden pisar. Las de recursos y alumnos distintos siguen en paralelo.
+   *
+   * Reemplaza a SERIALIZABLE, que bajo carga generaba deadlocks entre inscripciones a la misma
+   * comisión (medido con loadtest/pico-inscripcion.js). El orden fijo alumno → recurso evita
+   * deadlocks entre estas transacciones; si igual SQL Server elige una víctima (P2034), se reintenta.
    */
-  async runSerializable<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>, maxAttempts = 3): Promise<T> {
+  async runWithEnrollmentLocks<T>(
+    lock: { studentCareerId: number } & ({ courseOfferingId: number } | { examCallId: number }),
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    maxAttempts = 3,
+  ): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       try {
-        return await prisma.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        return await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT STUDENT_CAREER_ID FROM STUDENT_CAREER WITH (UPDLOCK, ROWLOCK) WHERE STUDENT_CAREER_ID = ${lock.studentCareerId}`;
+          if ("courseOfferingId" in lock) {
+            await tx.$queryRaw`SELECT COURSE_OFFERING_ID FROM COURSE_OFFERING WITH (UPDLOCK, ROWLOCK) WHERE COURSE_OFFERING_ID = ${lock.courseOfferingId}`;
+          } else {
+            await tx.$queryRaw`SELECT EXAM_CALL_ID FROM EXAM_CALL WITH (UPDLOCK, ROWLOCK) WHERE EXAM_CALL_ID = ${lock.examCallId}`;
+          }
+          return fn(tx);
+        });
       } catch (error) {
         const isConflict = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
         if (!isConflict || attempt >= maxAttempts) throw error;

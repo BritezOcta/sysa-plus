@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma.js";
 import { timeFromString } from "../src/lib/schedule.js";
 import {

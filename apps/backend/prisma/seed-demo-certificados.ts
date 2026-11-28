@@ -11,7 +11,7 @@
  * Con eso se pueden emitir el certificado de alumno regular y el analítico parcial
  * (el analítico completo queda deshabilitado porque faltan materias).
  */
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma.js";
 
 const TAG = "PRUEBA-RF11";

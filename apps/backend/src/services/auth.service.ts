@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { env } from "../config/env.js";
 import { AppError } from "../lib/AppError.js";
 import { signSessionToken } from "../lib/jwt.js";

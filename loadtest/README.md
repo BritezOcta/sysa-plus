@@ -43,3 +43,20 @@ Al final k6 muestra un resumen. Lo importante:
   - `llegadas_tarde`: alumnos que terminaron de iniciar sesión después de la largada común (por defecto,
     30 s después del setup; se cambia con `-e ESPERA_S=60`). Si no es 0, el pico fue menos simultáneo de lo previsto.
 
+## Juez de fases
+
+Las mejoras de rendimiento se hacen por fases. Cada fase tiene sus criterios de aprobación en
+`criterios/fase-<N>.md`, fijados **antes** de medir. Al cerrar la fase, el agente `juez-carga`
+(`.claude/agents/juez-carga.md`) lee los JSON de `resultados/` y dictamina APROBADO o RECHAZADO.
+Sus veredictos quedan en `resultados/fase-<N>-veredicto-<intento>.md`.
+
+## A tener en cuenta
+
+- Los números dependen de la máquina: en Docker Desktop la CPU y la memoria están limitadas y la base corre en la
+  misma PC. Sirven para encontrar cuellos de botella y comparar antes/después de un cambio; la cifra real se mide
+  en el servidor donde se hostee.
+- Todos los usuarios virtuales salen de la misma IP. Los logins correctos no cuentan para el límite de intentos por
+  IP, pero si una prueba falla logins (por ejemplo, sin haber corrido el seed), la IP queda bloqueada 15 minutos:
+  reiniciar el backend (`docker restart sysaplus-backend`) para limpiarlo.
+- Los datos de carga son una carrera aparte (`CARGA`) con alumnos `@carga.sysa.test`. El seed borra y recrea solo
+  eso; no toca el resto de la base.

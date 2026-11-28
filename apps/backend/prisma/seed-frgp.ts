@@ -7,7 +7,7 @@
  *   PROFESOR de prueba (DNI 90xxxxxx, email @docentes.sysa.test, clave Docente123!).
  *   El primero de cada materia queda TITULAR y el resto AYUDANTE.
  */
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma.js";
 import { timeFromString } from "../src/lib/schedule.js";
 import { ASSIGNMENT_ROLE, OFFERING_STATUS } from "../src/types/academic.js";
