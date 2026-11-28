@@ -7,6 +7,10 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "carga:seed": "docker exec sysaplus-backend pnpm db:seed:carga",
+    "carga:normal": "docker compose run --rm k6 run --summary-export /resultados/uso-normal.json /scripts/uso-normal.js",
+    "carga:pico": "docker compose run --rm k6 run --summary-export /resultados/pico-inscripcion.json /scripts/pico-inscripcion.js",
+    "carga:login": "docker compose run --rm k6 run --summary-export /resultados/login-masivo.json /scripts/login-masivo.js"
   }
 }

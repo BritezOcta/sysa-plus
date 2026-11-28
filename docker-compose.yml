@@ -68,6 +68,21 @@ services:
     networks:
       - sysaplus-net
 
+  # Pruebas de carga (k6). No arranca con "up": se usa con "docker compose run --rm k6 run /scripts/<escenario>.js".
+  # Ver loadtest/README.md.
+  k6:
+    image: grafana/k6:latest
+    profiles: ["carga"]
+    volumes:
+      - ./loadtest:/scripts:ro
+      - ./loadtest/resultados:/resultados
+    environment:
+      BASE_URL: http://frontend
+    depends_on:
+      - frontend
+    networks:
+      - sysaplus-net
+
 volumes:
   sqlserver_data:
 
