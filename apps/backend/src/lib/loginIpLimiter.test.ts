@@ -1,49 +1,40 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createLoginIpLimiter } from "./loginIpLimiter.js";
+import { afterFailure, remainingBlockMs, type ThrottleState } from "./loginIpLimiter.js";
 
 const MINUTE = 60_000;
+const opts = { maxFailures: 3, blockMs: 15 * MINUTE };
 
-function setup() {
-  let now = 0;
-  const limiter = createLoginIpLimiter({ maxFailures: 3, blockMs: 15 * MINUTE, now: () => now });
-  return { limiter, advance: (ms: number) => (now += ms) };
+/** Registra n fallos seguidos en el instante `now`, partiendo de `state`. */
+function fail(state: ThrottleState | null, now: number, n = 1): ThrottleState {
+  let s = state;
+  for (let i = 0; i < n; i++) s = afterFailure(s, now, opts);
+  return s!;
 }
 
 test("bloquea la IP al llegar a 3 intentos fallidos y la libera al vencer el bloqueo", () => {
-  const { limiter, advance } = setup();
-  limiter.registerFailure("1.1.1.1");
-  limiter.registerFailure("1.1.1.1");
-  assert.equal(limiter.blockedFor("1.1.1.1"), 0);
+  const two = fail(null, 0, 2);
+  assert.equal(remainingBlockMs(two, 0), 0);
 
-  limiter.registerFailure("1.1.1.1");
-  assert.equal(limiter.blockedFor("1.1.1.1"), 15 * MINUTE);
-
-  advance(15 * MINUTE);
-  assert.equal(limiter.blockedFor("1.1.1.1"), 0);
+  const three = fail(two, 0);
+  assert.equal(remainingBlockMs(three, 0), 15 * MINUTE);
+  assert.equal(remainingBlockMs(three, 15 * MINUTE), 0);
 });
 
-test("cada IP se cuenta por separado", () => {
-  const { limiter } = setup();
-  for (let i = 0; i < 3; i++) limiter.registerFailure("1.1.1.1");
-  assert.ok(limiter.blockedFor("1.1.1.1") > 0);
-  assert.equal(limiter.blockedFor("2.2.2.2"), 0);
+test("sin registro previo la IP no está bloqueada", () => {
+  assert.equal(remainingBlockMs(null, 0), 0);
 });
 
-test("un ingreso exitoso reinicia el conteo", () => {
-  const { limiter } = setup();
-  limiter.registerFailure("1.1.1.1");
-  limiter.registerFailure("1.1.1.1");
-  limiter.reset("1.1.1.1");
-  limiter.registerFailure("1.1.1.1");
-  assert.equal(limiter.blockedFor("1.1.1.1"), 0);
+test("después de un bloqueo vencido, el conteo arranca de cero", () => {
+  const blocked = fail(null, 0, 3);
+  const afterBlock = fail(blocked, 15 * MINUTE);
+  assert.equal(afterBlock.failures, 1);
+  assert.equal(remainingBlockMs(afterBlock, 15 * MINUTE), 0);
 });
 
 test("los fallos viejos vencen: solo cuentan los de la ventana del bloqueo", () => {
-  const { limiter, advance } = setup();
-  limiter.registerFailure("1.1.1.1");
-  limiter.registerFailure("1.1.1.1");
-  advance(15 * MINUTE);
-  limiter.registerFailure("1.1.1.1");
-  assert.equal(limiter.blockedFor("1.1.1.1"), 0);
+  const two = fail(null, 0, 2);
+  const third = fail(two, 15 * MINUTE);
+  assert.equal(remainingBlockMs(third, 15 * MINUTE), 0);
+  assert.equal(third.failures, 1);
 });

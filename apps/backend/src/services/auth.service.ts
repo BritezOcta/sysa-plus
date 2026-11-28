@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { env } from "../config/env.js";
 import { AppError } from "../lib/AppError.js";
 import { signSessionToken } from "../lib/jwt.js";
-import { createLoginIpLimiter } from "../lib/loginIpLimiter.js";
+import { loginIpThrottleRepository } from "../repositories/loginIpThrottle.repository.js";
 import { userRepository } from "../repositories/user.repository.js";
 import { isRole, type AuthUser } from "../types/auth.js";
 import { AUDIT_ACTIONS, auditService } from "./audit.service.js";
@@ -40,10 +40,10 @@ const accountLocked = (lockedUntil: Date) =>
     { lockedUntil: lockedUntil.toISOString() },
   );
 
-const loginIpLimiter = createLoginIpLimiter({
+const IP_THROTTLE = {
   maxFailures: env.LOGIN_IP_MAX_ATTEMPTS,
   blockMs: env.LOGIN_IP_BLOCK_MINUTES * 60_000,
-});
+};
 
 // Solo cuentan los fallos de credenciales (401) y los intentos sobre una cuenta bloqueada (423).
 const countsAsIpFailure = (err: unknown) =>
@@ -89,7 +89,7 @@ export interface LoginResult {
 export const authService = {
   async login(input: LoginInput): Promise<LoginResult> {
     const ip = input.ipAddress;
-    const blockedMs = ip ? loginIpLimiter.blockedFor(ip) : 0;
+    const blockedMs = ip ? await loginIpThrottleRepository.blockedFor(ip) : 0;
     if (blockedMs > 0) {
       await auditService.record({
         userId: null,
@@ -107,10 +107,10 @@ export const authService = {
 
     try {
       const result = await authService.checkCredentials(input);
-      if (ip) loginIpLimiter.reset(ip);
+      if (ip) await loginIpThrottleRepository.reset(ip);
       return result;
     } catch (err) {
-      if (ip && countsAsIpFailure(err)) loginIpLimiter.registerFailure(ip);
+      if (ip && countsAsIpFailure(err)) await loginIpThrottleRepository.registerFailure(ip, IP_THROTTLE);
       throw err;
     }
   },

@@ -21,6 +21,9 @@ function positiveInt(name: string, fallback: number): number {
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 3000),
+  // Procesos de Node que atienden la API (node:cluster). Cada uno tiene su propio pool de
+  // conexiones (DB_POOL_MAX) y su pool de hilos para bcrypt (UV_THREADPOOL_SIZE).
+  WEB_CONCURRENCY: positiveInt("WEB_CONCURRENCY", 1),
   DATABASE_URL: required("DATABASE_URL"),
   // Conexiones simultáneas a SQL Server (el driver usa 10 por defecto) y cuánto espera una
   // transacción por una conexión libre antes de fallar. Se midieron con loadtest/pico-inscripcion.js.

@@ -467,3 +467,13 @@ model Notification {
   @@index([userId, isRead], map: "IX_NOTIFICATIONS_USER_READ")
   @@map("NOTIFICATIONS")
 }
+
+/// Límite de login por IP (loginIpLimiter.ts): estado compartido por todas las instancias del backend.
+model LoginIpThrottle {
+  ipAddress    String    @id(map: "PK_LOGIN_IP_THROTTLE") @map("IP_ADDRESS") @db.NVarChar(64)
+  failures     Int       @map("FAILURES")
+  windowStart  DateTime  @map("WINDOW_START")
+  blockedUntil DateTime? @map("BLOCKED_UNTIL")
+
+  @@map("LOGIN_IP_THROTTLE")
+}

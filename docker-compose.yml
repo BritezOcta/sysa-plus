@@ -41,9 +41,11 @@ services:
       REMEMBER_ME_DAYS: "${REMEMBER_ME_DAYS:-7}"
       LOGIN_MAX_ATTEMPTS: "${LOGIN_MAX_ATTEMPTS:-5}"
       LOGIN_LOCK_MINUTES: "${LOGIN_LOCK_MINUTES:-15}"
-      # Hilos de libuv: ahí corre bcrypt (login). Node usa 4 por defecto.
-      UV_THREADPOOL_SIZE: "${UV_THREADPOOL_SIZE:-8}"
-      DB_POOL_MAX: "${DB_POOL_MAX:-20}"
+      # Procesos de Node (node:cluster). Los dos valores siguientes son POR worker:
+      # 4 workers x 10 conexiones = 40 a SQL Server; 4 x 4 hilos de libuv (bcrypt) = 16.
+      WEB_CONCURRENCY: "${WEB_CONCURRENCY:-4}"
+      UV_THREADPOOL_SIZE: "${UV_THREADPOOL_SIZE:-4}"
+      DB_POOL_MAX: "${DB_POOL_MAX:-10}"
       DB_TX_MAX_WAIT_MS: "${DB_TX_MAX_WAIT_MS:-10000}"
       LOGIN_IP_MAX_ATTEMPTS: "${LOGIN_IP_MAX_ATTEMPTS:-3}"
       LOGIN_IP_BLOCK_MINUTES: "${LOGIN_IP_BLOCK_MINUTES:-15}"

@@ -1,50 +1,36 @@
 /**
  * Límite de intentos de login fallidos por IP. Complementa el bloqueo por cuenta (RF-01):
  * frena a quien prueba muchos DNI distintos desde la misma IP.
- * Vive en memoria: alcanza con una sola instancia del backend y se reinicia con el proceso.
+ *
+ * Funciones puras sobre el estado de una IP; el estado vive en la tabla LOGIN_IP_THROTTLE
+ * (loginIpThrottle.repository.ts) para que lo compartan todas las instancias del backend.
+ * Un ingreso exitoso borra el estado de la IP.
  */
-interface Entry {
+export interface ThrottleState {
   failures: number;
+  /** Inicio de la ventana en la que se cuentan los fallos (ms). */
   windowStart: number;
+  /** Hasta cuándo está bloqueada la IP (ms); 0 = no bloqueada. */
   blockedUntil: number;
 }
 
-/** Por encima de esta cantidad de IPs guardadas se purgan las que ya vencieron. */
-const MAX_TRACKED_IPS = 10_000;
+export interface ThrottleOptions {
+  maxFailures: number;
+  blockMs: number;
+}
 
-export function createLoginIpLimiter(opts: { maxFailures: number; blockMs: number; now?: () => number }) {
-  const now = opts.now ?? Date.now;
-  const entries = new Map<string, Entry>();
+/** Milisegundos que le quedan de bloqueo a la IP; 0 si puede intentar. */
+export function remainingBlockMs(state: ThrottleState | null, now: number): number {
+  return state ? Math.max(0, state.blockedUntil - now) : 0;
+}
 
-  const isExpired = (e: Entry, t: number) => e.blockedUntil <= t && t - e.windowStart >= opts.blockMs;
+/** Estado de la IP después de un intento fallido. */
+export function afterFailure(state: ThrottleState | null, now: number, opts: ThrottleOptions): ThrottleState {
+  // Sin registro, o con la ventana y el bloqueo ya vencidos: se empieza a contar de nuevo.
+  const expired = !state || (state.blockedUntil <= now && now - state.windowStart >= opts.blockMs);
+  const failures = (expired ? 0 : state.failures) + 1;
+  const windowStart = expired ? now : state.windowStart;
 
-  return {
-    /** Milisegundos que le quedan de bloqueo a la IP; 0 si puede intentar. */
-    blockedFor(ip: string): number {
-      const e = entries.get(ip);
-      return e ? Math.max(0, e.blockedUntil - now()) : 0;
-    },
-
-    registerFailure(ip: string): void {
-      const t = now();
-      let e = entries.get(ip);
-      if (!e || isExpired(e, t)) {
-        if (entries.size >= MAX_TRACKED_IPS) {
-          for (const [key, value] of entries) if (isExpired(value, t)) entries.delete(key);
-        }
-        e = { failures: 0, windowStart: t, blockedUntil: 0 };
-        entries.set(ip, e);
-      }
-      e.failures += 1;
-      if (e.failures >= opts.maxFailures) {
-        e.blockedUntil = t + opts.blockMs;
-        e.failures = 0;
-        e.windowStart = t;
-      }
-    },
-
-    reset(ip: string): void {
-      entries.delete(ip);
-    },
-  };
+  if (failures >= opts.maxFailures) return { failures: 0, windowStart: now, blockedUntil: now + opts.blockMs };
+  return { failures, windowStart, blockedUntil: expired ? 0 : state.blockedUntil };
 }

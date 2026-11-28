@@ -292,7 +292,7 @@ function mapConcurrencyError(error: unknown): never {
         "Ya estás inscripto en esta comisión.",
       );
     }
-    // P2034: deadlock que persistió tras los reintentos de runWithEnrollmentLocks (raro).
+    // P2034: deadlock entre inscripciones (raro: reserveCourseSeat bloquea siempre alumno → comisión).
     if (error.code === "P2034") {
       throw new AppError(
         409,
@@ -432,12 +432,14 @@ export const courseEnrollmentService = {
     const { studentCareerId } = context;
     const academicPeriodId = offering.academicPeriod.academicPeriodId;
 
-    /** Validaciones del alumno y del cupo. `db` = transacción con bloqueo, o sin bloqueo para rechazar rápido. */
-    const validate = async (db?: Prisma.TransactionClient) => {
+    /**
+     * Validaciones del alumno y del cupo, sin bloqueo: rechazan rápido y arman los mensajes.
+     * La verificación definitiva la repite repo.reserveCourseSeat en la base (mismas reglas en SQL).
+     */
+    const validate = async () => {
       const active = await repo.findActiveEnrollmentsInPeriod(
         studentCareerId,
         academicPeriodId,
-        db,
       );
 
       if (
@@ -476,10 +478,7 @@ export const courseEnrollmentService = {
         );
       }
 
-      const enrolledCount = await repo.countActiveEnrollments(
-        courseOfferingId,
-        db,
-      );
+      const enrolledCount = await repo.countActiveEnrollments(courseOfferingId);
       if (enrolledCount >= offering.capacity) {
         throw new AppError(
           409,
@@ -492,36 +491,30 @@ export const courseEnrollmentService = {
     // Sin bloqueo: con la comisión llena (la mayoría de los pedidos en un pico) se rechaza sin hacer fila.
     await validate();
 
-    let courseEnrollmentId: number;
+    // Verificación definitiva y alta en una sola ida a la base, con el alumno y la comisión bloqueados.
+    let reservation: Awaited<ReturnType<typeof repo.reserveCourseSeat>>;
     try {
-      courseEnrollmentId = await repo.runWithEnrollmentLocks({ studentCareerId, courseOfferingId }, async (tx) => {
-        // Con la fila del alumno y la de la comisión bloqueadas: esta es la verificación que vale.
-        await validate(tx);
-
-        // Si se había inscripto antes a esta misma comisión y canceló, se reactiva ese registro.
-        const previous = await repo.findEnrollment(
-          studentCareerId,
-          courseOfferingId,
-          tx,
-        );
-        const saved = previous
-          ? await repo.reactivateEnrollment(
-              previous.courseEnrollmentId,
-              today,
-              tx,
-            )
-          : await repo.createEnrollment(
-              studentCareerId,
-              courseOfferingId,
-              today,
-              tx,
-            );
-        return saved.courseEnrollmentId;
+      reservation = await repo.reserveCourseSeat({
+        studentCareerId,
+        courseOfferingId,
+        academicPeriodId,
+        studyPlanSubjectId: subject.studyPlanSubjectId,
+        enrollmentDate: today,
       });
     } catch (error) {
-      if (error instanceof AppError) throw error;
       mapConcurrencyError(error);
     }
+    if (reservation.result !== "OK" || reservation.courseEnrollmentId === null) {
+      // Otro pedido ganó la carrera entre la validación previa y el alta. validate() ya ve ese pedido
+      // confirmado y arma el mismo mensaje (con su detalle) que en el caso común.
+      await validate();
+      throw new AppError(
+        409,
+        ENROLLMENT_ERROR_CODES[reservation.result === "OK" ? "CONCURRENT_UPDATE" : reservation.result],
+        "No se pudo completar la inscripción porque cambió la disponibilidad. Actualizá la pantalla e intentá nuevamente.",
+      );
+    }
+    const courseEnrollmentId = reservation.courseEnrollmentId;
 
     await auditService.record({
       userId: user.userId,

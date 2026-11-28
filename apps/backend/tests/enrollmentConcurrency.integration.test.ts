@@ -156,6 +156,21 @@ test("inscripciones simultáneas respetan cupo y validaciones del alumno", async
       assert.deepEqual(tally(results), { "201": 1, "409 ALREADY_ENROLLED": 1 });
       assert.equal(await prisma.courseEnrollment.count({ where: { courseOfferingId: free.courseOfferingId } }), 1);
     });
+
+    await t.test("cancelar y volver a anotarse reactiva la misma inscripción", async () => {
+      const before = await prisma.courseEnrollment.findFirstOrThrow({ where: { courseOfferingId: free.courseOfferingId } });
+      const cancel = await fetch(`${base}/course-enrollments/${before.courseEnrollmentId}`, {
+        method: "DELETE",
+        headers: { cookie: soloCookie },
+      });
+      assert.equal(cancel.status, 200);
+      const again = await post("/course-enrollments", soloCookie, { courseOfferingId: free.courseOfferingId });
+      assert.equal(again.status, 201);
+      const rows = await prisma.courseEnrollment.findMany({ where: { courseOfferingId: free.courseOfferingId } });
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]!.courseEnrollmentId, before.courseEnrollmentId);
+      assert.equal(rows[0]!.enrollmentStatus, "INSCRIPTO");
+    });
   } finally {
     server.close();
     await prisma.$disconnect();
