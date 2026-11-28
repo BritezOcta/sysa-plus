@@ -4,12 +4,15 @@ import {
   notificationsApi,
   type NotificationItem,
 } from "../../api/notifications.api";
+import NoticeDetailModal from "../notices/NoticeDetailModal";
+import { getNoticeDestination } from "../notices/noticeDestination";
 
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selected, setSelected] = useState<NotificationItem | null>(null);
 
   async function load() {
     try {
@@ -34,7 +37,9 @@ export default function NotificationBell() {
       setUnreadCount((c) => Math.max(0, c - 1));
     }
     setOpen(false);
-    if (item.link) navigate(item.link);
+    const destination = getNoticeDestination(item);
+    if (destination) navigate(destination);
+    else setSelected(item);
   }
 
   async function handleMarkAll() {
@@ -127,6 +132,10 @@ export default function NotificationBell() {
             </ul>
           )}
         </div>
+      )}
+
+      {selected && (
+        <NoticeDetailModal notice={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );
