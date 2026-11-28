@@ -1,18 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { type NotificationItem } from "../../../api/notifications.api";
 import { useStudentNotifications } from "../StudentNotificationsContext";
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import NoticeCard from "../../../components/notices/NoticeCard";
+import NoticeDetailModal from "../../../components/notices/NoticeDetailModal";
+import { getNoticeDestination } from "../../../components/notices/noticeDestination";
 
 export function AvisosPage() {
   const navigate = useNavigate();
@@ -24,10 +16,13 @@ export function AvisosPage() {
     markAsRead,
     markAllAsRead,
   } = useStudentNotifications();
+  const [selected, setSelected] = useState<NotificationItem | null>(null);
 
   async function handleClickItem(item: NotificationItem) {
     if (!item.leido) await markAsRead(item.id);
-    if (item.link) navigate(item.link);
+    const destination = getNoticeDestination(item);
+    if (destination) navigate(destination);
+    else setSelected(item);
   }
 
   return (
@@ -84,49 +79,23 @@ export function AvisosPage() {
           }}
         >
           {items.map((item) => (
-            <li
-              key={item.id}
-              onClick={() => void handleClickItem(item)}
-              style={{
-                padding: "1rem",
-                borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                borderLeft: `4px solid ${
-                  item.tipo === "importante" ? "#d97706" : "#2563eb"
-                }`,
-                background: item.leido
-                  ? "transparent"
-                  : "rgba(37, 99, 235, 0.06)",
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "1rem",
-                }}
-              >
-                <strong style={{ fontWeight: item.leido ? 500 : 700 }}>
-                  {item.tipo === "importante" ? "⚠️ " : ""}
-                  {item.titulo}
-                </strong>
-                <small style={{ opacity: 0.7, whiteSpace: "nowrap" }}>
-                  {formatDate(item.fecha)}
-                </small>
-              </div>
-              <p style={{ margin: "0.4rem 0 0", opacity: 0.9 }}>
-                {item.cuerpo}
-              </p>
-              {!item.leido && (
-                <small style={{ color: "#2563eb", fontWeight: 600 }}>
-                  Nuevo
-                </small>
-              )}
+            <li key={item.id}>
+              <NoticeCard
+                titulo={item.titulo}
+                cuerpo={item.cuerpo}
+                tipo={item.tipo}
+                fecha={item.fecha}
+                leido={item.leido}
+                truncate
+                onClick={() => void handleClickItem(item)}
+              />
             </li>
           ))}
         </ul>
+      )}
+
+      {selected && (
+        <NoticeDetailModal notice={selected} onClose={() => setSelected(null)} />
       )}
     </section>
   );

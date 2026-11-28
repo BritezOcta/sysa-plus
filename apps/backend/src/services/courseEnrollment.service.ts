@@ -642,7 +642,7 @@ export const courseEnrollmentService = {
       title: "Baja de cursada confirmada",
       body: `Cancelaste tu inscripción a ${studyPlanSubject.subject.subjectName} (Comisión ${commission}).`,
       type: "info",
-      link: "/alumno/cursadas",
+      link: "/alumno/cursado",
     });
   },
 };

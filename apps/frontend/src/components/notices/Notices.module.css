@@ -1,0 +1,94 @@
+.card {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--sa-radius, 10px);
+  border: 1px solid var(--sa-border, #dbe3ee);
+  border-left-width: 4px;
+  background: var(--sa-surface, #ffffff);
+  color: var(--sa-text, #0b1426);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.cardInfo {
+  border-left-color: var(--sa-accent, #1a8fd1);
+}
+
+.cardImportant {
+  border-left-color: var(--sa-warn, #b45f06);
+}
+
+.cardUnread {
+  background: var(--sa-accent-soft, rgba(26, 143, 209, 0.12));
+}
+
+.cardImportant.cardUnread {
+  background: var(--sa-warn-soft, rgba(245, 165, 36, 0.2));
+}
+
+.cardClickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cardClickable:hover {
+  box-shadow: var(--sa-shadow);
+  transform: translateY(-1px);
+}
+
+.cardClickable:focus-visible {
+  outline: 2px solid var(--sa-accent, #1a8fd1);
+  outline-offset: 2px;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.titleRead {
+  font-weight: 500;
+}
+
+.titleUnread {
+  font-weight: 700;
+}
+
+.date {
+  color: var(--sa-text-muted, #5b6b82);
+  white-space: nowrap;
+}
+
+.body {
+  display: block;
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.bodyTruncate {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.newTag {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--sa-accent, #1a8fd1);
+  font-weight: 600;
+}
+
+.detailBody {
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  color: var(--modal-text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

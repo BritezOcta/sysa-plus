@@ -1,5 +1,19 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { notificationsApi } from "../../../api/notifications.api";
+import NoticeCard from "../../notices/NoticeCard";
+import ModalShell from "../../ui/ModalShell";
+import modalStyles from "../Modals.module.css";
+import s from "./BroadcastNoticeModal.module.css";
+
+type NoticeType = "info" | "importante";
+
+const TITLE_MAX = 120;
+const BODY_MAX = 1000;
+
+const TYPE_OPTIONS: { value: NoticeType; icon: string; label: string; hint: string }[] = [
+  { value: "info", icon: "ℹ️", label: "Informativo", hint: "Novedades generales" },
+  { value: "importante", icon: "⚠️", label: "Importante", hint: "Requiere atención del alumno" },
+];
 
 interface BroadcastNoticeModalProps {
   onClose: () => void;
@@ -12,9 +26,11 @@ export default function BroadcastNoticeModal({
 }: BroadcastNoticeModalProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [type, setType] = useState<"info" | "importante">("info");
+  const [type, setType] = useState<NoticeType>("info");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewDate] = useState(() => new Date().toISOString());
+  const titleRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -47,172 +63,124 @@ export default function BroadcastNoticeModal({
     }
   }
 
+  const isEmpty = !title.trim() && !body.trim();
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="broadcast-modal-title"
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
-        display: "grid",
-        placeItems: "center",
-        padding: "1rem",
-        zIndex: 1000,
-      }}
+    <ModalShell
+      titleId="broadcast-modal-title"
+      title="Enviar aviso a alumnos"
+      subtitle="Llega a todos los alumnos activos del sistema."
+      closeAriaLabel="Cerrar modal"
+      tone={type === "importante" ? "warning" : "default"}
+      wide
+      canClose={!submitting}
+      initialFocusRef={titleRef}
+      onRequestClose={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 480,
-          background: "#ffffff",
-          color: "#0f172a",
-          borderRadius: 10,
-          padding: "1.5rem",
-          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1rem",
-          }}
-        >
-          <h2
-            id="broadcast-modal-title"
-            style={{ margin: 0, fontSize: "1.15rem" }}
-          >
-            Enviar aviso a alumnos
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar modal"
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: "1.2rem",
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
+      <form className={modalStyles.formBody} onSubmit={(e) => void handleSubmit(e)}>
+        <div className={s.layout}>
+          <div className={s.formColumn}>
+            <div role="radiogroup" aria-label="Tipo de aviso" className={s.typeGroup}>
+              {TYPE_OPTIONS.map((opt) => {
+                const checked = type === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={checked}
+                    className={`${s.typeOption} ${
+                      opt.value === "importante" ? s.typeImportant : s.typeInfo
+                    } ${checked ? s.typeChecked : ""}`}
+                    onClick={() => setType(opt.value)}
+                  >
+                    <span className={s.typeIcon} aria-hidden="true">
+                      {opt.icon}
+                    </span>
+                    <span className={s.typeLabel}>{opt.label}</span>
+                    <span className={s.typeHint}>{opt.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={modalStyles.field}>
+              <div className={s.labelRow}>
+                <label htmlFor="broadcast-title">Título</label>
+                <span className={s.counter}>
+                  {title.length}/{TITLE_MAX}
+                </span>
+              </div>
+              <input
+                ref={titleRef}
+                id="broadcast-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ej: Recordatorio de inscripción a finales"
+                maxLength={TITLE_MAX}
+                required
+              />
+            </div>
+
+            <div className={modalStyles.field}>
+              <div className={s.labelRow}>
+                <label htmlFor="broadcast-body">Mensaje</label>
+                <span className={s.counter}>
+                  {body.length}/{BODY_MAX}
+                </span>
+              </div>
+              <textarea
+                id="broadcast-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Escribí el contenido del aviso para todos los alumnos..."
+                rows={6}
+                maxLength={BODY_MAX}
+                required
+                className={s.textarea}
+              />
+            </div>
+          </div>
+
+          <aside className={s.previewColumn} aria-label="Vista previa">
+            <p className={s.previewHeading}>Así lo verá el alumno</p>
+            <div className={isEmpty ? s.previewEmpty : undefined}>
+              <NoticeCard
+                titulo={title.trim() || "Título del aviso"}
+                cuerpo={body.trim() || "El mensaje aparecerá acá a medida que lo escribas."}
+                tipo={type}
+                fecha={previewDate}
+                leido={false}
+                truncate
+              />
+            </div>
+            <p className={s.previewHint}>
+              Al hacer clic, el alumno lo ve completo en una ventana flotante.
+            </p>
+          </aside>
         </div>
 
-        <form
-          onSubmit={(e) => void handleSubmit(e)}
-          style={{ display: "grid", gap: "0.9rem" }}
-        >
-          <label
-            style={{ display: "grid", gap: "0.35rem", fontSize: "0.9rem" }}
-          >
-            <span>Título</span>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: Recordatorio de inscripción a finales"
-              maxLength={120}
-              required
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: 6,
-                border: "1px solid #cbd5e1",
-              }}
-            />
-          </label>
+        {error && (
+          <p role="alert" className={modalStyles.errorBanner}>
+            {error}
+          </p>
+        )}
 
-          <label
-            style={{ display: "grid", gap: "0.35rem", fontSize: "0.9rem" }}
+        <div className={modalStyles.modalFooter}>
+          <button
+            type="button"
+            className={modalStyles.secondaryBtn}
+            onClick={onClose}
+            disabled={submitting}
           >
-            <span>Tipo de aviso</span>
-            <select
-              value={type}
-              onChange={(e) =>
-                setType(e.target.value === "importante" ? "importante" : "info")
-              }
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: 6,
-                border: "1px solid #cbd5e1",
-              }}
-            >
-              <option value="info">Informativo (info)</option>
-              <option value="importante">Importante (importante)</option>
-            </select>
-          </label>
-
-          <label
-            style={{ display: "grid", gap: "0.35rem", fontSize: "0.9rem" }}
-          >
-            <span>Mensaje</span>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Escribí el contenido del aviso para todos los alumnos..."
-              rows={4}
-              maxLength={1000}
-              required
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: 6,
-                border: "1px solid #cbd5e1",
-                resize: "vertical",
-              }}
-            />
-          </label>
-
-          {error && (
-            <p style={{ margin: 0, color: "#dc2626", fontSize: "0.85rem" }}>
-              {error}
-            </p>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "0.6rem",
-              marginTop: "0.5rem",
-            }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              style={{
-                padding: "0.5rem 0.9rem",
-                borderRadius: 6,
-                border: "1px solid #cbd5e1",
-                background: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: 6,
-                border: "none",
-                background: "#2563eb",
-                color: "#fff",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {submitting ? "Enviando..." : "Enviar aviso"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            Cancelar
+          </button>
+          <button type="submit" className={modalStyles.primaryBtn} disabled={submitting}>
+            {submitting ? "Enviando..." : "Enviar a todos los alumnos"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
