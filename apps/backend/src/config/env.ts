@@ -37,7 +37,7 @@ export const env = {
   LOGIN_MAX_ATTEMPTS: positiveInt("LOGIN_MAX_ATTEMPTS", 5),
   LOGIN_LOCK_MINUTES: positiveInt("LOGIN_LOCK_MINUTES", 15),
   // Límite por IP, independiente del bloqueo de cuenta.
-  LOGIN_IP_MAX_ATTEMPTS: positiveInt("LOGIN_IP_MAX_ATTEMPTS", 3),
+  LOGIN_IP_MAX_ATTEMPTS: positiveInt("LOGIN_IP_MAX_ATTEMPTS", 20),
   LOGIN_IP_BLOCK_MINUTES: positiveInt("LOGIN_IP_BLOCK_MINUTES", 15),
 
   // RF-11 · Certificados: URL pública del frontend a la que apunta el QR de validación.

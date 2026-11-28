@@ -47,7 +47,7 @@ services:
       UV_THREADPOOL_SIZE: "${UV_THREADPOOL_SIZE:-4}"
       DB_POOL_MAX: "${DB_POOL_MAX:-10}"
       DB_TX_MAX_WAIT_MS: "${DB_TX_MAX_WAIT_MS:-10000}"
-      LOGIN_IP_MAX_ATTEMPTS: "${LOGIN_IP_MAX_ATTEMPTS:-3}"
+      LOGIN_IP_MAX_ATTEMPTS: "${LOGIN_IP_MAX_ATTEMPTS:-20}"
       LOGIN_IP_BLOCK_MINUTES: "${LOGIN_IP_BLOCK_MINUTES:-15}"
     # Solo desde esta PC: desde la red se entra por nginx (frontend), que es quien
     # agrega X-Forwarded-For. Expuesta, cualquiera podría falsear su IP salteando nginx.

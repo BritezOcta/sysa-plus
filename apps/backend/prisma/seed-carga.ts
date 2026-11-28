@@ -12,6 +12,7 @@
  * Uso (con Docker levantado):
  *   docker exec sysaplus-backend pnpm db:seed:carga
  *   docker exec -e CARGA_ALUMNOS=1000 -e CARGA_CUPO_PICO=80 sysaplus-backend pnpm db:seed:carga
+ *   docker exec -e CARGA_SOLO_BORRAR=1 sysaplus-backend pnpm db:seed:carga   (solo borra; pnpm carga:limpiar)
  *
  * Requiere un período con la inscripción abierta hoy y uno ya terminado (los crea db:seed:demo).
  */
@@ -90,6 +91,12 @@ async function reset() {
 }
 
 async function main() {
+  if (process.env.CARGA_SOLO_BORRAR === "1") {
+    await reset();
+    console.log(`✔ Datos de carga borrados (carrera ${CAREER_CODE} y alumnos ${EMAIL_DOMAIN}).`);
+    return;
+  }
+
   const startedAt = Date.now();
   const now = new Date();
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));

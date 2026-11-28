@@ -25,6 +25,13 @@ Corren con Docker: no hace falta instalar k6.
    Opciones: `pnpm carga:normal -e MAX_USUARIOS=400`, `pnpm carga:pico -e USUARIOS=500 -e CUPO=80`.
    Si el seed se corrió con otra cantidad de alumnos, agregar `-e ALUMNOS=<cantidad>`.
 
+4. Al terminar, borrar los datos de carga (la carrera `CARGA` y sus 500 alumnos aparecen en la
+   oferta académica, los reportes y el listado de usuarios):
+
+   ```
+   pnpm carga:limpiar
+   ```
+
 ## Cómo leer el resultado
 
 Al final k6 muestra un resumen. Lo importante:
