@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import {
   notificationsApi,
@@ -134,9 +135,13 @@ export default function NotificationBell() {
         </div>
       )}
 
-      {selected && (
-        <NoticeDetailModal notice={selected} onClose={() => setSelected(null)} />
-      )}
+      {/* Portal: la topbar tiene backdrop-filter y encerraría al modal (position: fixed).
+          Se monta en #root para conservar el zoom de accesibilidad. */}
+      {selected &&
+        createPortal(
+          <NoticeDetailModal notice={selected} onClose={() => setSelected(null)} />,
+          document.getElementById("root") ?? document.body,
+        )}
     </div>
   );
 }

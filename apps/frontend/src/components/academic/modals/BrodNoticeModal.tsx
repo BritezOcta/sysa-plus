@@ -152,6 +152,7 @@ export default function BroadcastNoticeModal({
                 tipo={type}
                 fecha={previewDate}
                 leido={false}
+                truncate
               />
             </div>
             <p className={s.previewHint}>

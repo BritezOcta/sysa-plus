@@ -29,21 +29,23 @@ export default function NoticeCard({
 
   const content = (
     <>
-      <div className={s.cardHead}>
+      <span className={s.cardHead}>
         <strong className={leido ? s.titleRead : s.titleUnread}>
           {tipo === "importante" ? "⚠️ " : ""}
           {titulo}
         </strong>
         <small className={s.date}>{formatNoticeDate(fecha)}</small>
-      </div>
-      <p className={`${s.body} ${truncate ? s.bodyTruncate : ""}`}>{cuerpo}</p>
+      </span>
+      <span className={`${s.body} ${truncate ? s.bodyTruncate : ""}`}>{cuerpo}</span>
       {!leido && <small className={s.newTag}>Nuevo</small>}
     </>
   );
 
   if (onClick) {
+    // Nombre accesible corto: el cuerpo completo se lee al abrir el aviso.
+    const label = `${tipo === "importante" ? "Aviso importante" : "Aviso"}: ${titulo}${leido ? "" : " (nuevo)"}`;
     return (
-      <button type="button" className={className} onClick={onClick}>
+      <button type="button" className={className} onClick={onClick} aria-label={label}>
         {content}
       </button>
     );
