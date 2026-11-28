@@ -1,0 +1,196 @@
+﻿# Fase 2, pico 500, corrida 1 (commit 45f9ed7). host = CPU total de Windows (8 nÃºcleos fÃ­sicos, 16 lÃ³gicos); contenedores con docker stats (100% = 1 nÃºcleo lÃ³gico).
+00:17:19.7 host=35%
+00:17:20.5 host=99%
+00:17:21.0 host=96%
+00:17:19.8 sysaplus-backend=1308.06%  sysaplus-db=74.60%
+00:17:21.6 host=96%
+00:17:22.2 host=98%
+00:17:22.8 host=95%
+00:17:23.4 host=14%
+00:17:21.9 sysaplus-backend=432.93%  sysaplus-db=120.11%
+00:17:24.0 host=23%
+00:17:24.6 host=5%
+00:17:25.1 host=4%
+00:17:23.9 sysaplus-backend=0.04%  sysaplus-db=0.92%
+00:17:25.7 host=10%
+00:17:26.3 host=2%
+00:17:26.9 host=14%
+00:17:27.4 host=14%
+00:17:25.9 sysaplus-backend=0.06%  sysaplus-db=0.76%
+00:17:28.0 host=6%
+00:17:28.6 host=8%
+00:17:29.2 host=17%
+00:17:27.9 sysaplus-backend=0.04%  sysaplus-db=0.65%
+00:17:29.8 host=30%
+00:17:30.3 host=10%
+00:17:30.9 host=8%
+00:17:31.5 host=10%
+00:17:29.9 sysaplus-backend=0.10%  sysaplus-db=0.71%
+00:17:32.1 host=6%
+00:17:32.6 host=0%
+00:17:33.2 host=8%
+00:17:32.0 sysaplus-backend=0.04%  sysaplus-db=1.02%
+00:17:33.8 host=13%
+00:17:34.4 host=7%
+00:17:34.9 host=10%
+00:17:35.5 host=14%
+00:17:34.0 sysaplus-backend=0.04%  sysaplus-db=0.92%
+00:17:36.1 host=18%
+00:17:36.7 host=11%
+00:17:37.3 host=19%
+00:17:36.0 sysaplus-backend=0.04%  sysaplus-db=0.77%
+00:17:37.8 host=13%
+00:17:38.4 host=13%
+00:17:39.0 host=11%
+00:17:39.6 host=13%
+00:17:38.0 sysaplus-backend=0.06%  sysaplus-db=0.75%
+00:17:40.1 host=6%
+00:17:40.7 host=3%
+00:17:41.3 host=2%
+00:17:40.0 sysaplus-backend=0.04%  sysaplus-db=0.67%
+00:17:41.9 host=8%
+00:17:42.4 host=6%
+00:17:43.0 host=6%
+00:17:43.6 host=19%
+00:17:42.0 sysaplus-backend=0.04%  sysaplus-db=0.83%
+00:17:44.2 host=10%
+00:17:44.8 host=10%
+00:17:45.3 host=11%
+00:17:44.0 sysaplus-backend=0.05%  sysaplus-db=0.84%
+00:17:45.9 host=25%
+00:17:46.5 host=6%
+00:17:47.1 host=12%
+00:17:47.6 host=11%
+00:17:46.0 sysaplus-backend=0.05%  sysaplus-db=0.68%
+00:17:48.2 host=13%
+00:17:48.8 host=8%
+00:17:49.4 host=8%
+00:17:48.1 sysaplus-backend=0.04%  sysaplus-db=0.78%
+00:17:49.9 host=11%
+00:17:50.5 host=89%
+00:17:51.1 host=71%
+00:17:51.7 host=72%
+00:17:50.1 sysaplus-backend=537.86%  sysaplus-db=290.28%
+00:17:52.3 host=63%
+00:17:52.8 host=12%
+00:17:53.4 host=1%
+00:17:52.1 sysaplus-backend=0.04%  sysaplus-db=0.81%
+00:17:54.0 host=12%
+00:17:54.6 host=11%
+00:17:55.2 host=9%
+00:17:55.7 host=17%
+00:17:54.1 sysaplus-backend=0.05%  sysaplus-db=1.02%
+00:17:56.3 host=13%
+00:17:56.9 host=6%
+00:17:57.5 host=4%
+00:17:56.1 sysaplus-backend=0.07%  sysaplus-db=1.25%
+00:17:58.0 host=11%
+00:17:58.6 host=10%
+00:17:59.2 host=16%
+00:17:59.8 host=23%
+00:17:58.1 sysaplus-backend=0.04%  sysaplus-db=0.76%
+00:18:00.3 host=15%
+00:18:00.9 host=9%
+00:18:01.5 host=10%
+00:18:00.1 sysaplus-backend=0.11%  sysaplus-db=0.96%
+00:18:02.1 host=15%
+00:18:02.7 host=13%
+00:18:03.2 host=5%
+00:18:03.8 host=11%
+00:18:02.1 sysaplus-backend=4.96%  sysaplus-db=1.80%
+00:18:04.4 host=5%
+00:18:05.0 host=13%
+00:18:05.5 host=9%
+00:18:04.1 sysaplus-backend=0.04%  sysaplus-db=2.79%
+00:18:06.1 host=17%
+00:18:06.7 host=7%
+00:18:07.3 host=6%
+00:18:07.9 host=8%
+00:18:06.1 sysaplus-backend=17.92%  sysaplus-db=0.73%
+00:18:08.4 host=9%
+00:18:09.0 host=4%
+00:18:09.6 host=9%
+00:18:08.2 sysaplus-backend=0.04%  sysaplus-db=1.09%
+00:18:10.2 host=16%
+00:18:10.7 host=2%
+00:18:11.3 host=10%
+00:18:11.9 host=8%
+00:18:10.2 sysaplus-backend=0.04%  sysaplus-db=0.73%
+00:18:12.5 host=12%
+00:18:13.0 host=17%
+00:18:13.6 host=8%
+00:18:12.2 sysaplus-backend=0.07%  sysaplus-db=0.90%
+00:18:14.2 host=12%
+00:18:14.8 host=15%
+00:18:15.4 host=18%
+00:18:14.2 sysaplus-backend=0.05%  sysaplus-db=0.70%
+00:18:15.9 host=25%
+00:18:16.5 host=10%
+00:18:17.1 host=9%
+00:18:17.7 host=12%
+00:18:16.2 sysaplus-backend=0.05%  sysaplus-db=0.77%
+00:18:18.3 host=9%
+00:18:18.8 host=15%
+00:18:19.4 host=5%
+00:18:18.2 sysaplus-backend=0.04%  sysaplus-db=1.30%
+00:18:20.0 host=14%
+00:18:20.6 host=5%
+00:18:21.1 host=12%
+00:18:21.7 host=3%
+00:18:20.2 sysaplus-backend=0.04%  sysaplus-db=0.67%
+00:18:22.3 host=13%
+00:18:22.9 host=6%
+00:18:23.5 host=8%
+00:18:22.2 sysaplus-backend=0.56%  sysaplus-db=2.36%
+00:18:24.0 host=10%
+00:18:24.6 host=11%
+00:18:25.2 host=20%
+00:18:25.8 host=3%
+00:18:24.2 sysaplus-backend=0.00%  sysaplus-db=0.77%
+00:18:26.3 host=8%
+00:18:26.9 host=8%
+00:18:27.5 host=4%
+00:18:26.3 sysaplus-backend=0.02%  sysaplus-db=0.74%
+00:18:28.1 host=9%
+00:18:28.6 host=11%
+00:18:29.2 host=13%
+00:18:29.8 host=9%
+00:18:28.3 sysaplus-backend=0.00%  sysaplus-db=0.90%
+00:18:30.4 host=19%
+00:18:31.0 host=9%
+00:18:31.5 host=8%
+00:18:30.3 sysaplus-backend=0.00%  sysaplus-db=0.81%
+00:18:32.1 host=15%
+00:18:32.7 host=18%
+00:18:33.3 host=10%
+00:18:33.8 host=5%
+00:18:32.3 sysaplus-backend=0.00%  sysaplus-db=0.89%
+00:18:34.4 host=11%
+00:18:35.0 host=10%
+00:18:35.6 host=10%
+00:18:34.3 sysaplus-backend=0.00%  sysaplus-db=0.73%
+00:18:36.2 host=14%
+00:18:36.7 host=9%
+00:18:37.3 host=8%
+00:18:37.9 host=1%
+00:18:36.3 sysaplus-backend=0.00%  sysaplus-db=0.79%
+00:18:38.5 host=7%
+00:18:39.0 host=8%
+00:18:39.6 host=10%
+00:18:38.3 sysaplus-backend=0.00%  sysaplus-db=1.09%
+00:18:40.2 host=19%
+00:18:40.8 host=17%
+00:18:41.4 host=5%
+00:18:41.9 host=13%
+00:18:40.3 sysaplus-backend=0.00%  sysaplus-db=0.72%
+00:18:42.5 host=16%
+00:18:43.1 host=8%
+00:18:43.7 host=8%
+00:18:42.3 sysaplus-backend=0.00%  sysaplus-db=0.82%
+00:18:44.2 host=7%
+00:18:44.8 host=12%
+00:18:45.4 host=12%
+00:18:46.0 host=26%
+00:18:44.3 sysaplus-backend=0.00%  sysaplus-db=0.70%
+00:18:46.4 sysaplus-backend=0.00%  sysaplus-db=0.78%
+00:18:48.4 sysaplus-backend=0.00%  sysaplus-db=0.92%
