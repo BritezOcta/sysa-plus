@@ -325,7 +325,7 @@ export const teacherService = {
       title: `Nueva observación en ${assignment.courseOffering.studyPlanSubject.subject.subjectName}`,
       body: `El docente registró una observación en tu cursada (Comisión ${assignment.courseOffering.commission}).`,
       type: "info",
-      link: "/alumno/avisos",
+      link: null,
     });
 
     return {

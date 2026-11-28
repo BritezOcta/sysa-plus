@@ -75,7 +75,7 @@ export const notificationsService = {
         title,
         body,
         type,
-        link: "/alumno/avisos",
+        link: null,
       })),
     );
 
